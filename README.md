@@ -1,13 +1,13 @@
-## BlueROV2 MPC
+# BlueROV2 MPC
 Designing MPC for bluerov2 model.
 
-# Requirements
+## Requirements
 * [uuv simulator](https://uuvsimulator.github.io/)
 * [bluerov2 ros simulation](https://github.com/tsaoyu/bluerov2)
 * [ros kinetic or newer](http://wiki.ros.org/ROS/Installation)
 * Python
 
-# Working progress
+## Working progress
 * Fixed camera function in bluerov2_description/urdf/sensors.xacro
 * Created new launch file bluerov2_description/launch/upload_bluerov2_v2.launch
 * Created new launch file bluerov2_description/launch/upload_bluerov2_v2_default.launch
