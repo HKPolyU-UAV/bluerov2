@@ -1,0 +1,55 @@
+
+<launch>
+
+    <arg name="uuv_name" default="bluerov2"/>
+    <arg name="namespace" default="bluerov2"/>
+
+    <!-- If you want to generate a ROS bag with the recorded simulated data, set this flag to true -->
+    <arg name="record" default="false"/>
+    <arg name="bag_filename" default="recording.bag"/>
+
+    <arg name="use_ned_frame" default="false"/>
+    <arg name="teleop_on" default="false"/>
+    <arg name="joy_id" default="0"/>
+
+    <!-- Initial position and heading of the vehicle (wrt Gazebo's inertial frame)  -->
+    <arg name="x" default="0"/>
+    <arg name="y" default="0"/>
+    <arg name="z" default="0"/>
+    <arg name="yaw" default="0"/>
+
+    <!-- Start the a underwater world simulation scenario -->
+    <!-- <include file="$(find uuv_descriptions)/launch/ocean_waves.launch"/> -->
+
+    <!-- Wait 5s -->
+    <!-- <include file="$(find uuv_simulation_wrapper)/launch/unpause_simulation.launch">
+        <arg name="timeout" value="5"/>
+    </include> -->
+
+    <!-- Add the bluerov2 vehicle to the world simulation (namespace: bluerov2) -->
+    <include file="$(find bluerov2_description)/launch/upload_bluerov2.launch">
+        <arg name="namespace" value="$(arg namespace)"/>
+        <arg name="x" value="$(arg x)"/>
+        <arg name="y" value="$(arg y)"/>
+        <arg name="z" value="$(arg z)"/>
+        <arg name="yaw" value="$(arg yaw)"/>
+        <!-- <arg name="use_ned_frame" value="$(arg use_ned_frame)"/> -->
+    </include>
+
+    <!-- Start the SITL (Pixhawk controller) with its default parameters for the BlueROV2 vehicle  -->
+    <include file="$(find bluerov2_control)/launch/start_ardusub_sitl.launch">
+        <!-- <arg name="uuv_name" value="$(arg uuv_name)"/>
+        <arg name="teleop_on" value="$(arg teleop_on)"/>
+        <arg name="joy_id" value="$(arg joy_id)"/>
+        <arg name="use_ned_frame" value="$(arg use_ned_frame)"/> -->
+    </include>
+
+    <!-- Open RViz for visualization of sensor data and visualization markers -->
+    <!-- <node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find bluerov2_gazebo)/rviz/bluerov2.rviz"/> -->
+
+    <!-- Initialize the recording fo the simulation according to the record flag  -->
+    <!-- <include file="$(find bluerov2_gazebo)/launch/record.launch">
+      <arg name="record" value="$(arg record)"/>
+      <arg name="bag_filename" value="$(arg bag_filename)"/>
+    </include> -->
+</launch>
