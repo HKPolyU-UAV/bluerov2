@@ -27,13 +27,13 @@
   <arg name="controller_config_file" default="$(find uuv_trajectory_control)/config/controllers/pid/$(arg model_name)/params.yaml"/>
 
   <!--Thruster manager configuration  -->
-  <arg name="thruster_manager_output_dir" default="$(find bluerov2_control)/config"/>
+  <arg name="thruster_manager_output_dir" default="$(find bluerov2_control)/config/$(arg model_name)"/>
   <arg name="thruster_manager_config_file" default="$(find bluerov2_control)/config/thruster_manager.yaml"/>
   <!-- File containing the thruster allocation matrix -->
   <arg name="tam_file" default="$(find bluerov2_control)/config/TAM.yaml"/>
 
   <!-- Start the thruster allocation manager -->
-  <include file="$(find uuv_thruster_manager)/launch/thruster_manager.launch">
+  <include file="$(find bluerov2_control)/launch/start_thruster_manager.launch">
      <arg name="uuv_name" value="$(arg uuv_name)" />
      <arg name="model_name" value="$(arg model_name)" />
      <arg name="output_dir" value="$(arg thruster_manager_output_dir)" />

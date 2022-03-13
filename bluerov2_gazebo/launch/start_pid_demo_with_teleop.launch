@@ -16,7 +16,7 @@
     <include file="$(find uuv_gazebo_worlds)/launch/ocean_waves.launch"/>
 
     <!-- Add the bluerov2 vehicle to the world  -->
-    <include file="$(find bluerov2_description)/launch/upload_bluerov2_v2.launch">
+    <include file="$(find bluerov2_description)/launch/upload_bluerov2.launch">
         <arg name="x" default="20"/>
         <arg name="y" default="0"/>
         <arg name="z" default="-20"/>
@@ -54,6 +54,6 @@
     </include>
 
     <!-- Start RViz  -->
-    <node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find bluerov2_gazebo)/rviz/bluerov2.rviz"/>
+    <node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find bluerov2_control)/rviz/bluerov2_control.rviz"/>
 
 </launch>

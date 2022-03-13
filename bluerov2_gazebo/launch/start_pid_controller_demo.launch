@@ -27,7 +27,7 @@
     </include> -->
 
     <!-- Add the bluerov2 vehicle to the world simulation (namespace: bluerov2) -->
-    <include file="$(find bluerov2_description)/launch/upload_bluerov2_v2.launch">
+    <include file="$(find bluerov2_description)/launch/upload_bluerov2.launch">
         <arg name="namespace" value="$(arg namespace)"/>
         <arg name="x" value="$(arg x)"/>
         <arg name="y" value="$(arg y)"/>
