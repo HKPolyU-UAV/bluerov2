@@ -9,23 +9,27 @@ Designing MPC for bluerov2 model.
 
 ## Run bluerov2 control
 Control with teleop:
-'''
+
+```
 roslaunch bluerov2_gazebo start_pid_demo_with_teleop.launch
-'''
+```
 
 Control without teleop:
-'''
+
+```
 roslaunch bluerov2_gazebo start_pid_demo.launch
-'''
+```
 
 Linear trajectory:
-'''
+
+```
 roslaunch uuv_control_utils send_waypoints_file.launch uuv_name:=bluerov2 interpolator:=linear
-'''
+```
 
 Helical trajectory:
-'''
+
+```
 roslaunch uuv_control_utils start_helical_trajectory.launch uuv_name:=bluerov2 n_turns:=2
-'''
+```
 
 
