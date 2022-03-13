@@ -7,7 +7,7 @@ Designing MPC for bluerov2 model.
 * [ros kinetic or newer](http://wiki.ros.org/ROS/Installation)
 * Python
 
-## Run bluerov2 control
+## Run bluerov2 control (ocean_waves is set as default world)
 Control with teleop:
 
 ```
