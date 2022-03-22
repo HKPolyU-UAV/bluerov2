@@ -4,7 +4,7 @@
   <!-- Vehicle's initial pose -->
   <arg name="x" default="0"/>
   <arg name="y" default="0"/>
-  <arg name="z" default="0"/>
+  <arg name="z" default="-2"/>
   <arg name="roll" default="0.0"/>
   <arg name="pitch" default="0.0"/>
   <arg name="yaw" default="0.0"/>
@@ -22,14 +22,23 @@
   <!-- <arg name="use_ned_frame" default="false"/> -->
 
   <group ns="$(arg namespace)">
+    <group if="$(arg use_ned_frame)">
+      <param name="robot_description"
+        command="$(find xacro)/xacro '$(find bluerov2_description)/robots/bluerov2_$(arg mode).xacro' --inorder
+          debug:=$(arg debug)
+          namespace:=$(arg namespace)" />
 
-    <param name="robot_description"
-           command="$(find xacro)/xacro '$(find bluerov2_description)/robots/bluerov2_$(arg mode).xacro' --inorder
-                    debug:=$(arg debug)
-                    namespace:=$(arg namespace)" />
+          <!-- use_simplified_mesh:=$(arg use_simplified_mesh) -->
+          inertial_reference_frame:=world_ned
+    </group>
 
-                    <!-- use_simplified_mesh:=$(arg use_simplified_mesh) -->
-                    <!-- inertial_reference_frame:=world_ned -->
+    <group unless="$(arg use_ned_frame)">
+      <param name="robot_description"
+        command="$(find xacro)/xacro '$(find bluerov2_description)/robots/bluerov2_$(arg mode).xacro' --inorder
+          debug:=$(arg debug)
+          namespace:=$(arg namespace)
+          inertial_reference_frame:=world" />
+    </group>
 
     <!-- Run a python script to the send a service call to gazebo_ros to spawn a URDF robot -->
     <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
@@ -40,6 +49,7 @@
     <!-- Publish robot model for ROS -->
     <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="true" output="screen">
       <param name="robot_description" value="/$(arg namespace)/robot_description" />
+      <param name="publish_frequency" value="5" />
     </node>
   </group>
 
