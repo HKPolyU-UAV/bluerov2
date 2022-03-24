@@ -7,9 +7,31 @@ Designing MPC for bluerov2 model.
 * [ros kinetic or newer](http://wiki.ros.org/ROS/Installation)
 * Python
 
-## Working progress
-* Fixed camera function in bluerov2_description/urdf/sensors.xacro
-* Created new launch file bluerov2_description/launch/upload_bluerov2_v2.launch
-* Created new launch file bluerov2_description/launch/upload_bluerov2_v2_default.launch
-* Created new launch file bluerov2_gazebo/launch/start_pid_demo_with_teleop.launch
-* Created new launch file bluerov2_control/launch/rov_pid_controller.launch
+## Run bluerov2 control
+Ocean_waves in uuv simulator is set as default world.
+
+Control with teleop:
+
+```
+roslaunch bluerov2_gazebo start_pid_demo_with_teleop.launch
+```
+
+Control without teleop:
+
+```
+roslaunch bluerov2_gazebo start_pid_demo.launch
+```
+
+Linear trajectory:
+
+```
+roslaunch uuv_control_utils send_waypoints_file.launch uuv_name:=bluerov2 interpolator:=linear
+```
+
+Helical trajectory:
+
+```
+roslaunch uuv_control_utils start_helical_trajectory.launch uuv_name:=bluerov2 n_turns:=2
+```
+
+
