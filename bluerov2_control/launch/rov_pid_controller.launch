@@ -57,7 +57,7 @@
 
   <group if="$(arg use_params_file)">
     <group ns="$(arg uuv_name)">
-      <node pkg="uuv_trajectory_control"
+      <node pkg="bluerov2_control"
             type="rov_pid_controller.py"
             name="rov_pid_controller"
             output="screen"
@@ -76,7 +76,7 @@
         </rosparam>
       </node>
 
-      <node pkg="uuv_trajectory_control"
+      <node pkg="bluerov2_control"
             type="rov_pid_controller.py"
             name="rov_pid_controller"
             output="screen"
@@ -99,7 +99,7 @@
 
   <group unless="$(arg use_params_file)">
     <group ns="$(arg uuv_name)">
-      <node pkg="uuv_trajectory_control"
+      <node pkg="bluerov2_control"
             type="rov_pid_controller.py"
             name="rov_pid_controller"
             output="screen"
@@ -122,7 +122,7 @@
         </rosparam>
       </node>
 
-      <node pkg="uuv_trajectory_control"
+      <node pkg="bluerov2_control"
             type="rov_pid_controller.py"
             name="rov_pid_controller"
             output="screen"
