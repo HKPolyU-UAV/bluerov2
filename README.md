@@ -36,6 +36,6 @@ roslaunch uuv_control_utils start_helical_trajectory.launch uuv_name:=bluerov2 n
 
 Go to desired position by controlling cmd_vel:
 
-'''
+```
 rosrun bluerov2_control waypoint.py
-'''
+```
