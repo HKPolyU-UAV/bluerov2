@@ -45,7 +45,7 @@ git clone --branch noetic https://github.com/arturmiller/uuv_simulator.git	(for 
 Clone this package to catkin src folder
 ```
 cd ~/catkin_ws/src
-git clone https://github.com/HKPolyU-UAV/bluerov_MPC.git
+git clone https://github.com/HKPolyU-UAV/bluerov2.git
 ```
 Compile
 ```
