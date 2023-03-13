@@ -1,0 +1,27 @@
+mappings:
+    depth_hold: 0
+    switch: 1
+    manual: 2
+    stabilize: 3
+    mount_dec: 4
+    mount_inc: 5
+    shift: 6
+
+    disarm: 8
+    arm: 9
+    mount_center: 10
+
+
+
+    light_dec: 15
+    light_inc: 14
+    gain_dec: 17
+    gain_inc: 16
+
+# arm: 512 (9)
+# disarm: 256 (8)
+# gain_inc 14
+# gain_dec 15
+# manual 2
+# alt_hold 0
+# stabilize 3

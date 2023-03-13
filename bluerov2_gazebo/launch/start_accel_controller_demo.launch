@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<launch>
+
+    <arg name="uuv_name" default="bluerov2"/>
+    <arg name="namespace" default="bluerov2"/>
+
+    <arg name="use_ned_frame" default="false"/>
+    <arg name="teleop_on" default="true"/>
+    <arg name="joy_id" default="0"/>
+    <arg name="gui_on" default="false"/>
+    <arg name="paused" default="false"/>
+    <arg name="rviz" default="false"/>
+
+    <!-- Initial position and heading of the vehicle (wrt Gazebo's inertial frame)  -->
+    <arg name="x" default="0"/>
+    <arg name="y" default="0"/>
+    <arg name="z" default="-1"/>
+    <arg name="yaw" default="0"/>
+
+    <!-- Start the a underwater world simulation scenario -->
+    <include file="$(find uuv_gazebo_worlds)/launch/herkules_ship_wreck.launch">
+        <arg name="paused" value="$(arg paused)"/>
+        <arg name="gui" value="$(arg gui_on)"/>
+    </include>
+
+    <!-- Add the bluerov2 vehicle to the world simulation (namespace: bluerov2) -->
+    <include file="upload.launch">
+        <arg name="namespace" value="$(arg namespace)"/>
+        <arg name="x" value="$(arg x)"/>
+        <arg name="y" value="$(arg y)"/>
+        <arg name="z" value="$(arg z)"/>
+        <arg name="yaw" value="$(arg yaw)"/>
+    </include>
+
+    <!-- Start the PID controller with its default parameters for the RexROV vehicle  -->
+    <include file="$(find bluerov2_control)/launch/start_pid_controller.launch">
+        <arg name="uuv_name" value="$(arg uuv_name)"/>
+        <arg name="teleop_on" value="$(arg teleop_on)"/>
+        <arg name="joy_id" value="$(arg joy_id)"/>
+        <arg name="use_ned_frame" value="$(arg use_ned_frame)"/>
+        <arg name="gui_on" value="$(arg gui_on)"/>
+        <arg name="rviz" value="$(arg rviz)"/>
+        <arg name="accel_control" value="true"/>
+    </include>
+
+</launch>

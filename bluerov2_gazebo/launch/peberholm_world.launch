@@ -1,0 +1,38 @@
+<launch>
+  <arg name="paused" default="false"/>
+  <arg name="gui" default="true"/>
+  <arg name="use_world_ned_frame" default="true"/>
+  <arg name="peberholm_depth" default="-6"/>
+  <arg name="use_sim_time" default="true"/>
+
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="world_name" value="$(find bluerov2_gazebo)/worlds/peberholm.world"/>
+    <arg name="paused" value="$(arg paused)"/>
+    <arg name="gui" value="$(arg gui)"/>
+    <arg name="headless" value="false"/>
+    <arg name="debug" value="false"/>
+    <arg name="verbose" value="true" />
+    <arg name="use_sim_time" value="$(arg use_sim_time)"/>
+  </include>
+
+  <group if="$(arg use_world_ned_frame)">
+    <include file="$(find uuv_assistants)/launch/publish_world_ned_frame.launch"/>
+  </group>
+
+  <node name="publish_world_models"
+        pkg="uuv_assistants"
+        type="publish_world_models.py"
+        output="screen">
+        <rosparam subst_value="true">
+            meshes:
+                herkules_seabed:
+                    mesh: package://uuv_gazebo_worlds/models/herkules_seabed/meshes/herkules_seabed.dae
+                    pose:
+                      position: [0, 0, $(arg peberholm_depth)]
+                      orientation: [0.0349066,0,0]
+                    scale: [4, 4, 1]
+        </rosparam>
+  </node>
+
+
+</launch>

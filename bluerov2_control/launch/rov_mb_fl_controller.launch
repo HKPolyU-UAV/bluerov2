@@ -1,4 +1,3 @@
-<?xml version="1.0"?>
 <launch>
   <!-- Vehicle namespace -->
   <arg name="uuv_name"/>
@@ -21,17 +20,19 @@
   <!-- The following controller parameters have been optimized for the RexROV
        vehicle using SMAC (https://github.com/automl/SMAC3)
   -->
-  <arg name="Kp" default="11993.888,11993.888,11993.888,19460.069,19460.069,19460.069"/>
-  <arg name="Kd" default="9077.459,9077.459,9077.459,18880.925,18880.925,18880.925"/>
-  <arg name="Ki" default="321.417,321.417,321.417,2096.951,2096.951,2096.951"/>
+  <arg name="Kp" default="19987.218,19987.218,19987.218,19460.293,19460.293,19460.293"/>
+  <arg name="Kd" default="11458.051,11458.051,11458.051,17068.778,17068.778,17068.778"/>
+  <arg name="Ki" default="1689.976,1689.976,1689.976,186.198,186.198,186.198"/>
 
-  <arg name="controller_config_file" default="$(find bluerov2_control)/config/controllers/pid/params.yaml"/>
+  <arg name="controller_config_file" default="$(find uuv_trajectory_control)/config/controllers/pid/$(arg model_name)/params.yaml"/>
+
+  <arg name="model_params_file" default="$(find uuv_trajectory_control)/config/models/$(arg model_name)/params.yaml"/>
 
   <!--Thruster manager configuration  -->
-  <arg name="thruster_manager_output_dir" default="$(find bluerov2_control)/config"/>
-  <arg name="thruster_manager_config_file" default="$(find bluerov2_control)/config/thruster_manager.yaml"/>
+  <arg name="thruster_manager_output_dir" default="$(find uuv_thruster_manager)/config/$(arg model_name)"/>
+  <arg name="thruster_manager_config_file" default="$(find uuv_thruster_manager)/config/$(arg model_name)/thruster_manager.yaml"/>
   <!-- File containing the thruster allocation matrix -->
-  <arg name="tam_file" default="$(find bluerov2_control)/config/TAM.yaml"/>
+  <arg name="tam_file" default="$(find uuv_thruster_manager)/config/$(arg model_name)/TAM.yaml"/>
 
   <!-- Start the thruster allocation manager -->
   <include file="$(find uuv_thruster_manager)/launch/thruster_manager.launch">
@@ -59,8 +60,8 @@
   <group if="$(arg use_params_file)">
     <group ns="$(arg uuv_name)">
       <node pkg="uuv_trajectory_control"
-            type="rov_pid_controller.py"
-            name="rov_pid_controller"
+            type="rov_mb_fl_controller.py"
+            name="rov_mb_fl_controller"
             output="screen"
             if="$(arg use_ned_frame)">
         <!-- Remap necessary topics -->
@@ -72,14 +73,15 @@
         <remap from="reference" to="dp_controller/reference"/>
         <remap from="thruster_output" to="thruster_manager/input_stamped"/>
         <rosparam file="$(arg controller_config_file)" command="load"/>
+        <rosparam file="$(arg model_params_file)" command="load"/>
         <rosparam subst_value="true">
           inertial_frame_id: world_ned
         </rosparam>
       </node>
 
       <node pkg="uuv_trajectory_control"
-            type="rov_pid_controller.py"
-            name="rov_pid_controller"
+            type="rov_mb_fl_controller.py"
+            name="rov_mb_fl_controller"
             output="screen"
             unless="$(arg use_ned_frame)">
         <!-- Remap necessary topics -->
@@ -91,6 +93,7 @@
         <remap from="reference" to="dp_controller/reference"/>
         <remap from="thruster_output" to="thruster_manager/input_stamped"/>
         <rosparam file="$(arg controller_config_file)" command="load"/>
+        <rosparam file="$(arg model_params_file)" command="load"/>
         <rosparam subst_value="true">
           inertial_frame_id: world
         </rosparam>
@@ -101,8 +104,8 @@
   <group unless="$(arg use_params_file)">
     <group ns="$(arg uuv_name)">
       <node pkg="uuv_trajectory_control"
-            type="rov_pid_controller.py"
-            name="rov_pid_controller"
+            type="rov_mb_fl_controller.py"
+            name="rov_mb_fl_controller"
             output="screen"
             if="$(arg use_ned_frame)">
         <!-- Remap necessary topics -->
@@ -113,6 +116,7 @@
         <remap from="error" to="dp_controller/error"/>
         <remap from="reference" to="dp_controller/reference"/>
         <remap from="thruster_output" to="thruster_manager/input_stamped"/>
+        <rosparam file="$(arg model_params_file)" command="load"/>
         <!-- Controller parameters -->
         <rosparam subst_value="true">
           saturation: $(arg saturation)
@@ -124,8 +128,8 @@
       </node>
 
       <node pkg="uuv_trajectory_control"
-            type="rov_pid_controller.py"
-            name="rov_pid_controller"
+            type="rov_mb_fl_controller.py"
+            name="rov_mb_fl_controller"
             output="screen"
             unless="$(arg use_ned_frame)">
         <!-- Remap necessary topics -->
@@ -136,6 +140,7 @@
         <remap from="error" to="dp_controller/error"/>
         <remap from="reference" to="dp_controller/reference"/>
         <remap from="thruster_output" to="thruster_manager/input_stamped"/>
+        <rosparam file="$(arg model_params_file)" command="load"/>
         <!-- Controller parameters -->
         <rosparam subst_value="true">
           saturation: $(arg saturation)

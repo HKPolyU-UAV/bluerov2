@@ -1,0 +1,26 @@
+<launch>
+    <arg name="gui_on" default="False"/>
+    <arg name="rviz_on" default="False"/>
+    <arg name="mode" default="default"/>
+    <include file="$(find bluerov2_description)/launch/upload.launch">
+        <arg name="use_geodetic" value="true"/>
+        <arg name="latitude" value="55.603036"/>
+        <arg name="longitude" value="12.8089368"/>
+        <arg name="depth" value="-1"/>
+        <arg name="use_ned_frame" value="true"/>
+        <arg name="mode" value="$(arg mode)"/>
+    </include>
+    <include file="$(find uuv_trajectory_control)/launch/rov_pid_controller.launch">
+        <arg name="uuv_name" value="bluerov2"/>
+        <arg name="controller_config_file" value="$(find bluerov2_control)/config/controllers/pid/params.yaml"/>
+        <arg name="gui_on" value="true"/>
+        <arg name="tam_file" value="$(find bluerov2_control)/config/TAM.yaml"/>
+        <arg name="thruster_manager_config_file" value="$(find bluerov2_control)/config/thruster_manager.yaml"/>
+        <arg name="thruster_manager_output_dir" value="$(find bluerov2_control)/config"/>
+        <arg name="use_ned_frame" value="false"/>
+        <arg name="use_params_file" value="true"/>
+        <arg name="saturation" value="1540"/>
+    </include>
+    <node pkg="bluerov2_control" type="geodetic_to_local.py" name="geodetic2local" ns="bluerov2"/>
+    <node if="$(arg rviz_on)" name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find bluerov2_gazebo)/rviz/bluerov2_gazebo.rviz"/>
+</launch>

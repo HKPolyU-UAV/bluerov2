@@ -1,55 +1,40 @@
-
+<?xml version="1.0"?>
 <launch>
 
-    <arg name="uuv_name" default="bluerov2"/>
-    <arg name="namespace" default="bluerov2"/>
+    <arg name="uuv_name" default="bluerov2" doc="Name of the robot (leave as bluerov2)"/>
+    <arg name="namespace" default="bluerov2" doc="Namespace of the robot (leave as bluerov2)"/>
 
-    <!-- If you want to generate a ROS bag with the recorded simulated data, set this flag to true -->
-    <arg name="record" default="false"/>
-    <arg name="bag_filename" default="recording.bag"/>
+    <arg name="use_joystick" default="true" doc="Enable Joystick Support"/>
+    <arg name="joy_dev" default="/dev/input/js0" doc="Device Name of Joystick"/>
 
-    <arg name="use_ned_frame" default="false"/>
-    <arg name="teleop_on" default="false"/>
-    <arg name="joy_id" default="0"/>
+    <arg name="gazebo" default="false" doc="Enable Gazebo for Camera Visualization (no physics)"/>
+    <arg name="gui" default="false" doc="Enable Gazebo GUI"/>
+    <arg name="rviz" default="false" doc="Enable RViz visualization"/>
 
-    <!-- Initial position and heading of the vehicle (wrt Gazebo's inertial frame)  -->
-    <arg name="x" default="0"/>
-    <arg name="y" default="0"/>
-    <arg name="z" default="0"/>
-    <arg name="yaw" default="0"/>
+    <group if="$(arg gazebo)">
+        <param name="/use_sim_time" value="true"/>
+        <include file="$(find bluerov2_gazebo)/launch/herkules_ship_wreck.launch">
+            <arg name="gui" value="$(arg gui)"/>
+        </include>
 
-    <!-- Start the a underwater world simulation scenario -->
-    <!-- <include file="$(find uuv_descriptions)/launch/ocean_waves.launch"/> -->
-
-    <!-- Wait 5s -->
-    <!-- <include file="$(find uuv_simulation_wrapper)/launch/unpause_simulation.launch">
-        <arg name="timeout" value="5"/>
-    </include> -->
-
-    <!-- Add the bluerov2 vehicle to the world simulation (namespace: bluerov2) -->
-    <include file="$(find bluerov2_description)/launch/upload_bluerov2.launch">
-        <arg name="namespace" value="$(arg namespace)"/>
-        <arg name="x" value="$(arg x)"/>
-        <arg name="y" value="$(arg y)"/>
-        <arg name="z" value="$(arg z)"/>
-        <arg name="yaw" value="$(arg yaw)"/>
-        <!-- <arg name="use_ned_frame" value="$(arg use_ned_frame)"/> -->
-    </include>
+        <include file="upload.launch">
+            <arg name="namespace" value="$(arg namespace)"/>
+            <arg name="x" value="0"/>
+            <arg name="y" value="0"/>
+            <arg name="z" value="0"/>
+            <arg name="yaw" value="0"/>
+            <arg name="world_frame" value="world"/>
+        </include>
+    </group>
 
     <!-- Start the SITL (Pixhawk controller) with its default parameters for the BlueROV2 vehicle  -->
     <include file="$(find bluerov2_control)/launch/start_ardusub_sitl.launch">
-        <!-- <arg name="uuv_name" value="$(arg uuv_name)"/>
-        <arg name="teleop_on" value="$(arg teleop_on)"/>
-        <arg name="joy_id" value="$(arg joy_id)"/>
-        <arg name="use_ned_frame" value="$(arg use_ned_frame)"/> -->
+        <arg name="joy_dev" value="$(arg joy_dev)"/>
+        <arg name="pose2gazebo" value="$(arg gazebo)"/>
+        <arg name="use_joystick" value="$(arg use_joystick)"/>
     </include>
 
     <!-- Open RViz for visualization of sensor data and visualization markers -->
-    <!-- <node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find bluerov2_gazebo)/rviz/bluerov2.rviz"/> -->
+    <node if="$(arg rviz)" name="rviz" pkg="rviz" type="rviz" args="-d $(find bluerov2_gazebo)/rviz/bluerov2.rviz"/>
 
-    <!-- Initialize the recording fo the simulation according to the record flag  -->
-    <!-- <include file="$(find bluerov2_gazebo)/launch/record.launch">
-      <arg name="record" value="$(arg record)"/>
-      <arg name="bag_filename" value="$(arg bag_filename)"/>
-    </include> -->
 </launch>

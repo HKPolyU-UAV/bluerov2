@@ -10,6 +10,14 @@ project(bluerov2_control)
 ## ADDED
 find_package(catkin REQUIRED COMPONENTS
   rospy
+  roscpp
+  geographic_msgs
+  geodesy
+  geometry_msgs
+  message_generation
+  dynamic_reconfigure
+  uuv_control_msgs
+  actionlib_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -20,7 +28,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## modules and global scripts declared therein get installed
 ## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
 ## ADDED
-catkin_python_setup()
+#catkin_python_setup()
 
 ################################################
 ## Declare ROS messages, services and actions ##
@@ -47,31 +55,33 @@ catkin_python_setup()
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+add_message_files(
+  FILES
+  ControlMode.msg
+  Autopilot.msg
+)
 
-## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+# Generate services in the 'srv' folder
+ add_service_files(
+   FILES
+   ConvertGeoPoints.srv
+   SetControlMode.srv
+ )
 
 ## Generate actions in the 'action' folder
-# add_action_files(
-#   FILES
-#   Action1.action
-#   Action2.action
-# )
+add_action_files(
+  FILES
+  FollowWaypoints.action
+)
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  geographic_msgs
+  geometry_msgs
+  uuv_control_msgs
+  actionlib_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -87,11 +97,11 @@ catkin_python_setup()
 ##   * uncomment the "generate_dynamic_reconfigure_options" section below
 ##     and list every .cfg file to be processed
 
-## Generate dynamic reconfigure parameters in the 'cfg' folder
-# generate_dynamic_reconfigure_options(
-#   cfg/DynReconf1.cfg
-#   cfg/DynReconf2.cfg
-# )
+# Generate dynamic reconfigure parameters in the 'cfg' folder
+ generate_dynamic_reconfigure_options(
+   cfg/pid_reconfig.cfg
+   cfg/marker_reconfig.cfg
+ )
 
 ###################################
 ## catkin specific configuration ##
@@ -187,13 +197,14 @@ include_directories(
 
 ## ADDED
 catkin_install_python(PROGRAMS
-  src/bluerov/bin/user_mav
-  src/bluerov/bin/video
-  src/bluerov/sitl.py
-  src/bridge/bluerov_node.py
-  src/bridge/bridge.py
-  src/bridge/node
-  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+    scripts/set_gm_current.py
+#  src/bluerov/bin/user_mav
+#  src/bluerov/bin/video
+#  src/bluerov/sitl.py
+#  src/bridge/bluerov_node.py
+#  src/bridge/bridge.py
+#  src/bridge/node
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
 

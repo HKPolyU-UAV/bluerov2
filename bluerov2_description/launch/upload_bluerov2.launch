@@ -8,6 +8,20 @@
   <arg name="roll" default="0.0"/>
   <arg name="pitch" default="0.0"/>
   <arg name="yaw" default="0.0"/>
+
+  <arg name="use_geodetic" default="false"/>
+  <arg name="latitude" default="0"/>
+  <arg name="longitude" default="0"/>
+  <arg name="depth" default="0"/>
+
+  <arg name="latitude_ref" default="0"/>
+  <arg name="longitude_ref" default="0"/>
+  <arg name="altitude_ref" default="0"/>
+
+  
+
+  <arg name="gazebo_tf" default="true"/>
+
   <!-- Mode to open different robot configurations as set the in file
   nomenclature standard for the files in /robots
   /robots/<mode>.xacro
@@ -16,7 +30,7 @@
   <!-- Vehicle's namespace -->
   <arg name="namespace" default="bluerov2"/>
   <!-- World Frame -->
-  <arg name="use_ned_frame" default="false"/>
+  <arg name="use_ned_frame" default="world"/>
 
   <!-- <arg name="use_simplified_mesh" default="false"/> -->
   <!-- <arg name="use_ned_frame" default="false"/> -->
@@ -34,7 +48,7 @@
 
     <group unless="$(arg use_ned_frame)">
       <param name="robot_description"
-        command="$(find xacro)/xacro '$(find bluerov2_description)/robots/bluerov2_$(arg mode).xacro' --inorder
+        command="$(find xacro)/xacro '$(find bluerov2_description)/robots/$(arg mode).xacro' --inorder
           debug:=$(arg debug)
           namespace:=$(arg namespace)
           inertial_reference_frame:=world" />

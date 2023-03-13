@@ -1,0 +1,23 @@
+<launch>
+  <arg name="component" />
+  <arg name="mean" default="0.0"/>
+  <arg name="min" default="0.0"/>
+  <arg name="max" default="0.0"/>
+  <arg name="noise" default="0.0"/>
+  <arg name="mu" default="0.0"/>
+
+  <node pkg="bluerov2_control"
+    type="set_gm_current.py"
+    name="set_gm_current"
+    output="screen">
+    <rosparam subst_value="true">
+      component: $(arg component)
+      mean: $(arg mean)
+      min: $(arg min)
+      max: $(arg max)
+      noise: $(arg noise)
+      mu: $(arg mu)
+    </rosparam>
+  </node>
+
+</launch>

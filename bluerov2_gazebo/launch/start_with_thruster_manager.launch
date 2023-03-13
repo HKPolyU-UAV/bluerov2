@@ -12,7 +12,7 @@
     <!-- Initialize the Gazebo world  -->
     <include file="$(find uuv_gazebo_worlds)/launch/ocean_waves.launch"/>
 
-    <!-- Add the BlueROV2 vehicle to the world  -->
+    <!-- Add the RexROV vehicle to the world  -->
     <include file="$(find bluerov2_description)/launch/upload.launch">
         <arg name="x" default="$(arg x)"/>
         <arg name="y" default="$(arg y)"/>
@@ -21,12 +21,6 @@
         <arg name="use_ned_frame" value="$(arg use_ned_frame)"/>
     </include>
 
-    <!-- Start the PID controller with its default parameters for the bluerov2 vehicle  -->
-    <include file="$(find bluerov2_control)/launch/rov_pid_controller.launch"> 
-        <arg name="uuv_name" value="bluerov2"/> 
-        <arg name="model_name" value="bluerov2"/> 
-        <arg name="use_ned_frame" value="$(arg use_ned_frame)"/> 
-    </include> 
 
     <!-- Initialize the recording fo the simulation according to the record flag  -->
     <include file="$(find uuv_gazebo)/launch/controller_demos/record_demo.launch">
@@ -36,5 +30,9 @@
 
     <!-- Start RViz  -->
     <node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find bluerov2_control)/rviz/bluerov2_control.rviz"/>
+
+    <!-- Start thruster manager-->
+    <include file="$(find bluerov2_control)/launch/start_thruster_manager.launch">
+    </include>
 
 </launch>

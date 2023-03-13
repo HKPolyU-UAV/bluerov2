@@ -14,7 +14,7 @@
     Vehicle's parameters (remember to enter the model parameters below)
   -->
   <!-- Mass -->
-  <xacro:property name="mass" value="10"/>
+  <xacro:property name="mass" value="11.2"/>
   <!-- Describing the dimensions of the vehicle's bounding box: width, length, height -->
   <xacro:property name="x_size" value="0.448"/>
   <xacro:property name="y_size" value="0.2384"/>
@@ -29,7 +29,7 @@
   The original values, [0.0822, -0.00773, 0.3872] however, seem to
   assume NWU (otherwise cob is below cog?). 0.155
   -->
-  <xacro:property name="cob" value="0 0 0"/>
+  <xacro:property name="cob" value="0 0 0.3872"/>
   <!-- Fluid density -->
   <xacro:property name="rho" value="1028"/>
   <!--
@@ -79,12 +79,12 @@
         </visual>
 
         <!-- In rexrov2_base they made collision planes to minize the GPU load -->
-        <!-- <collision>
+        <collision>
           <origin xyz="0 0 0" rpy="0 0 0"/>
           <geometry>
             <mesh filename="${collision_mesh_file}" scale="1 1 1" />
           </geometry>
-        </collision> -->
+        </collision>
 
       </link>
 

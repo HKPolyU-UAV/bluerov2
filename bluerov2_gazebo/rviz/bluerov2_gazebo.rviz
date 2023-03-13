@@ -4,16 +4,10 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
-        - /Global Options1
-        - /Status1
-        - /RobotModel1
-        - /DVL - Sonar 01
-        - /Trajectory1
-        - /Waypoint Path Marker1
-        - /Waypoints1
-        - /Image1
+        - /RobotModel1/Status1
+        - /TF1/Frames1
       Splitter Ratio: 0.5
-    Tree Height: 672
+    Tree Height: 410
   - Class: rviz/Selection
     Name: Selection
   - Class: rviz/Tool Properties
@@ -41,7 +35,7 @@ Visualization Manager:
   Class: ""
   Displays:
     - Alpha: 0.5
-      Cell Size: 1
+      Cell Size: 5
       Class: rviz/Grid
       Color: 160; 160; 164
       Enabled: true
@@ -55,7 +49,7 @@ Visualization Manager:
         Y: 0
         Z: 0
       Plane: XY
-      Plane Cell Count: 10
+      Plane Cell Count: 80
       Reference Frame: <Fixed Frame>
       Value: true
     - Alpha: 1
@@ -88,11 +82,6 @@ Visualization Manager:
         Expand Link Details: false
         Expand Tree: false
         Link Tree Style: Links in Alphabetic Order
-        bluerov2/altimeter_down_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
         bluerov2/base_link:
           Alpha: 1
           Show Axes: false
@@ -111,16 +100,6 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
         bluerov2/pressure_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        bluerov2/sonarport_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        bluerov2/sonarstarboard_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
@@ -166,8 +145,6 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: false
-        bluerov2/altimeter_down_link:
-          Value: false
         bluerov2/base_footprint:
           Value: false
         bluerov2/base_link:
@@ -183,10 +160,6 @@ Visualization Manager:
         bluerov2/pose_sensor_link_default:
           Value: false
         bluerov2/pressure_link:
-          Value: false
-        bluerov2/sonarport_link:
-          Value: false
-        bluerov2/sonarstarboard_link:
           Value: false
         bluerov2/thruster_0:
           Value: false
@@ -214,7 +187,7 @@ Visualization Manager:
           Value: false
         world_ned:
           Value: true
-      Marker Scale: 1.5
+      Marker Scale: 100
       Name: TF
       Show Arrows: true
       Show Axes: true
@@ -225,8 +198,6 @@ Visualization Manager:
             bluerov2/base_footprint:
               bluerov2/base_stabilized:
                 bluerov2/base_link:
-                  bluerov2/altimeter_down_link:
-                    {}
                   bluerov2/base_link_ned:
                     {}
                   bluerov2/gps_link:
@@ -236,10 +207,6 @@ Visualization Manager:
                   bluerov2/pose_sensor_link_default:
                     {}
                   bluerov2/pressure_link:
-                    {}
-                  bluerov2/sonarport_link:
-                    {}
-                  bluerov2/sonarstarboard_link:
                     {}
                   bluerov2/thruster_0:
                     {}
@@ -262,7 +229,7 @@ Visualization Manager:
             world_ned:
               {}
       Update Interval: 0
-      Value: false
+      Value: true
     - Class: rviz/Marker
       Enabled: true
       Marker Topic: /bluerov2/current_velocity_marker
@@ -288,7 +255,7 @@ Visualization Manager:
           Scale: 1
           Value: true
         Value: true
-      Enabled: false
+      Enabled: true
       Keep: 100
       Name: Odometry
       Position Tolerance: 0.10000000149011612
@@ -490,36 +457,31 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Class: rviz/Orbit
-      Distance: 3.10235857963562
+      Angle: 0
+      Class: rviz/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
-      Focal Point:
-        X: 0.3968469202518463
-        Y: -0.016775911673903465
-        Z: 0.010779554955661297
-      Focal Shape Fixed Size: false
-      Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.7147964239120483
-      Target Frame: bluerov2/base_link
-      Value: Orbit (rviz)
-      Yaw: 1.0103951692581177
+      Scale: 2.943387508392334
+      Target Frame: world
+      Value: TopDownOrtho (rviz)
+      X: 0
+      Y: 0
     Saved: ~
 Window Geometry:
   Displays:
     collapsed: false
-  Height: 1023
+  Height: 1025
   Hide Left Dock: false
   Hide Right Dock: true
   Image:
     collapsed: false
-  QMainWindow State: 000000ff00000000fd00000004000000000000029000000388fc020000000afb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c0061007900730100000016000001d6000000c900fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb0000000a0049006d00610067006501000001f2000001ac0000001600fffffffb0000000a0049006d006100670065010000017d000002210000000000000000000000010000010f00000388fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000001600000388000000a400fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e100000197000000030000073d0000003efc0100000002fb0000000800540069006d006501000000000000073d000002eb00fffffffb0000000800540069006d00650100000000000004500000000000000000000004a70000038800000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730000000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd0000000400000000000002900000038afc020000000afb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c0061007900730100000016000001d7000000c900fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb0000000a0049006d00610067006501000001f3000001ad0000001600fffffffb0000000a0049006d006100670065010000017d000002210000000000000000000000010000010f00000388fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000001600000388000000a400fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e100000197000000030000073d0000003efc0100000002fb0000000800540069006d006501000000000000073d000002eb00fffffffb0000000800540069006d00650100000000000004500000000000000000000004a70000038a00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730000000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Time:

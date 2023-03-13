@@ -1,0 +1,99 @@
+<launch>
+    <!-- Flag to start recoding a rosbag  -->
+    <arg name="record" default="false"/>
+
+    <!-- Parameters for the current velocity model -->
+    <arg name="starting_time" default="10"/>
+    <arg name="end_time" default="200"/>
+
+    <!-- Magnitudes of the current velocity in m/s -->
+    <arg name="current_vel" default="0.7"/>
+
+    <!-- Set current angles in degrees -->
+    <arg name="horizontal_angle" default="50"/>
+    <arg name="vertical_angle" default="20"/>
+    
+    <!-- Set Gauss-Markov parameters of the current velocity in m/s -->
+    <arg name="component_vel" default="velocity"/>
+    <arg name="mean_vel" default="0.3"/>
+    <arg name="min_vel" default="0.0"/>
+    <arg name="max_vel" default="0.6"/>
+    <arg name="noise_vel" default="0.1"/>
+    <arg name="mu_vel" default="0.0"/>
+
+    <!-- Set Gauss-Markov parameters of the current horizontal angle -->
+    <arg name="component_horz" default="horz_angle"/>
+    <arg name="mean_horz" default="15"/>
+    <arg name="min_horz" default="0.0"/>
+    <arg name="max_horz" default="30"/>
+    <arg name="noise_horz" default="1"/>
+    <arg name="mu_horz" default="0.0"/>
+
+    <!-- Initial position and heading of the vehicle (wrt Gazebo's inertial frame)  -->
+    <arg name="x" default="0"/>
+    <arg name="y" default="0"/>
+    <arg name="z" default="-20"/>
+    <arg name="yaw" default="0"/>
+
+    <arg name="use_ned_frame" default="false"/>
+
+    <!-- Initialize the Gazebo world  -->
+    <include file="$(find uuv_gazebo_worlds)/launch/ocean_waves.launch"/>
+
+    <!-- Add the BlueROV2 vehicle to the world  -->
+    <include file="$(find bluerov2_description)/launch/upload.launch">
+        <arg name="x" default="$(arg x)"/>
+        <arg name="y" default="$(arg y)"/>
+        <arg name="z" default="$(arg z)"/>
+        <arg name="yaw" default="$(arg yaw)"/>
+        <arg name="use_ned_frame" value="$(arg use_ned_frame)"/>
+    </include>
+
+    <!-- Start the PID controller with its default parameters for the bluerov2 vehicle  -->
+    <include file="$(find bluerov2_control)/launch/rov_pid_controller.launch"> 
+        <arg name="uuv_name" value="bluerov2"/> 
+        <arg name="model_name" value="bluerov2"/> 
+        <arg name="use_ned_frame" value="$(arg use_ned_frame)"/> 
+    </include> 
+
+    <!-- Start trajectory following -->
+    <include file="$(find uuv_control_utils)/launch/send_waypoints_file.launch">
+        <arg name="uuv_name" value="bluerov2"/>
+	<arg name="interpolator" value="linear"/>
+        <!-- <arg name="n_turns" value="2"/> -->
+    </include>
+
+    <!-- Generate constant current velocity models -->
+    <!--
+    <include file="$(find uuv_control_utils)/launch/set_timed_current_perturbation.launch">
+        <arg name="starting_time" default="$(arg starting_time)"/>
+        <arg name="end_time" default="$(arg end_time)"/>
+        <arg name="current_vel" default="$(arg current_vel)"/>
+        <arg name="horizontal_angle" default="$(arg horizontal_angle)"/>
+        <arg name="vertical_angle" default="$(arg vertical_angle)"/>
+    </include>
+    -->
+
+    <arg name="currents" default="$(find bluerov2_gazebo)/config/gm_current.yaml" />
+
+    <!-- Generate Gauss-Markov models for producing random current velocities and angles -->
+    <include file="$(find bluerov2_control)/launch/set_gm_current.launch">
+        <arg name="component" default="$(arg component_vel)"/>
+        <arg name="mean" default="$(arg mean_vel)"/>
+        <arg name="min" default="$(arg min_vel)"/>
+        <arg name="max" default="$(arg max_vel)"/>
+        <arg name="noise" default="$(arg noise_vel)"/>
+        <arg name="mu" default="$(arg mu_vel)"/>
+    </include>
+    
+    
+    <!-- Initialize the recording fo the simulation according to the record flag  -->
+    <include file="$(find uuv_gazebo)/launch/controller_demos/record_demo.launch">
+      <arg name="record" value="$(arg record)"/>
+      <arg name="use_ned_frame" value="$(arg use_ned_frame)"/>
+    </include>
+
+    <!-- Start RViz  -->
+    <node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find bluerov2_control)/rviz/bluerov2_control.rviz"/>
+
+</launch>

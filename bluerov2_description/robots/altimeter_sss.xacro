@@ -1,0 +1,71 @@
+<?xml version="1.0"?>
+<robot name="bluerov2" xmlns:xacro="http://www.ros.org/wiki/xacro" >
+  <xacro:arg name="debug" default="0"/>
+  <xacro:arg name="namespace" default="bluerov2"/>
+  <!-- Include the ROV macro file xacro:bluerov2_base -->
+  <xacro:include filename="$(find bluerov2_description)/urdf/base.xacro"/>
+  <!-- Hydrodynamic and hydrostatic parameters for the vehicle xacro:macro bluerov2_hydro_model -->
+  <xacro:include filename="$(find bluerov2_description)/urdf/gazebo.xacro"/>
+
+<!-- Create the bluerov2 -->
+  <xacro:bluerov2_base namespace="$(arg namespace)">
+    <!-- The underwater object plugin is given as an input block parameter to
+     allow the addition of external models of manipulator units -->
+    <gazebo>
+      <plugin name="uuv_plugin" filename="libuuv_underwater_object_ros_plugin.so">
+        <fluid_density>1028.0</fluid_density>
+        <flow_velocity_topic>hydrodynamics/current_velocity</flow_velocity_topic>
+        <debug>$(arg debug)</debug>
+        <!-- Adding the hydrodynamic and hydrostatic parameters for the vehicle -->
+        <xacro:bluerov2_hydro_model namespace="$(arg namespace)"/>
+        <!--
+          In case other modules are added to the vehicle (such as a manipulator)
+          that also have link running with the underwater object plugin, they
+          should also be added in this block. For this, this new module should
+          have a file similar to gazebo.xacro above with the description of the
+          parameter necessary for the underwater object plugin to be initialized.
+        -->
+      </plugin>
+    </gazebo>
+  </xacro:bluerov2_base>
+
+  <xacro:bluerov_altimeter namespace="$(arg namespace)" parent_link="$(arg namespace)/base_link" suffix="_down">
+    <origin xyz="0.05 -0.07 -0.17" rpy="0 ${0.5*pi} 0"/>
+  </xacro:bluerov_altimeter>
+
+  <xacro:bluerov2_sss namespace="$(arg namespace)" parent_link="$(arg namespace)/base_link" topic="sss_" mass="0.001"
+                      update_rate="18" samples="60" fov="0.87266462599" range_min="1.0"
+                      range_max="40.0"
+                      range_stddev="0.027"
+                      mesh=""
+                      suffix="port">
+          <inertia ixx="0.00001" ixy="0.0" ixz="0.0" iyy="0.00001" iyz="0.0" izz="0.00001" />
+          <origin xyz="0 0 0" rpy="${pi/2} ${pi/4} ${pi/2}"/>
+          <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+              <box size="0.001 0.001 0.001"/>
+            </geometry>
+          </visual>
+  </xacro:bluerov2_sss>
+
+  <xacro:bluerov2_sss namespace="$(arg namespace)" parent_link="$(arg namespace)/base_link" topic="sss_" mass="0.001"
+                      update_rate="18" samples="60" fov="0.87266462599" range_min="1.0"
+                      range_max="40.0"
+                      range_stddev="0.027"
+                      mesh=""
+                      suffix="starboard">
+          <inertia ixx="0.00001" ixy="0.0" ixz="0.0" iyy="0.00001" iyz="0.0" izz="0.00001" />
+          <origin xyz="0 0 0" rpy="-${pi/2} ${pi/4} -${pi/2}"/>
+          <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+              <box size="0.001 0.001 0.001"/>
+            </geometry>
+          </visual>
+  </xacro:bluerov2_sss>
+
+  <!-- Joint state publisher plugin -->
+  <xacro:default_joint_state_publisher namespace="$(arg namespace)" update_rate="10"/>
+
+</robot>

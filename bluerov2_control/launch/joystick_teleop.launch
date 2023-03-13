@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<!-- Launches Joystick Driver intended for Nintendo Switch Pro Controller -->
+<launch>
+	<arg name="joystick_name" doc="Name of the joystick, should be located in /dev/{name}"/>
+	<arg name="joy_dev" value="/dev/$(arg joystick_name)"/>
+	<node pkg="joy" type="joy_node" name="joy_node">
+		<remap from="joy" to="joy_orig"/>
+		<param name="dev" value="$(arg joy_dev)"/>
+	</node>
+	<node pkg="joy" type="joy_remap.py" name="joy_remap_node">
+		<remap from="joy_in" to="joy_orig"/>
+		<remap from="joy_out" to="joy"/>
+		<rosparam command="load" file="$(find bluerov2_control)/config/teleop/$(arg joystick_name)_mappings.yaml"/>
+	</node>
+	<node pkg="bluerov2_control" type="mavros_interface.py" name="mavros_interface" output="screen">
+		<rosparam command="load" file="$(find bluerov2_control)/config/teleop/$(arg joystick_name)_command_mappings.yaml"/>
+		<rosparam command="load" file="$(find bluerov2_control)/config/thrusters/t200_thrust2gain_map.yaml"/>
+	</node>
+</launch>
