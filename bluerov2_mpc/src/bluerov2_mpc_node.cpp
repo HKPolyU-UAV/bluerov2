@@ -68,21 +68,25 @@ class NMPC
         ros::Subscriber local_pose_sub;
         ros::Subscriber local_twist_sub;
 
-        ros::Publisher thrust0;
-        ros::Publisher thrust1;
-        ros::Publisher thrust2;
-        ros::Publisher thrust3;
-        ros::Publisher thrust4;
-        ros::Publisher thrust5;
+        ros::Publisher thrust0_pub;
+        ros::Publisher thrust1_pub;
+        ros::Publisher thrust2_pub;
+        ros::Publisher thrust3_pub;
+        ros::Publisher thrust4_pub;
+        ros::Publisher thrust5_pub;
 
         // ROS message variables
         geometry_msgs::PoseWithCovariance local_pose;
         geometry_msgs::TwistWithCovariance local_twist;
         
         Euler local_euler;
-        Euler target_euler;
-        //mavros_msgs::AttitudeTarget attitude_target;
 
+        uuv_gazebo_ros_plugins_msgs::FloatStamped thrust0;
+        uuv_gazebo_ros_plugins_msgs::FloatStamped thrust1;
+        uuv_gazebo_ros_plugins_msgs::FloatStamped thrust2;
+        uuv_gazebo_ros_plugins_msgs::FloatStamped thrust3;
+        uuv_gazebo_ros_plugins_msgs::FloatStamped thrust4;
+        uuv_gazebo_ros_plugins_msgs::FloatStamped thrust5;
         
 
         // Acados variables
@@ -125,14 +129,14 @@ class NMPC
             }
 
             // ROS Subscriber & Publisher
-            /*
-            local_pose_sub = nh.subscribe<geometry_msgs::PoseStamped>("/mavros/local_position/pose", 20, &NMPC::local_pose_cb, this);
-            local_twist_sub = nh.subscribe<geometry_msgs::TwistStamped>("/mavros/local_position/velocity_local", 20, &NMPC::local_twist_cb, this);
-            local_pose_sub = nh.subscribe<geometry_msgs::PoseWithCovariance>("/bluerov2/pose_gt/pose", 20, &NMPC::local_pose_cb, this);
-            setpoint_pub = nh.advertise<mavros_msgs::AttitudeTarget>("/mavros/setpoint_raw/attitude",20);
-            */
             local_pose_sub = nh.subscribe<geometry_msgs::PoseWithCovariance>("/bluerov2/pose_gt/pose", 20, &NMPC::local_pose_cb, this); 
             local_twist_sub = nh.subscribe<geometry_msgs::TwistWithCovariance>("/bluerov2/pose_gt/twist", 20, &NMPC::local_twist_cb, this);
+            thrust0_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("bluerov2/thrusters/0/input",20);
+            thrust1_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("bluerov2/thrusters/1/input",20);
+            thrust2_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("bluerov2/thrusters/2/input",20);
+            thrust3_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("bluerov2/thrusters/3/input",20);
+            thrust4_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("bluerov2/thrusters/4/input",20);
+            thrust5_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("bluerov2/thrusters/5/input",20);
 
             // Initialize
             for(unsigned int i=0; i < BLUEROV2_NU; i++) acados_out.u0[i] = 0.0;
@@ -249,15 +253,13 @@ class NMPC
             
 
             ocp_nlp_constraints_model_set(mpc_capsule->nlp_config,mpc_capsule->nlp_dims,mpc_capsule->nlp_in, 0, "lbx", acados_in.x0);
-            
             ocp_nlp_constraints_model_set(mpc_capsule->nlp_config,mpc_capsule->nlp_dims,mpc_capsule->nlp_in, 0, "ubx", acados_in.x0);
             
             ref_cb(line_number);
             line_number++;
             
             for (unsigned int i = 0; i <= BLUEROV2_N; i++)
-                {
-                
+                {            
                 ocp_nlp_cost_model_set(mpc_capsule->nlp_config, mpc_capsule->nlp_dims, mpc_capsule->nlp_in, i, "yref", acados_in.yref[i]);
                 }
             
@@ -296,7 +298,7 @@ class NMPC
                 std::cout << "------------------------------------------------------------------------------" << std::endl;
                 std::cout << "x_ref:      " << acados_in.yref[0][0] << "\ty_ref:   " << acados_in.yref[0][1] << "\tz_ref:         " << acados_in.yref[0][2] << std::endl;
                 std::cout << "x_gt:       " << acados_in.x0[0] << "\ty_gt:    " << acados_in.x0[1] << "\tz_gt:          " << acados_in.x0[2] << std::endl;
-                std::cout << "theta_cmd:  " << target_euler.theta << "\tphi_cmd: " << target_euler.phi <<  "\tthrust_cmd:    " << attitude_target.thrust << std::endl;
+                //std::cout << "theta_cmd:  " << target_euler.theta << "\tphi_cmd: " << target_euler.phi <<  "\tthrust_cmd:    " << attitude_target.thrust << std::endl;
                 std::cout << "solve_time: "<< acados_out.cpu_time << "\tkkt_res: " << acados_out.kkt_res << "\tacados_status: " << acados_out.status << std::endl;
                 std::cout << "ros_time:   " << std::fixed << ros::Time::now().toSec() << std::endl;
                 std::cout << "------------------------------------------------------------------------------" << std::endl;
