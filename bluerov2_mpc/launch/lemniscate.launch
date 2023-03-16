@@ -1,0 +1,7 @@
+<launch>
+
+    <node name="bluerov2_mpc_node" pkg="bluerov2_mpc" type="bluerov2_mpc_node" output="screen">
+        <param name="ref_traj" type = "string" value="$(find bluerov2_mpc)/traj/lemniscate.txt" />
+    </node>
+    
+</launch>
