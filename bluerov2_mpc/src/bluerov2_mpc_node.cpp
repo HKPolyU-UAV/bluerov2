@@ -5,6 +5,7 @@
 #include <geometry_msgs/TwistStamped.h>
 #include <geometry_msgs/TwistWithCovariance.h>
 #include <mavros_msgs/AttitudeTarget.h>
+#include <uuv_gazebo_ros_plugins_msgs/FloatStamped.h>
 
 #include <iostream>
 #include <fstream>
@@ -81,6 +82,7 @@ class NMPC
         Euler local_euler;
         Euler target_euler;
         //mavros_msgs::AttitudeTarget attitude_target;
+
         
 
         // Acados variables
@@ -247,20 +249,20 @@ class NMPC
             
 
             ocp_nlp_constraints_model_set(mpc_capsule->nlp_config,mpc_capsule->nlp_dims,mpc_capsule->nlp_in, 0, "lbx", acados_in.x0);
-            //std::cout<<"gan1"<<std::endl;
+            
             ocp_nlp_constraints_model_set(mpc_capsule->nlp_config,mpc_capsule->nlp_dims,mpc_capsule->nlp_in, 0, "ubx", acados_in.x0);
-            //std::cout<<"gan2"<<std::endl;
+            
             ref_cb(line_number);
             line_number++;
-            //std::cout<<"gan2.5"<<std::endl;
+            
             for (unsigned int i = 0; i <= BLUEROV2_N; i++)
                 {
-                //std::cout<<"ganloop"<<std::endl;
+                
                 ocp_nlp_cost_model_set(mpc_capsule->nlp_config, mpc_capsule->nlp_dims, mpc_capsule->nlp_in, i, "yref", acados_in.yref[i]);
                 }
-            //std::cout<<"gan3"<<std::endl;
+            
             acados_status = bluerov2_acados_solve(mpc_capsule);
-            //std::cout<<"gan4"<<std::endl;
+            
             if (acados_status != 0){
                 ROS_INFO_STREAM("acados returned status " << acados_status << std::endl);
             }
@@ -271,12 +273,14 @@ class NMPC
             ocp_nlp_get(mpc_capsule->nlp_config, mpc_capsule->nlp_solver, "time_tot", &acados_out.cpu_time);
 
             ocp_nlp_out_get(mpc_capsule->nlp_config, mpc_capsule->nlp_dims, mpc_capsule->nlp_out, 0, "u", (void *)acados_out.u0);
-
+            /*
             attitude_target.thrust = acados_out.u0[0];  
             target_euler.phi = acados_out.u0[1];
             target_euler.theta = acados_out.u0[2];
             target_euler.psi = 0.00;
- 
+            */
+
+            /*
             geometry_msgs::Quaternion target_quaternion = tf::createQuaternionMsgFromRollPitchYaw(target_euler.phi, target_euler.theta, target_euler.psi);
 
             attitude_target.orientation.w = target_quaternion.w;
@@ -285,7 +289,7 @@ class NMPC
             attitude_target.orientation.z = target_quaternion.z;
 
             setpoint_pub.publish(attitude_target);
-
+            */
 
             /*Mission information cout**********************************************/        
             if(cout_counter > 2){ //reduce cout rate
