@@ -152,7 +152,7 @@ class NMPC
 
             tf::quaternionMsgToTF(pose->pose.orientation,tf_quaternion);
             tf::Matrix3x3(tf_quaternion).getRPY(local_euler.phi, local_euler.theta, local_euler.psi);
-        }
+        } 
 
         void local_twist_cb(const geometry_msgs::TwistWithCovariance::ConstPtr& twist)
         {
@@ -238,7 +238,9 @@ class NMPC
 
         void run()
         {
+            std::cout << "pose_gt.position.x published:     " << local_pose.pose.position.x << std::endl;
             acados_in.x0[x] = local_pose.pose.position.x;
+            std::cout << "acados_in.x0 (x) received:     " << acados_in.x0[x] <<std::endl;
             acados_in.x0[y] = local_pose.pose.position.y;
             acados_in.x0[z] = local_pose.pose.position.z;
             acados_in.x0[phi] = local_euler.phi;
