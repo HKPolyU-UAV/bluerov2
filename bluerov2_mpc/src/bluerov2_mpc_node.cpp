@@ -275,23 +275,21 @@ class NMPC
             ocp_nlp_get(mpc_capsule->nlp_config, mpc_capsule->nlp_solver, "time_tot", &acados_out.cpu_time);
 
             ocp_nlp_out_get(mpc_capsule->nlp_config, mpc_capsule->nlp_dims, mpc_capsule->nlp_out, 0, "u", (void *)acados_out.u0);
-            /*
-            attitude_target.thrust = acados_out.u0[0];  
-            target_euler.phi = acados_out.u0[1];
-            target_euler.theta = acados_out.u0[2];
-            target_euler.psi = 0.00;
-            */
 
-            /*
-            geometry_msgs::Quaternion target_quaternion = tf::createQuaternionMsgFromRollPitchYaw(target_euler.phi, target_euler.theta, target_euler.psi);
 
-            attitude_target.orientation.w = target_quaternion.w;
-            attitude_target.orientation.x = target_quaternion.x;
-            attitude_target.orientation.y = target_quaternion.y;
-            attitude_target.orientation.z = target_quaternion.z;
+            thrust0.data=(-acados_out.u0[0]+acados_out.u0[1]+acados_out.u0[3]);
+            thrust1.data=(-acados_out.u0[0]+acados_out.u0[1]-acados_out.u0[3]);
+            thrust2.data=(acados_out.u0[0]+acados_out.u0[1]-acados_out.u0[3]);
+            thrust3.data=(acados_out.u0[0]-acados_out.u0[1]+acados_out.u0[3]);
+            thrust4.data=(-acados_out.u0[2]);
+            thrust5.data=(-acados_out.u0[2]);
 
-            setpoint_pub.publish(attitude_target);
-            */
+            thrust0_pub.publish(thrust0);
+            thrust1_pub.publish(thrust1);
+            thrust2_pub.publish(thrust2);
+            thrust3_pub.publish(thrust3);
+            thrust4_pub.publish(thrust4);
+            thrust5_pub.publish(thrust5);
 
             /*Mission information cout**********************************************/        
             if(cout_counter > 2){ //reduce cout rate
