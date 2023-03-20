@@ -1,11 +1,9 @@
 #include <ros/ros.h>
 #include <tf/tf.h>
-#include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/PoseWithCovariance.h>
-#include <geometry_msgs/TwistStamped.h>
 #include <geometry_msgs/TwistWithCovariance.h>
-#include <mavros_msgs/AttitudeTarget.h>
 #include <uuv_gazebo_ros_plugins_msgs/FloatStamped.h>
+#include <nav_msgs/Odometry.h>
 
 #include <iostream>
 #include <fstream>
@@ -65,8 +63,7 @@ class NMPC
         };
 
         // ROS subscriber and publisher
-        ros::Subscriber local_pose_sub;
-        ros::Subscriber local_twist_sub;
+        ros::Subscriber pose_gt_sub;
 
         ros::Publisher thrust0_pub;
         ros::Publisher thrust1_pub;
@@ -76,9 +73,7 @@ class NMPC
         ros::Publisher thrust5_pub;
 
         // ROS message variables
-        geometry_msgs::PoseWithCovariance local_pose;
-        geometry_msgs::TwistWithCovariance local_twist;
-        
+        nav_msgs::Odometry pose_gt;
         Euler local_euler;
 
         uuv_gazebo_ros_plugins_msgs::FloatStamped thrust0;
@@ -129,41 +124,41 @@ class NMPC
             }
 
             // ROS Subscriber & Publisher
-            local_pose_sub = nh.subscribe<geometry_msgs::PoseWithCovariance>("/bluerov2/pose_gt/pose", 20, &NMPC::local_pose_cb, this); 
-            local_twist_sub = nh.subscribe<geometry_msgs::TwistWithCovariance>("/bluerov2/pose_gt/twist", 20, &NMPC::local_twist_cb, this);
-            thrust0_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("bluerov2/thrusters/0/input",20);
-            thrust1_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("bluerov2/thrusters/1/input",20);
-            thrust2_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("bluerov2/thrusters/2/input",20);
-            thrust3_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("bluerov2/thrusters/3/input",20);
-            thrust4_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("bluerov2/thrusters/4/input",20);
-            thrust5_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("bluerov2/thrusters/5/input",20);
+            pose_gt_sub = nh.subscribe<nav_msgs::Odometry>("/bluerov2/pose_gt", 20, &NMPC::pose_gt_cb, this);
+            thrust0_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/0/input",20);
+            thrust1_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/1/input",20);
+            thrust2_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/2/input",20);
+            thrust3_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/3/input",20);
+            thrust4_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/4/input",20);
+            thrust5_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/5/input",20);
 
             // Initialize
             for(unsigned int i=0; i < BLUEROV2_NU; i++) acados_out.u0[i] = 0.0;
             for(unsigned int i=0; i < BLUEROV2_NX; i++) acados_in.x0[i] = 0.0;
 
         }
-        
-        void local_pose_cb(const geometry_msgs::PoseWithCovariance::ConstPtr& pose)
+        void pose_gt_cb(const nav_msgs::Odometry::ConstPtr& pose)
         {
-            local_pose.pose.position.x = pose->pose.position.x;
-            local_pose.pose.position.y = pose->pose.position.y;
-            local_pose.pose.position.z = pose->pose.position.z;
+            // get linear position x, y, z
+            pose_gt.pose.pose.position.x = pose->pose.pose.position.x;
+            pose_gt.pose.pose.position.y = pose->pose.pose.position.y;
+            pose_gt.pose.pose.position.z = pose->pose.pose.position.z;
 
-            tf::quaternionMsgToTF(pose->pose.orientation,tf_quaternion);
+            // get angle phi, theta, psi
+            tf::quaternionMsgToTF(pose->pose.pose.orientation,tf_quaternion);
             tf::Matrix3x3(tf_quaternion).getRPY(local_euler.phi, local_euler.theta, local_euler.psi);
-        } 
 
-        void local_twist_cb(const geometry_msgs::TwistWithCovariance::ConstPtr& twist)
-        {
-            local_twist.twist.linear.x = twist->twist.linear.x;
-            local_twist.twist.linear.y = twist->twist.linear.y;
-            local_twist.twist.linear.z = twist->twist.linear.z;
-            local_twist.twist.angular.x = twist->twist.angular.x;
-            local_twist.twist.angular.y = twist->twist.angular.y;
-            local_twist.twist.angular.z = twist->twist.angular.z;
+            // get linear velocity u, v, w
+            pose_gt.twist.twist.linear.x = pose->twist.twist.linear.x;
+            pose_gt.twist.twist.linear.y = pose->twist.twist.linear.y;
+            pose_gt.twist.twist.linear.z = pose->twist.twist.linear.z;
+
+            // get angular velocity p, q, r
+            pose_gt.twist.twist.angular.x = pose->twist.twist.angular.x;
+            pose_gt.twist.twist.angular.y = pose->twist.twist.angular.y;
+            pose_gt.twist.twist.angular.z = pose->twist.twist.angular.z;
         }
-
+       
         int readDataFromFile(const char* fileName, std::vector<std::vector<double>> &data)
 		{
 		    std::ifstream file(fileName);
@@ -238,20 +233,18 @@ class NMPC
 
         void run()
         {
-            std::cout << "pose_gt.position.x published:     " << local_pose.pose.position.x << std::endl;
-            acados_in.x0[x] = local_pose.pose.position.x;
-            std::cout << "acados_in.x0 (x) received:     " << acados_in.x0[x] <<std::endl;
-            acados_in.x0[y] = local_pose.pose.position.y;
-            acados_in.x0[z] = local_pose.pose.position.z;
+            acados_in.x0[x] = pose_gt.pose.pose.position.x;
+            acados_in.x0[y] = pose_gt.pose.pose.position.y;
+            acados_in.x0[z] = pose_gt.pose.pose.position.z;
             acados_in.x0[phi] = local_euler.phi;
             acados_in.x0[theta] = local_euler.theta;
             acados_in.x0[psi] = local_euler.psi;
-            acados_in.x0[u] = local_twist.twist.linear.x;
-            acados_in.x0[v] = local_twist.twist.linear.y;
-            acados_in.x0[w] = local_twist.twist.linear.z;
-            acados_in.x0[p] = local_twist.twist.angular.x;
-            acados_in.x0[q] = local_twist.twist.angular.y;
-            acados_in.x0[r] = local_twist.twist.angular.z;
+            acados_in.x0[u] = pose_gt.twist.twist.linear.x;
+            acados_in.x0[v] = pose_gt.twist.twist.linear.y;
+            acados_in.x0[w] = pose_gt.twist.twist.linear.z;
+            acados_in.x0[p] = pose_gt.twist.twist.angular.x;
+            acados_in.x0[q] = pose_gt.twist.twist.angular.y;
+            acados_in.x0[r] = pose_gt.twist.twist.angular.z;
             
 
             ocp_nlp_constraints_model_set(mpc_capsule->nlp_config,mpc_capsule->nlp_dims,mpc_capsule->nlp_in, 0, "lbx", acados_in.x0);
@@ -298,7 +291,8 @@ class NMPC
                 std::cout << "------------------------------------------------------------------------------" << std::endl;
                 std::cout << "x_ref:      " << acados_in.yref[0][0] << "\ty_ref:   " << acados_in.yref[0][1] << "\tz_ref:         " << acados_in.yref[0][2] << std::endl;
                 std::cout << "x_gt:       " << acados_in.x0[0] << "\ty_gt:    " << acados_in.x0[1] << "\tz_gt:          " << acados_in.x0[2] << std::endl;
-                //std::cout << "theta_cmd:  " << target_euler.theta << "\tphi_cmd: " << target_euler.phi <<  "\tthrust_cmd:    " << attitude_target.thrust << std::endl;
+                std::cout << "u1    : " << acados_out.u0[0] << "\tu2:    " << acados_out.u0[1] << "\tu3:    " << acados_out.u0[2] << "\tu4:    " << acados_out.u0[3] << std::endl;
+                std::cout << "t0:    " << thrust0.data << "\tt1:    " << thrust1.data << "\tt2:    " << thrust2.data << "\tt3:    " << thrust3.data << "\tt4:    " << thrust4.data << "\tt5:    " << thrust5.data << std::endl;
                 std::cout << "solve_time: "<< acados_out.cpu_time << "\tkkt_res: " << acados_out.kkt_res << "\tacados_status: " << acados_out.status << std::endl;
                 std::cout << "ros_time:   " << std::fixed << ros::Time::now().toSec() << std::endl;
                 std::cout << "------------------------------------------------------------------------------" << std::endl;
@@ -317,7 +311,7 @@ int main(int argc, char **argv)
     std::string ref_traj;
     nh.getParam("/bluerov2_mpc_node/ref_traj", ref_traj);
     NMPC nmpc(nh, ref_traj);
-    ros::Rate loop_rate(40);
+    ros::Rate loop_rate(20);
 
     while(ros::ok()){
         nmpc.run();

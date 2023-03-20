@@ -545,14 +545,14 @@ void bluerov2_acados_create_5_set_nlp_in(bluerov2_solver_capsule* capsule, const
     double* lbu = lubu;
     double* ubu = lubu + NBU;
     
-    lbu[0] = -30;
-    ubu[0] = 30;
-    lbu[1] = -30;
-    ubu[1] = 30;
-    lbu[2] = -30;
-    ubu[2] = 30;
-    lbu[3] = -30;
-    ubu[3] = 30;
+    lbu[0] = -200;
+    ubu[0] = 200;
+    lbu[1] = -200;
+    ubu[1] = 200;
+    lbu[2] = -200;
+    ubu[2] = 200;
+    lbu[3] = -200;
+    ubu[3] = 200;
 
     for (int i = 0; i < N; i++)
     {
