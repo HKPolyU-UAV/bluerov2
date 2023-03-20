@@ -40,4 +40,4 @@ for i in range(1,cycles+1):
 traj[-1,0:3] = traj[-2,0:3]
 
 # write to txt
-np.savetxt('points_python.txt',traj,fmt='%f')
+np.savetxt('points.txt',traj,fmt='%f')

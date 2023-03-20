@@ -250,7 +250,7 @@ class NMPC
             ocp_nlp_constraints_model_set(mpc_capsule->nlp_config,mpc_capsule->nlp_dims,mpc_capsule->nlp_in, 0, "lbx", acados_in.x0);
             ocp_nlp_constraints_model_set(mpc_capsule->nlp_config,mpc_capsule->nlp_dims,mpc_capsule->nlp_in, 0, "ubx", acados_in.x0);
             
-            ref_cb(line_number);
+            ref_cb(line_number); 
             line_number++;
             
             for (unsigned int i = 0; i <= BLUEROV2_N; i++)
@@ -292,7 +292,7 @@ class NMPC
                 std::cout << "x_ref:      " << acados_in.yref[0][0] << "\ty_ref:   " << acados_in.yref[0][1] << "\tz_ref:         " << acados_in.yref[0][2] << std::endl;
                 std::cout << "x_gt:       " << acados_in.x0[0] << "\ty_gt:    " << acados_in.x0[1] << "\tz_gt:          " << acados_in.x0[2] << std::endl;
                 std::cout << "u1    : " << acados_out.u0[0] << "\tu2:    " << acados_out.u0[1] << "\tu3:    " << acados_out.u0[2] << "\tu4:    " << acados_out.u0[3] << std::endl;
-                std::cout << "t0:    " << thrust0.data << "\tt1:    " << thrust1.data << "\tt2:    " << thrust2.data << "\tt3:    " << thrust3.data << "\tt4:    " << thrust4.data << "\tt5:    " << thrust5.data << std::endl;
+                std::cout << "t0:  " << thrust0.data << "\tt1:  " << thrust1.data << "\tt2:  " << thrust2.data << "\tt3:  " << thrust3.data << "\tt4:  " << thrust4.data << "\tt5:  " << thrust5.data << std::endl;
                 std::cout << "solve_time: "<< acados_out.cpu_time << "\tkkt_res: " << acados_out.kkt_res << "\tacados_status: " << acados_out.status << std::endl;
                 std::cout << "ros_time:   " << std::fixed << ros::Time::now().toSec() << std::endl;
                 std::cout << "------------------------------------------------------------------------------" << std::endl;

@@ -5,7 +5,7 @@ This work implements a NMPC controller for BlueROV2 with ROS.
 * Python 3.7
 * ROS ([ROS noetic](http://wiki.ros.org/noetic/Installation/Ubuntu) recommended)
 * [uuv simulator](https://uuvsimulator.github.io/)
-* [MAVROS](http://wiki.ros.org/mavros
+* [MAVROS](http://wiki.ros.org/mavros)
 * [Acados](https://docs.acados.org/installation/index.html)
 
 ## Getting started
