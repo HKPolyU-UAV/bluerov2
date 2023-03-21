@@ -24,7 +24,7 @@ traj[:,10] = 0                      # q
 traj[:,11] = 0                      # r
 traj[:,12] = 0                      # u1
 traj[:,13] = 0                      # u2
-traj[:,14] = 58                     # u3
+traj[:,14] = 5.8                    # u3: set to overcome bouyant
 traj[:,15] = 0                      # u4
 
 # write to txt

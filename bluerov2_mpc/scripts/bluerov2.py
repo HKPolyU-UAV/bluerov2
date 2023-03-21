@@ -56,7 +56,7 @@ def export_bluerov2_model() -> AcadosModel:
     M = np.diag([m+added_mass[0], m+added_mass[1], m+added_mass[2], Ix+added_mass[3], Iy+added_mass[4], Iz+added_mass[5]]) # M_RB + M_A
     M_inv = np.linalg.inv(M)
 
-    # dynamics
+    # dynamics -2.828*(80/(1+(-4*math.e**((u1**3))))-40)
     du = M_inv[0,0]*(-2.828*u1+m*r*v-m*q*w)
     dv = M_inv[1,1]*(-2.828*u2-m*r*u+m*p*w)
     dw = M_inv[2,2]*(-2*u3+m*q*u-m*p*v)

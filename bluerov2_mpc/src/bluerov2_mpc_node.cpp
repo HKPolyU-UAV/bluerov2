@@ -272,12 +272,12 @@ class NMPC
             ocp_nlp_out_get(mpc_capsule->nlp_config, mpc_capsule->nlp_dims, mpc_capsule->nlp_out, 0, "u", (void *)acados_out.u0);
 
 
-            thrust0.data=(-acados_out.u0[0]+acados_out.u0[1]+acados_out.u0[3]);
-            thrust1.data=(-acados_out.u0[0]+acados_out.u0[1]-acados_out.u0[3]);
-            thrust2.data=(acados_out.u0[0]+acados_out.u0[1]-acados_out.u0[3]);
-            thrust3.data=(acados_out.u0[0]-acados_out.u0[1]+acados_out.u0[3]);
-            thrust4.data=(-acados_out.u0[2]);
-            thrust5.data=(-acados_out.u0[2]);
+            thrust0.data=10*(-acados_out.u0[0]+acados_out.u0[1]+acados_out.u0[3]);
+            thrust1.data=10*(-acados_out.u0[0]+acados_out.u0[1]-acados_out.u0[3]);
+            thrust2.data=10*(acados_out.u0[0]+acados_out.u0[1]-acados_out.u0[3]);
+            thrust3.data=10*(acados_out.u0[0]-acados_out.u0[1]+acados_out.u0[3]);
+            thrust4.data=10*(-acados_out.u0[2]);
+            thrust5.data=10*(-acados_out.u0[2]);
 
             thrust0_pub.publish(thrust0);
             thrust1_pub.publish(thrust1);
