@@ -26,7 +26,7 @@ def main():
 
     # set cost
     W_x = np.diag([100, 100, 100, 10, 10, 100, 10, 10, 10, 10, 10, 10])    #Q_mat
-    W_u = np.diag([100, 100, 100, 50])                                   #R_mat
+    W_u = np.diag([0.01, 0.01, 0.01, 0.005])                                   #R_mat
     W = block_diag(W_x, W_u)
     ocp.cost.W_e = W_x
     ocp.cost.W = W
@@ -42,8 +42,8 @@ def main():
     
 
     # set constraints
-    u_min = np.array([-20, -20, -20, -20])
-    u_max = np.array([20, 20, 20, 20])
+    u_min = np.array([-300, -300, -300, -300])
+    u_max = np.array([300, 300, 300, 300])
     ocp.constraints.lbu = u_min
     ocp.constraints.ubu = u_max
     ocp.constraints.idxbu = np.array([0,0,0,0])

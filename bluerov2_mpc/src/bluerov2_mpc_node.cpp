@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <cmath>
 
 #include "acados/utils/print.h"
 #include "acados_c/ocp_nlp_interface.h"
@@ -271,14 +272,22 @@ class NMPC
 
             ocp_nlp_out_get(mpc_capsule->nlp_config, mpc_capsule->nlp_dims, mpc_capsule->nlp_out, 0, "u", (void *)acados_out.u0);
 
-
-            thrust0.data=10*(-acados_out.u0[0]+acados_out.u0[1]+acados_out.u0[3]);
-            thrust1.data=10*(-acados_out.u0[0]+acados_out.u0[1]-acados_out.u0[3]);
-            thrust2.data=10*(acados_out.u0[0]+acados_out.u0[1]-acados_out.u0[3]);
-            thrust3.data=10*(acados_out.u0[0]-acados_out.u0[1]+acados_out.u0[3]);
-            thrust4.data=10*(-acados_out.u0[2]);
-            thrust5.data=10*(-acados_out.u0[2]);
-
+            //rotor constant 0.026546960744430276
+            /*
+            thrust0.data=80/(1+exp(-4*pow((-acados_out.u0[0]+acados_out.u0[1]+acados_out.u0[3]),3)))-40;
+            thrust1.data=80/(1+exp(-4*pow((-acados_out.u0[0]-acados_out.u0[1]-acados_out.u0[3]),3)))-40;
+            thrust2.data=80/(1+exp(-4*pow((acados_out.u0[0]+acados_out.u0[1]-acados_out.u0[3]),3)))-40;
+            thrust3.data=80/(1+exp(-4*pow((acados_out.u0[0]-acados_out.u0[1]+acados_out.u0[3]),3)))-40;
+            thrust4.data=80/(1+exp(-4*pow((-acados_out.u0[2]),3)))-40;
+            thrust5.data=80/(1+exp(-4*pow((-acados_out.u0[2]),3)))-40;
+            */
+            thrust0.data=(-acados_out.u0[0]+acados_out.u0[1]+acados_out.u0[3]);
+            thrust1.data=(-acados_out.u0[0]-acados_out.u0[1]-acados_out.u0[3]);
+            thrust2.data=(acados_out.u0[0]+acados_out.u0[1]-acados_out.u0[3]);
+            thrust3.data=(acados_out.u0[0]-acados_out.u0[1]+acados_out.u0[3]);
+            thrust4.data=(-acados_out.u0[2]);
+            thrust5.data=(-acados_out.u0[2]);
+            
             thrust0_pub.publish(thrust0);
             thrust1_pub.publish(thrust1);
             thrust2_pub.publish(thrust2);

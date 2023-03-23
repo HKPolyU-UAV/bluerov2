@@ -10,7 +10,7 @@ duration = 120                   # seconds
 # Trajectory
 traj = np.zeros((int(duration/sample_time+1),16)) # x y z phi theta psi u v w p q r u1 u2 u3 u4
 
-traj[:,0] = 10                      # x
+traj[:,0] = 1                      # x
 traj[:,1] = 0                       # y
 traj[:,2] = -20                     # z
 traj[:,3] = 0                       # phi
@@ -24,7 +24,7 @@ traj[:,10] = 0                      # q
 traj[:,11] = 0                      # r
 traj[:,12] = 0                      # u1
 traj[:,13] = 0                      # u2
-traj[:,14] = 5.8                    # u3: set to overcome bouyant
+traj[:,14] = 57.5                    # u3: set to overcome bouyant
 traj[:,15] = 0                      # u4
 
 # write to txt

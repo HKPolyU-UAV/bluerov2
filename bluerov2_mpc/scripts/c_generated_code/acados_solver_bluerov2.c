@@ -426,10 +426,10 @@ void bluerov2_acados_create_5_set_nlp_in(bluerov2_solver_capsule* capsule, const
     W_0[9+(NY0) * 9] = 10;
     W_0[10+(NY0) * 10] = 10;
     W_0[11+(NY0) * 11] = 10;
-    W_0[12+(NY0) * 12] = 100;
-    W_0[13+(NY0) * 13] = 100;
-    W_0[14+(NY0) * 14] = 100;
-    W_0[15+(NY0) * 15] = 50;
+    W_0[12+(NY0) * 12] = 0.01;
+    W_0[13+(NY0) * 13] = 0.01;
+    W_0[14+(NY0) * 14] = 0.01;
+    W_0[15+(NY0) * 15] = 0.005;
     ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, 0, "W", W_0);
     free(W_0);
     double* W = calloc(NY*NY, sizeof(double));
@@ -446,10 +446,10 @@ void bluerov2_acados_create_5_set_nlp_in(bluerov2_solver_capsule* capsule, const
     W[9+(NY) * 9] = 10;
     W[10+(NY) * 10] = 10;
     W[11+(NY) * 11] = 10;
-    W[12+(NY) * 12] = 100;
-    W[13+(NY) * 13] = 100;
-    W[14+(NY) * 14] = 100;
-    W[15+(NY) * 15] = 50;
+    W[12+(NY) * 12] = 0.01;
+    W[13+(NY) * 13] = 0.01;
+    W[14+(NY) * 14] = 0.01;
+    W[15+(NY) * 15] = 0.005;
 
     for (int i = 1; i < N; i++)
     {
@@ -547,14 +547,14 @@ void bluerov2_acados_create_5_set_nlp_in(bluerov2_solver_capsule* capsule, const
     double* lbu = lubu;
     double* ubu = lubu + NBU;
     
-    lbu[0] = -20;
-    ubu[0] = 20;
-    lbu[1] = -20;
-    ubu[1] = 20;
-    lbu[2] = -20;
-    ubu[2] = 20;
-    lbu[3] = -20;
-    ubu[3] = 20;
+    lbu[0] = -300;
+    ubu[0] = 300;
+    lbu[1] = -300;
+    ubu[1] = 300;
+    lbu[2] = -300;
+    ubu[2] = 300;
+    lbu[3] = -300;
+    ubu[3] = 300;
 
     for (int i = 0; i < N; i++)
     {
