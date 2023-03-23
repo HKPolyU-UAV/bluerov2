@@ -53,23 +53,25 @@ def export_bluerov2_model() -> AcadosModel:
     ZG = 0.02
     g = 9.81
     bouyancy = 0.2*g                                # net bouyancy forcy
-    added_mass = np.array([-5.5,-5.5,-5.5,-0.12,-0.12,-0.12])
+    #added_mass = np.array([-5.5,-5.5,-5.5,-0.12,-0.12,-0.12])
+    #added_mass = np.array([0,0,0,0,0,0])
+    added_mass = np.array([1.7182,0,5.468,0,1.2481,0.4006])
     M = np.diag([m+added_mass[0], m+added_mass[1], m+added_mass[2], Ix+added_mass[3], Iy+added_mass[4], Iz+added_mass[5]]) # M_RB + M_A
     M_inv = np.linalg.inv(M)
     '''
     K = np.array([[0.707,0.707,-0.707,-0.707,0,0],
-                  [-0.707,0.707,-0.707,0.707,0,0],
+                  [0.707,-0.707,0.707,-0.707,0,0],
                   [0,0,0,0,1,1],
-                  [0.051,-0.051,0.051,-0.051,0.111,-0.111],
-                  [0.051,0.051,-0.051,-0.051,0.002,-0.002],
-                  [-0.167,0.167,0.175,-0.175,0,0]])
+                  [0.051,-0.051,0.051,-0.051,0,0],
+                  [-0.051,-0.051,0.051,0.051,0,0],
+                  [0.167,-0.167,-0.175,0.175,0,0]])
     '''
     K = np.array([[0.707,0.707,-0.707,-0.707,0,0],
-                  [-0.707,0.707,-0.707,0.707,0,0],
+                  [0.707,-0.707,0.707,-0.707,0,0],
                   [0,0,0,0,1,1],                    # propulsion matrix
                   [0,0,0,0,0,0],
                   [0,0,0,0,0,0],
-                  [-0.167,0.167,0.167,-0.167,0,0]])
+                  [0.167,-0.167,-0.167,0.167,0,0]])
     
     '''
     t0 = 80/(1+(math.e**(-4*((-u1+u2+u4)**3))))-40
@@ -95,6 +97,14 @@ def export_bluerov2_model() -> AcadosModel:
     
 
     # dynamics
+    '''
+    du = M_inv[0,0]*(Kt0-bouyancy*sin(theta))
+    dv = M_inv[1,1]*(Kt1+bouyancy*cos(theta)*sin(phi))
+    dw = M_inv[2,2]*(Kt2+bouyancy*cos(theta)*cos(phi))
+    dp = M_inv[3,3]*(Kt3-m*ZG*g*cos(theta)*sin(phi))
+    dq = M_inv[4,4]*(Kt4-m*ZG*g*sin(theta))
+    dr = M_inv[5,5]*(Kt5)
+    '''
     du = M_inv[0,0]*(Kt0+m*r*v-m*q*w-bouyancy*sin(theta))
     dv = M_inv[1,1]*(Kt1-m*r*u+m*p*w+bouyancy*cos(theta)*sin(phi))
     dw = M_inv[2,2]*(Kt2+m*q*u-m*p*v+bouyancy*cos(theta)*cos(phi))

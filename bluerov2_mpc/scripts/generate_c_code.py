@@ -42,8 +42,8 @@ def main():
     
 
     # set constraints
-    u_min = np.array([-300, -300, -300, -300])
-    u_max = np.array([300, 300, 300, 300])
+    u_min = np.array([-250, -250, -250, -250])
+    u_max = np.array([250, 250, 250, 250])
     ocp.constraints.lbu = u_min
     ocp.constraints.ubu = u_max
     ocp.constraints.idxbu = np.array([0,0,0,0])
