@@ -24,7 +24,7 @@ def export_bluerov2_model() -> AcadosModel:
     sym_x = vertcat(x,y,z,phi,theta,psi,u,v,w,p,q,r)
 
     # controls
-    u1 = SX.sym('u1')               # control signal regard to surge
+    u1 = SX.sym('u1')               # control force regard to surge
     u2 = SX.sym('u2')               # control signal regard to sway
     u3 = SX.sym('u3')               # control signal regard to heave
     u4 = SX.sym('u4')               # control signal regard to yaw

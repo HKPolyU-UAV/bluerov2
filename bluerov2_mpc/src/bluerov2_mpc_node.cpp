@@ -4,6 +4,7 @@
 #include <geometry_msgs/TwistWithCovariance.h>
 #include <uuv_gazebo_ros_plugins_msgs/FloatStamped.h>
 #include <nav_msgs/Odometry.h>
+#include <visualization_msgs/Marker.h>
 
 #include <iostream>
 #include <fstream>
@@ -73,6 +74,8 @@ class NMPC
         ros::Publisher thrust4_pub;
         ros::Publisher thrust5_pub;
 
+        ros::Publisher marker_pub;
+
         // ROS message variables
         nav_msgs::Odometry pose_gt;
         Euler local_euler;
@@ -84,6 +87,7 @@ class NMPC
         uuv_gazebo_ros_plugins_msgs::FloatStamped thrust4;
         uuv_gazebo_ros_plugins_msgs::FloatStamped thrust5;
         
+        visualization_msgs::Marker marker;
 
         // Acados variables
         SolverInput acados_in;
@@ -132,6 +136,7 @@ class NMPC
             thrust3_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/3/input",20);
             thrust4_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/4/input",20);
             thrust5_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/5/input",20);
+            marker_pub = nh.advertise<visualization_msgs::Marker>("visualization_marker", 20);
 
             // Initialize
             for(unsigned int i=0; i < BLUEROV2_NU; i++) acados_out.u0[i] = 0.0;
@@ -281,6 +286,7 @@ class NMPC
             thrust4.data=80/(1+exp(-4*pow((-acados_out.u0[2]),3)))-40;
             thrust5.data=80/(1+exp(-4*pow((-acados_out.u0[2]),3)))-40;
             */
+            // publish thrusts
             thrust0.data=(-acados_out.u0[0]+acados_out.u0[1]+acados_out.u0[3]);
             thrust1.data=(-acados_out.u0[0]-acados_out.u0[1]-acados_out.u0[3]);
             thrust2.data=(acados_out.u0[0]+acados_out.u0[1]-acados_out.u0[3]);
@@ -294,6 +300,27 @@ class NMPC
             thrust3_pub.publish(thrust3);
             thrust4_pub.publish(thrust4);
             thrust5_pub.publish(thrust5);
+
+            // publishser trajectory marker on rviz
+            marker.header.frame_id = "map";
+            marker.ns = "trajectory";
+            marker.id = 0;
+            marker.type = visualization_msgs::Marker::LINE_STRIP;
+            marker.action = visualization_msgs::Marker::ADD;
+            marker.scale.x = 0.1;
+            marker.color.r = 1.0;
+            marker.color.g = 0.0;
+            marker.color.b = 0.0;
+            marker.color.a = 1.0;
+
+            geometry_msgs::Point current_point;
+            current_point.x = acados_in.yref[0][0];
+            current_point.y = acados_in.yref[0][1];
+            current_point.z = acados_in.yref[0][2];
+            marker.points.push_back(current_point);
+            
+            marker_pub.publish(marker);
+
 
             /*Mission information cout**********************************************/        
             if(cout_counter > 2){ //reduce cout rate
@@ -311,7 +338,7 @@ class NMPC
             else{
                 cout_counter++;
             }
-        }
+        }        
     };
 
 int main(int argc, char **argv)
