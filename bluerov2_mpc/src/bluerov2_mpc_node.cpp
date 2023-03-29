@@ -25,6 +25,11 @@
 class NMPC
     {
         private:
+        
+        float yaw_sum = 0;
+        float pre_yaw = 0;
+        float yaw_diff;
+        
         enum SystemStates{
             x = 0,
             y = 1,
@@ -239,12 +244,47 @@ class NMPC
 
         void run()
         {
+            // identify turning direction
+            if (pre_yaw >= 0 && local_euler.psi >=0)
+            {
+                yaw_diff = local_euler.psi - pre_yaw;
+            }
+            else if (pre_yaw >= 0 && local_euler.psi <0)
+            {
+                if (2*M_PI+local_euler.psi-pre_yaw >= pre_yaw+abs(local_euler.psi))
+                {
+                    yaw_diff = -(pre_yaw + abs(local_euler.psi));
+                }
+                else
+                {
+                    yaw_diff = 2 * M_PI + local_euler.psi - pre_yaw;
+                }
+            }
+            else if (pre_yaw < 0 && local_euler.psi >= 0)
+            {
+                if (2*M_PI-local_euler.psi+pre_yaw >= abs(pre_yaw)+local_euler.psi)
+                {
+                    yaw_diff = abs(pre_yaw)+local_euler.psi;
+                }
+                else
+                {
+                    yaw_diff = -(2*M_PI-local_euler.psi+pre_yaw);
+                }
+            }
+            else
+            {
+                yaw_diff = local_euler.psi - pre_yaw;
+            }
+
+            yaw_sum = yaw_sum + yaw_diff;
+            pre_yaw = local_euler.psi;
+            
             acados_in.x0[x] = pose_gt.pose.pose.position.x;
             acados_in.x0[y] = pose_gt.pose.pose.position.y;
             acados_in.x0[z] = pose_gt.pose.pose.position.z;
             acados_in.x0[phi] = local_euler.phi;
             acados_in.x0[theta] = local_euler.theta;
-            acados_in.x0[psi] = local_euler.psi;
+            acados_in.x0[psi] = yaw_sum;
             acados_in.x0[u] = pose_gt.twist.twist.linear.x;
             acados_in.x0[v] = pose_gt.twist.twist.linear.y;
             acados_in.x0[w] = pose_gt.twist.twist.linear.z;
@@ -252,7 +292,15 @@ class NMPC
             acados_in.x0[q] = pose_gt.twist.twist.angular.y;
             acados_in.x0[r] = pose_gt.twist.twist.angular.z;
             
-
+            float yaw_ref;
+            if(sin(acados_in.yref[0][5]) >= 0)
+            {
+                yaw_ref = fmod(acados_in.yref[0][5],M_PI);
+            }
+            else{
+                yaw_ref = -M_PI + fmod(acados_in.yref[0][5],M_PI);
+            }
+            
             ocp_nlp_constraints_model_set(mpc_capsule->nlp_config,mpc_capsule->nlp_dims,mpc_capsule->nlp_in, 0, "lbx", acados_in.x0);
             ocp_nlp_constraints_model_set(mpc_capsule->nlp_config,mpc_capsule->nlp_dims,mpc_capsule->nlp_in, 0, "ubx", acados_in.x0);
             
@@ -325,8 +373,8 @@ class NMPC
             /*Mission information cout**********************************************/        
             if(cout_counter > 2){ //reduce cout rate
                 std::cout << "------------------------------------------------------------------------------------------------" << std::endl;
-                std::cout << "x_ref:    " << acados_in.yref[0][0] << "\ty_ref:   " << acados_in.yref[0][1] << "\tz_ref:    " << acados_in.yref[0][2] << "\tyaw_ref:    " << acados_in.yref[0][5] << std::endl;
-                std::cout << "x_gt:     " << acados_in.x0[0] << "\ty_gt:     " << acados_in.x0[1] << "\tz_gt:     " << acados_in.x0[2] << "\tyaw_gt:     " << acados_in.x0[5] << std::endl;
+                std::cout << "x_ref:    " << acados_in.yref[0][0] << "\ty_ref:   " << acados_in.yref[0][1] << "\tz_ref:    " << acados_in.yref[0][2] << "\tyaw_ref:    " << yaw_ref << std::endl;
+                std::cout << "x_gt:     " << acados_in.x0[0] << "\ty_gt:     " << acados_in.x0[1] << "\tz_gt:     " << acados_in.x0[2] << "\tyaw_gt:     " << local_euler.psi << std::endl;
                 std::cout << "roll_gt:        " << acados_in.x0[3] << "\t\tpitch_gt:        " << acados_in.x0[4] << std::endl;
                 std::cout << "u1    : " << acados_out.u0[0] << "\tu2:    " << acados_out.u0[1] << "\tu3:    " << acados_out.u0[2] << "\tu4:    " << acados_out.u0[3] << std::endl;
                 std::cout << "t0:  " << thrust0.data << "\tt1:  " << thrust1.data << "\tt2:  " << thrust2.data << "\tt3:  " << thrust3.data << "\tt4:  " << thrust4.data << "\tt5:  " << thrust5.data << std::endl;

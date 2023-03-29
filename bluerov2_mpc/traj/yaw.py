@@ -26,7 +26,7 @@ traj[:,1] = 0     # y
 traj[:,2] = z0                      # z
 traj[:,3] = 0                       # phi
 traj[:,4] = 0                       # theta
-traj[:,5] = -t*v/r         # psi
+traj[:,5] = t*v/r - 0.5*np.pi        # psi
 traj[:,6] = 0         # u
 traj[:,7] = 0        # v
 traj[:,8] = 0                       # w
@@ -37,12 +37,13 @@ traj[:,12] = 0                      # u1
 traj[:,13] = 0                      # u2
 traj[:,14] = 57.5                   # u3
 traj[:,15] = 0                      # u4
-
+'''
 for i in range(0,int(duration/sample_time+1)):
     if np.sin(traj[i,5])>=0:
         traj[i,5] = traj[i,5]%np.pi
     else:
         traj[i,5] = -np.pi + traj[i,5]%np.pi
-
+    #traj[i,5] = np.sin(traj[i,5])
+'''
 # write to txt
 np.savetxt('yaw.txt',traj,fmt='%f')
