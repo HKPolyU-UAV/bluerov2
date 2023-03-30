@@ -47,6 +47,25 @@ Clone this package to catkin src folder
 cd ~/catkin_ws/src
 git clone https://github.com/HKPolyU-UAV/bluerov2.git
 ```
+Install acados_template python packages
+```
+pip install -e <acados_root>/interfaces/acados_template
+```
+Add the path to the compiled shared libraries (Hint: you can add these lines to your ```.bashrc``` by ```sudo gedit ~/.bashrc```)
+```
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:"<acados_root>/lib"
+export ACADOS_SOURCE_DIR="<acados_root>"
+```
+Modify <acados_root> path (18th and 19th lines) in CMakeLists
+```
+cd ~/catkin_ws/src/bluerov2/bluerov2_mpc
+gedit CMakeLists.txt
+```
+Generate C code for NMPC controller
+```
+cd scripts
+python generate_c_code.py
+```
 Compile
 ```
 cd ~/catkin_ws
@@ -55,6 +74,7 @@ catkin_make
 
 ## Start simulation without controller
 Ocean_waves in uuv simulator is set as default world.
+
 Quick start to initialize the Gazebo world and add blueROV2 vehicle
 ```
 roslaunch bluerov2_gazebo quick_start.launch
@@ -93,6 +113,7 @@ The bluerov2_mpc package also includes more trajectory following tasks such as f
 
 ## Disturbance generator
 The uuv simulator provides [disturbance generation functions](https://uuvsimulator.github.io/packages/uuv_simulator/docs/tutorials/disturbances/) for testing the vehicle.
+
 A demonstration of starting simulation with random current disturbances can be launched by
 ```
 roslaunch bluerov2_gazebo start_pid_with_current.launch    (with PID controller)
