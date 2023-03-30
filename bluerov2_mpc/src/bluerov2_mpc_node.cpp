@@ -1,10 +1,13 @@
 #include <ros/ros.h>
 #include <tf/tf.h>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <geometry_msgs/PoseWithCovariance.h>
 #include <geometry_msgs/TwistWithCovariance.h>
 #include <uuv_gazebo_ros_plugins_msgs/FloatStamped.h>
 #include <nav_msgs/Odometry.h>
 #include <visualization_msgs/Marker.h>
+#include <geometry_msgs/Pose.h>
 
 #include <iostream>
 #include <fstream>
@@ -82,6 +85,8 @@ class NMPC
 
         ros::Publisher marker_pub;
 
+        ros::Publisher ref_pose_pub;
+
         // ROS message variables
         nav_msgs::Odometry pose_gt;
         Euler local_euler;
@@ -94,6 +99,8 @@ class NMPC
         uuv_gazebo_ros_plugins_msgs::FloatStamped thrust5;
         
         visualization_msgs::Marker marker;
+
+        geometry_msgs::Pose ref_pose;
 
         // Acados variables
         SolverInput acados_in;
@@ -142,7 +149,8 @@ class NMPC
             thrust3_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/3/input",20);
             thrust4_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/4/input",20);
             thrust5_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/5/input",20);
-            marker_pub = nh.advertise<visualization_msgs::Marker>("visualization_marker", 20);
+            marker_pub = nh.advertise<visualization_msgs::Marker>("/visualization_marker", 20);
+            ref_pose_pub = nh.advertise<geometry_msgs::Pose>("/reference_pose",20);
 
             // Initialize
             for(unsigned int i=0; i < BLUEROV2_NU; i++) acados_out.u0[i] = 0.0;
@@ -350,7 +358,7 @@ class NMPC
             thrust4_pub.publish(thrust4);
             thrust5_pub.publish(thrust5);
 
-            // publishser trajectory marker on rviz
+            // publish trajectory marker on rviz
             marker.header.frame_id = "map";
             marker.ns = "trajectory";
             marker.id = 0;
@@ -370,6 +378,21 @@ class NMPC
             
             marker_pub.publish(marker);
 
+            // publish reference pose
+            tf2::Quaternion quat;
+            quat.setRPY(0, 0, yaw_ref);
+            geometry_msgs::Quaternion quat_msg;
+            tf2::convert(quat, quat_msg);
+            ref_pose.position.x = acados_in.yref[0][0];
+            ref_pose.position.y = acados_in.yref[0][1];
+            ref_pose.position.z = acados_in.yref[0][2];
+            ref_pose.orientation.x = quat_msg.x;
+            ref_pose.orientation.y = quat_msg.y;
+            ref_pose.orientation.z = quat_msg.z;
+            ref_pose.orientation.w = quat_msg.w;
+
+            ref_pose_pub.publish(ref_pose);
+        
 
             /*Mission information cout**********************************************/        
             if(cout_counter > 2){ //reduce cout rate
