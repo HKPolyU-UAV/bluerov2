@@ -97,14 +97,6 @@ def export_bluerov2_model() -> AcadosModel:
     
 
     # dynamics
-    '''
-    du = M_inv[0,0]*(Kt0-bouyancy*sin(theta))
-    dv = M_inv[1,1]*(Kt1+bouyancy*cos(theta)*sin(phi))
-    dw = M_inv[2,2]*(Kt2+bouyancy*cos(theta)*cos(phi))
-    dp = M_inv[3,3]*(Kt3-m*ZG*g*cos(theta)*sin(phi))
-    dq = M_inv[4,4]*(Kt4-m*ZG*g*sin(theta))
-    dr = M_inv[5,5]*(Kt5)
-    '''
     du = M_inv[0,0]*(Kt0+m*r*v-m*q*w-bouyancy*sin(theta))
     dv = M_inv[1,1]*(Kt1-m*r*u+m*p*w+bouyancy*cos(theta)*sin(phi))
     dw = M_inv[2,2]*(Kt2+m*q*u-m*p*v+bouyancy*cos(theta)*cos(phi))

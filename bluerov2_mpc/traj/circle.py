@@ -8,7 +8,7 @@ import math
 
 
 # Parameters
-sample_time = 0.005             # seconds
+sample_time = 0.025             # seconds
 duration = 240                   # seconds
 
 r = 1.5

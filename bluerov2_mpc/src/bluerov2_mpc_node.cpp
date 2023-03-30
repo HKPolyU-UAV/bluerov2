@@ -26,9 +26,10 @@ class NMPC
     {
         private:
         
-        float yaw_sum = 0;
-        float pre_yaw = 0;
-        float yaw_diff;
+        float yaw_sum = 0;      // yaw degree as continue number
+        float pre_yaw = 0;      // former state yaw degree
+        float yaw_diff;         // yaw degree difference in every step
+        float yaw_ref;          // yaw degree reference in form of (-pi, pi)
         
         enum SystemStates{
             x = 0,
@@ -292,7 +293,7 @@ class NMPC
             acados_in.x0[q] = pose_gt.twist.twist.angular.y;
             acados_in.x0[r] = pose_gt.twist.twist.angular.z;
             
-            float yaw_ref;
+            // change into form of (-pi, pi)
             if(sin(acados_in.yref[0][5]) >= 0)
             {
                 yaw_ref = fmod(acados_in.yref[0][5],M_PI);
