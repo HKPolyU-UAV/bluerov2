@@ -12,7 +12,7 @@ sample_time = 0.05             # seconds
 duration = 240                   # seconds
 
 r = 1.5
-v = 1.5
+v = 1
 
 x0 = 0.5                        
 y0 = 0.5

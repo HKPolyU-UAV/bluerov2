@@ -33,6 +33,7 @@ class NMPC
         float pre_yaw = 0;      // former state yaw degree
         float yaw_diff;         // yaw degree difference in every step
         float yaw_ref;          // yaw degree reference in form of (-pi, pi)
+        float yaw_error;        // yaw degree error
         
         enum SystemStates{
             x = 0,
@@ -87,6 +88,8 @@ class NMPC
 
         ros::Publisher ref_pose_pub;
 
+        ros::Publisher error_pose_pub;
+
         // ROS message variables
         nav_msgs::Odometry pose_gt;
         Euler local_euler;
@@ -100,7 +103,9 @@ class NMPC
         
         visualization_msgs::Marker marker;
 
-        geometry_msgs::Pose ref_pose;
+        nav_msgs::Odometry ref_pose;
+
+        nav_msgs::Odometry error_pose;
 
         // Acados variables
         SolverInput acados_in;
@@ -150,7 +155,8 @@ class NMPC
             thrust4_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/4/input",20);
             thrust5_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/5/input",20);
             marker_pub = nh.advertise<visualization_msgs::Marker>("/visualization_marker", 20);
-            ref_pose_pub = nh.advertise<geometry_msgs::Pose>("/reference_pose",20);
+            ref_pose_pub = nh.advertise<nav_msgs::Odometry>("/bluerov2/mpc/reference",20);
+            error_pose_pub = nh.advertise<nav_msgs::Odometry>("/bluerov2/mpc/error",20);
 
             // Initialize
             for(unsigned int i=0; i < BLUEROV2_NU; i++) acados_out.u0[i] = 0.0;
@@ -383,16 +389,37 @@ class NMPC
             quat.setRPY(0, 0, yaw_ref);
             geometry_msgs::Quaternion quat_msg;
             tf2::convert(quat, quat_msg);
-            ref_pose.position.x = acados_in.yref[0][0];
-            ref_pose.position.y = acados_in.yref[0][1];
-            ref_pose.position.z = acados_in.yref[0][2];
-            ref_pose.orientation.x = quat_msg.x;
-            ref_pose.orientation.y = quat_msg.y;
-            ref_pose.orientation.z = quat_msg.z;
-            ref_pose.orientation.w = quat_msg.w;
+            ref_pose.pose.pose.position.x = acados_in.yref[0][0];
+            ref_pose.pose.pose.position.y = acados_in.yref[0][1];
+            ref_pose.pose.pose.position.z = acados_in.yref[0][2];
+            ref_pose.pose.pose.orientation.x = quat_msg.x;
+            ref_pose.pose.pose.orientation.y = quat_msg.y;
+            ref_pose.pose.pose.orientation.z = quat_msg.z;
+            ref_pose.pose.pose.orientation.w = quat_msg.w;
+            ref_pose.header.stamp = ros::Time::now();
+            ref_pose.header.frame_id = "odom_frame";
+            ref_pose.child_frame_id = "base_link";
 
             ref_pose_pub.publish(ref_pose);
-        
+
+            // publish error pose
+            tf2::Quaternion quat_error;
+            yaw_error = yaw_sum - acados_in.yref[0][5];
+            quat_error.setRPY(0, 0, yaw_error);
+            geometry_msgs::Quaternion quat_error_msg;
+            tf2::convert(quat_error, quat_error_msg);
+            error_pose.pose.pose.position.x = acados_in.x0[0] - acados_in.yref[0][0];
+            error_pose.pose.pose.position.y = acados_in.x0[1] - acados_in.yref[0][1];
+            error_pose.pose.pose.position.z = acados_in.x0[2] - acados_in.yref[0][2];
+            error_pose.pose.pose.orientation.x = quat_error_msg.x;
+            error_pose.pose.pose.orientation.y = quat_error_msg.y;
+            error_pose.pose.pose.orientation.z = quat_error_msg.z;
+            error_pose.pose.pose.orientation.w = quat_error_msg.w;
+            error_pose.header.stamp = ros::Time::now();
+            error_pose.header.frame_id = "odom_frame";
+            error_pose.child_frame_id = "base_link";
+
+            error_pose_pub.publish(error_pose);
 
             /*Mission information cout**********************************************/        
             if(cout_counter > 2){ //reduce cout rate
