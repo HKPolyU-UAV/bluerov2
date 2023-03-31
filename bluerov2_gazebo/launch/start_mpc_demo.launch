@@ -22,7 +22,7 @@
     </include>
 
     <!-- Start the MPC controller with its default parameters for the bluerov2 vehicle  -->
-    <include file="$(find bluerov2_mpc)/launch/circle.launch"/> 
+    <include file="$(find bluerov2_mpc)/launch/stationary.launch"/> 
 
     <!-- Initialize the recording fo the simulation according to the record flag  -->
     <include file="$(find uuv_gazebo)/launch/controller_demos/record_demo.launch">

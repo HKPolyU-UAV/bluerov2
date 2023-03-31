@@ -19,7 +19,7 @@ def main():
     nx = model.x.size()[0]
     nu = model.u.size()[0]
     
-    N = 50
+    N = 55
 
     # set dimensions
     ocp.dims.N = N
