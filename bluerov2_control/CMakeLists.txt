@@ -28,7 +28,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## modules and global scripts declared therein get installed
 ## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
 ## ADDED
-#catkin_python_setup()
+catkin_python_setup()
 
 ################################################
 ## Declare ROS messages, services and actions ##
@@ -198,12 +198,12 @@ include_directories(
 ## ADDED
 catkin_install_python(PROGRAMS
     scripts/set_gm_current.py
-#  src/bluerov/bin/user_mav
-#  src/bluerov/bin/video
-#  src/bluerov/sitl.py
-#  src/bridge/bluerov_node.py
-#  src/bridge/bridge.py
-#  src/bridge/node
+    src/bluerov/bin/user_mav
+    src/bluerov/bin/video
+    src/bluerov/sitl.py
+    src/bridge/bluerov_node.py
+    src/bridge/bridge.py
+    src/bridge/node
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

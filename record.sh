@@ -1,1 +1,1 @@
-rosbag record -O mpc_stationaary /bluerov2/pose_gt /bluerov2/thrusters/0/input /bluerov2/thrusters/1/input /bluerov2/thrusters/2/input /bluerov2/thrusters/3/input /bluerov2/thrusters/4/input /bluerov2/thrusters/5/input /bluerov2/mpc/reference /bluerov2/mpc/error
+rosbag record -O mpc_stationary /bluerov2/pose_gt /bluerov2/thrusters/0/input /bluerov2/thrusters/1/input /bluerov2/thrusters/2/input /bluerov2/thrusters/3/input /bluerov2/thrusters/4/input /bluerov2/thrusters/5/input /bluerov2/mpc/reference /bluerov2/mpc/error

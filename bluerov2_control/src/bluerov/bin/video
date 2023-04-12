@@ -1,0 +1,35 @@
+#!/usr/bin/env python
+"""
+
+From bluerov_ros_playground respository (https://github.com/patrickelectric/bluerov_ros_playground)
+Credits: patrickelectric
+
+"""
+
+import bluerov.video as Video
+import cv2
+import rospy
+
+def main():
+    try:
+        rospy.init_node('user_node', log_level=rospy.DEBUG)
+    except rospy.ROSInterruptException as error:
+        print('pubs error with ROS: ', error)
+        exit(1)
+
+    udp_port = rospy.get_param("/bluerov_video/udp_port", 5600)
+    rospy.loginfo("udp_port: {}".format(udp_port))
+
+    video = Video.Video(udp_port)
+
+    while True:
+        if not video.frame_available():
+            continue
+
+        frame = video.frame()
+        cv2.imshow('frame', frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+if __name__ == '__main__':
+    main()

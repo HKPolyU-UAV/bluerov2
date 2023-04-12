@@ -31,7 +31,7 @@
     <include file="$(find bluerov2_control)/launch/start_ardusub_sitl.launch">
         <arg name="joy_dev" value="$(arg joy_dev)"/>
         <arg name="pose2gazebo" value="$(arg gazebo)"/>
-        <arg name="use_joystick" value="$(arg use_joystick)"/>
+        <!--<arg name="use_joystick" value="$(arg use_joystick)"/>-->
     </include>
 
     <!-- Open RViz for visualization of sensor data and visualization markers -->
