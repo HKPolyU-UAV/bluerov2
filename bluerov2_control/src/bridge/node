@@ -10,7 +10,7 @@ except rospy.ROSInterruptException as error:
     print('pubs error with ROS: ', error)
     exit(1)
 
-device = rospy.get_param("/node/device", 'udp:localhost:14550')
+device = rospy.get_param("/node/device", 'udp://:14551@127.0.0.1:14555')
 print('Running with device', device)
 bluerov = BR.BlueRov(device=device)
 

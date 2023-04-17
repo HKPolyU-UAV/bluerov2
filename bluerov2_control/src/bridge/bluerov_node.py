@@ -34,7 +34,7 @@ from std_msgs.msg import String
 from std_msgs.msg import UInt16
 
 class BlueRov(Bridge):
-    def __init__(self, device='udp:192.168.2.1:14550', baudrate=115200):
+    def __init__(self, device='udp://:14551@127.0.0.1:14555', baudrate=115200):
         """ BlueRov ROS Bridge
 
         Args:
@@ -499,7 +499,7 @@ if __name__ == '__main__':
         print('pubs error with ROS: ', error)
         exit(1)
 
-    bluerov = BlueRov(device='udp:localhost:14550')
+    bluerov = BlueRov(device='udp://:14551@127.0.0.1:14555')
 
     while not rospy.is_shutdown():
         bluerov.publish()

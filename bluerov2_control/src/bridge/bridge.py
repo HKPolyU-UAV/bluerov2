@@ -9,7 +9,7 @@ class Bridge(object):
         conn (TYPE): MAVLink connection
         data (dict): Deal with all data
     """
-    def __init__(self, device='udp:192.168.2.1:14550', baudrate=115200):
+    def __init__(self, device='udp://:14551@127.0.0.1:14555', baudrate=115200):
         """
         Args:
             device (str, optional): Input device

@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="log_output" default="screen"/>
+    <arg name="bluerov_node_device" default="udp://:14551@127.0.0.1:14555"/>
+
+    <!-- start bluerov2 node -->
+    <node respawn="true" pkg="bluerov2_control" type="node" name="bluerov_node" output="$(arg log_output)">
+        <param name="device" value="udp://:14551@127.0.0.1:14555"/>
+    </node>
+</launch>
