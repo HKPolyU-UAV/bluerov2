@@ -1,5 +1,5 @@
 import time
-# Import mavutil
+import sys
 from pymavlink import mavutil
 
 
@@ -70,12 +70,30 @@ class bluerov2_mavlink():
         0, 0, 0,
         mavutil.mavlink.MAV_MOUNT_MODE_MAVLINK_TARGETING)
 
+    def request_parameter(self):
+        # Request all parameters
+        self.master.mav.param_request_list_send(
+            self.master.target_system, self.master.target_component
+        )
+        while True:
+            time.sleep(0.01)
+            try:
+                message = self.master.recv_match(type='PARAM_VALUE', blocking=True).to_dict()
+                print('name: %s\tvalue: %d' % (message['param_id'],
+                                       message['param_value']))
+            except Exception as error:
+                print(error)
+                sys.exit(0)
 if __name__ == '__main__':
     bluerov2 = bluerov2_mavlink()
     #bluerov2.set_servo_pwm(1,1700)
-    bluerov2.arm_disarm_vehicle(1)
+    #bluerov2.arm_disarm_vehicle(1)
+    
     for us in range(1100, 1900, 50):
         bluerov2.set_servo_pwm(1, us)
         time.sleep(0.125)
         print("set pwm:",us)
-    bluerov2.arm_disarm_vehicle(0)
+    
+    #bluerov2.request_parameter()
+    #bluerov2.arm_disarm_vehicle(0)
+
