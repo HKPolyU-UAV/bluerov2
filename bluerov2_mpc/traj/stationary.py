@@ -12,7 +12,7 @@ traj = np.zeros((int(duration/sample_time+1),16)) # x y z phi theta psi u v w p 
 
 traj[:,0] = 0                       # x
 traj[:,1] = 0                       # y
-traj[:,2] = -20                     # z
+traj[:,2] = 0                     # z
 traj[:,3] = 0                       # phi
 traj[:,4] = 0                       # theta
 traj[:,5] = 0                       # psi
@@ -24,7 +24,7 @@ traj[:,10] = 0                      # q
 traj[:,11] = 0                      # r
 traj[:,12] = 0                      # u1
 traj[:,13] = 0                      # u2
-traj[:,14] = 57.5                    # u3: set to overcome bouyant
+traj[:,14] = 0                    # u3: set to overcome bouyant
 traj[:,15] = 0                      # u4
 
 # write to txt
