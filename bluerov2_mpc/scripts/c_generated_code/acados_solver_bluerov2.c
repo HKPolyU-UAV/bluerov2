@@ -540,9 +540,9 @@ void bluerov2_acados_create_5_set_nlp_in(bluerov2_solver_capsule* capsule, const
     int* idxbu = malloc(NBU * sizeof(int));
     
     idxbu[0] = 0;
-    idxbu[1] = 0;
-    idxbu[2] = 0;
-    idxbu[3] = 0;
+    idxbu[1] = 1;
+    idxbu[2] = 2;
+    idxbu[3] = 3;
     double* lubu = calloc(2*NBU, sizeof(double));
     double* lbu = lubu;
     double* ubu = lubu + NBU;

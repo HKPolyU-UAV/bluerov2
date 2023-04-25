@@ -18,6 +18,7 @@ def main():
     
     nx = model.x.size()[0]
     nu = model.u.size()[0]
+    ny = nx + nu                # y is x and u concatenated for compactness of the loss function
     
     N = 55
 
@@ -26,19 +27,24 @@ def main():
 
     # set cost
     W_x = np.diag([100, 100, 100, 10, 10, 100, 10, 10, 10, 10, 10, 10])    #Q_mat
-    W_u = np.diag([0.001, 0.001, 0.001, 0.0005])                                   #R_mat
+    W_u = np.diag([0.001, 0.001, 0.001, 0.0005])                           #R_mat
     W = block_diag(W_x, W_u)
     ocp.cost.W_e = W_x
     ocp.cost.W = W
 
     # the 'EXTERNAL' cost type can be used to define general cost terms
     # NOTE: This leads to additional (exact) hessian contributions when using GAUSS_NEWTON hessian.
-    #ocp.cost.cost_type = 'EXTERNAL'
-    #ocp.cost.cost_type_e = 'EXTERNAL'
-    ocp.cost.cost_type = 'NONLINEAR_LS'
-    ocp.cost.cost_type_e = 'NONLINEAR_LS'
-    ocp.model.cost_expr_ext_cost = model.x.T @ W_x @ model.x + model.u.T @ W_u @ model.u
-    ocp.model.cost_expr_ext_cost_e = model.x.T @ W_x @ model.x
+    ocp.cost.cost_type = 'NONLINEAR_LS'                 # weights times states (nonlinear relationship)
+    ocp.cost.cost_type_e = 'NONLINEAR_LS'               # end states cost
+    #ocp.model.cost_expr_ext_cost = model.x.T @ W_x @ model.x + model.u.T @ W_u @ model.u
+    #ocp.model.cost_expr_ext_cost_e = model.x.T @ W_x @ model.x
+    
+    # Optimization costs
+    ocp.cost.Vx = np.zeros((ny,nx))                     # raise dim of x to the dim of y
+    ocp.cost.Vx[:nx,:nx] = np.eye(nx)                   # weight only x
+    ocp.cost.Vx_e = np.eye(nx)                          # end x cost
+    ocp.cost.Vu = np.zeros((ny,nu))                     # raise the dim of u to the dim of y
+    ocp.cost.Vu[-nu:,-nu:] = np.eye(nu)                 # weight only u
     
 
     # set constraints
@@ -46,7 +52,7 @@ def main():
     u_max = np.array([250, 250, 250, 250])
     ocp.constraints.lbu = u_min
     ocp.constraints.ubu = u_max
-    ocp.constraints.idxbu = np.array([0,0,0,0])
+    ocp.constraints.idxbu = np.array([0,1,2,3])         # indices of bounds on u
 
     ocp.constraints.x0 = np.array([0.0, 0.0, -20, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 
