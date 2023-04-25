@@ -24,12 +24,11 @@
 
 #include "bluerov2_model/bluerov2_model.h"
 #include "acados_solver_bluerov2.h"
-
+bool start_sub;
 class NMPC
     {
         private:
-        
-        float yaw_sum = 0;      // yaw degree as continue number
+        float yaw_sum = 0;      // yaw degree as continous number
         float pre_yaw = 0;      // former state yaw degree
         float yaw_diff;         // yaw degree difference in every step
         float yaw_ref;          // yaw degree reference in form of (-pi, pi)
@@ -165,6 +164,7 @@ class NMPC
         }
         void pose_gt_cb(const nav_msgs::Odometry::ConstPtr& pose)
         {
+            start_sub = true;
             // get linear position x, y, z
             pose_gt.pose.pose.position.x = pose->pose.pose.position.x;
             pose_gt.pose.pose.position.y = pose->pose.pose.position.y;
@@ -448,9 +448,12 @@ int main(int argc, char **argv)
     nh.getParam("/bluerov2_mpc_node/ref_traj", ref_traj);
     NMPC nmpc(nh, ref_traj);
     ros::Rate loop_rate(20);
-
+    start_sub = false;
     while(ros::ok()){
-        nmpc.run();
+        if(start_sub == true){
+            nmpc.run();
+        }
+        //nmpc.run();
         ros::spinOnce();
         loop_rate.sleep();
     }
