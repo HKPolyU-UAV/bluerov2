@@ -89,6 +89,11 @@ class NMPC
 
         ros::Publisher error_pose_pub;
 
+        ros::Publisher control_input0_pub;
+        ros::Publisher control_input1_pub;
+        ros::Publisher control_input2_pub;
+        ros::Publisher control_input3_pub;
+
         // ROS message variables
         nav_msgs::Odometry pose_gt;
         Euler local_euler;
@@ -105,6 +110,11 @@ class NMPC
         nav_msgs::Odometry ref_pose;
 
         nav_msgs::Odometry error_pose;
+
+        uuv_gazebo_ros_plugins_msgs::FloatStamped control_input0;
+        uuv_gazebo_ros_plugins_msgs::FloatStamped control_input1;
+        uuv_gazebo_ros_plugins_msgs::FloatStamped control_input2;
+        uuv_gazebo_ros_plugins_msgs::FloatStamped control_input3;
 
         // Acados variables
         SolverInput acados_in;
@@ -156,7 +166,10 @@ class NMPC
             marker_pub = nh.advertise<visualization_msgs::Marker>("/visualization_marker", 20);
             ref_pose_pub = nh.advertise<nav_msgs::Odometry>("/bluerov2/mpc/reference",20);
             error_pose_pub = nh.advertise<nav_msgs::Odometry>("/bluerov2/mpc/error",20);
-
+            control_input0_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/control_input/0",20);
+            control_input1_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/control_input/1",20);
+            control_input2_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/control_input/2",20);
+            control_input3_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/control_input/3",20);
             // Initialize
             for(unsigned int i=0; i < BLUEROV2_NU; i++) acados_out.u0[i] = 0.0;
             for(unsigned int i=0; i < BLUEROV2_NX; i++) acados_in.x0[i] = 0.0;
@@ -420,6 +433,17 @@ class NMPC
             error_pose.child_frame_id = "base_link";
 
             error_pose_pub.publish(error_pose);
+
+            // publish conrtrol input
+            control_input0.data = acados_out.u0[0];
+            control_input1.data = acados_out.u0[1];
+            control_input2.data = acados_out.u0[2];
+            control_input3.data = acados_out.u0[3];
+
+            control_input0_pub.publish(control_input0);
+            control_input1_pub.publish(control_input1);
+            control_input2_pub.publish(control_input2);
+            control_input3_pub.publish(control_input3);
 
             /*Mission information cout**********************************************/        
             if(cout_counter > 2){ //reduce cout rate

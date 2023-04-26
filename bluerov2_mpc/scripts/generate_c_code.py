@@ -62,14 +62,14 @@ def main():
     ocp.cost.yref_e = x_ref
 
     # set options
-    ocp.solver_options.qp_solver = 'PARTIAL_CONDENSING_HPIPM' # FULL_CONDENSING_QPOASES
+    ocp.solver_options.qp_solver = 'FULL_CONDENSING_HPIPM' # FULL_CONDENSING_QPOASES
     # PARTIAL_CONDENSING_HPIPM, FULL_CONDENSING_QPOASES, FULL_CONDENSING_HPIPM,
     # PARTIAL_CONDENSING_QPDUNES, PARTIAL_CONDENSING_OSQP, FULL_CONDENSING_DAQP
-    #ocp.solver_options.hessian_approx = 'GAUSS_NEWTON' # 'GAUSS_NEWTON', 'EXACT'
+    ocp.solver_options.hessian_approx = 'GAUSS_NEWTON' # 'GAUSS_NEWTON', 'EXACT'
     ocp.solver_options.integrator_type = 'ERK'
-    ocp.solver_options.qp_solver_cond_N = 5
-    #ocp.solver_options.print_level = 0
-    ocp.solver_options.nlp_solver_type = 'SQP' # SQP_RTI, SQP
+    #ocp.solver_options.qp_solver_cond_N = 5
+    ocp.solver_options.print_level = 0
+    ocp.solver_options.nlp_solver_type = 'SQP_RTI' # SQP_RTI, SQP
 
 
     # set prediction horizon
