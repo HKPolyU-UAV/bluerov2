@@ -51,10 +51,15 @@
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>roscpp</build_depend>
   <build_depend>rospy</build_depend>
+  <!-- <build_depend>uuv_gazebo_plugins_msgs</build_depend> -->
+  <build_depend>uuv_gazebo_ros_plugins_msgs</build_depend>
+  
   <build_export_depend>roscpp</build_export_depend>
   <build_export_depend>rospy</build_export_depend>
   <exec_depend>roscpp</exec_depend>
   <exec_depend>rospy</exec_depend>
+  <exec_depend>uuv_gazebo_ros_plugins_msgs</exec_depend>
+
 
 
   <!-- The export tag contains other, unspecified, tags -->

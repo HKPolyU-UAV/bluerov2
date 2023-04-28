@@ -9,20 +9,21 @@ add_compile_options(-std=c++11)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  uuv_gazebo_ros_plugins_msgs
 )
 
 find_package(
   Eigen3 REQUIRED
 )
 
-set(acados_include "/home/fyp/acados/include")
-set(acados_lib "/home/fyp/acados/lib")
+set(acados_include "/home/yang/acados/include")
+set(acados_lib "/home/yang/acados/lib")
 set(bluerov2_model ${PROJECT_SOURCE_DIR}/scripts/c_generated_code)
 
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES bluerov2_mpc
-#  CATKIN_DEPENDS roscpp
+# CATKIN_DEPENDS uuv_gazebo_plugins_msgs
 #  DEPENDS system_lib
 )
 
