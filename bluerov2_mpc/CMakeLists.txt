@@ -16,8 +16,8 @@ find_package(
   Eigen3 REQUIRED
 )
 
-set(acados_include "/home/yang/acados/include")
-set(acados_lib "/home/yang/acados/lib")
+set(acados_include "/home/fyp/acados/include")
+set(acados_lib "/home/fyp/acados/lib")
 set(bluerov2_model ${PROJECT_SOURCE_DIR}/scripts/c_generated_code)
 
 catkin_package(

@@ -82,8 +82,8 @@ OBJ+= $(OCP_OBJ)
 EXTERNAL_DIR=
 EXTERNAL_LIB=
 
-INCLUDE_PATH = /home/yang/acados/include
-LIB_PATH = /home/yang/acados/lib
+INCLUDE_PATH = /home/fyp/acados/include
+LIB_PATH = /home/fyp/acados/lib
 
 # preprocessor flags for make's implicit rules
 CPPFLAGS+= -I$(INCLUDE_PATH)
@@ -144,7 +144,7 @@ ocp_cython_c: ocp_shared_lib
 	-o acados_ocp_solver_pyx.c \
 	-I $(INCLUDE_PATH)/../interfaces/acados_template/acados_template \
 	$(INCLUDE_PATH)/../interfaces/acados_template/acados_template/acados_ocp_solver_pyx.pyx \
-	-I /home/yang/bluerov_ws/src/bluerov2/bluerov2_mpc/scripts/c_generated_code \
+	-I /home/fyp/bluerov_ws/src/bluerov2/bluerov2_mpc/scripts/c_generated_code \
 
 ocp_cython_o: ocp_cython_c
 	$(CC) $(ACADOS_FLAGS) -c -O2 \
@@ -153,8 +153,8 @@ ocp_cython_o: ocp_cython_c
 	-I $(INCLUDE_PATH)/blasfeo/include/ \
 	-I $(INCLUDE_PATH)/hpipm/include/ \
 	-I $(INCLUDE_PATH) \
-	-I /usr/local/lib/python3.8/dist-packages/numpy/core/include \
-	-I /usr/include/python3.8 \
+	-I /home/fyp/bluerov_ws/src/bluerov2/bluerov2_mpc/env/lib/python3.7/site-packages/numpy/core/include \
+	-I /usr/include/python3.7m \
 	acados_ocp_solver_pyx.c \
 
 ocp_cython: ocp_cython_o
@@ -171,7 +171,7 @@ sim_cython_c: sim_shared_lib
 	-o acados_sim_solver_pyx.c \
 	-I $(INCLUDE_PATH)/../interfaces/acados_template/acados_template \
 	$(INCLUDE_PATH)/../interfaces/acados_template/acados_template/acados_sim_solver_pyx.pyx \
-	-I /home/yang/bluerov_ws/src/bluerov2/bluerov2_mpc/scripts/c_generated_code \
+	-I /home/fyp/bluerov_ws/src/bluerov2/bluerov2_mpc/scripts/c_generated_code \
 
 sim_cython_o: sim_cython_c
 	$(CC) $(ACADOS_FLAGS) -c -O2 \
@@ -180,8 +180,8 @@ sim_cython_o: sim_cython_c
 	-I $(INCLUDE_PATH)/blasfeo/include/ \
 	-I $(INCLUDE_PATH)/hpipm/include/ \
 	-I $(INCLUDE_PATH) \
-	-I /usr/local/lib/python3.8/dist-packages/numpy/core/include \
-	-I /usr/include/python3.8 \
+	-I /home/fyp/bluerov_ws/src/bluerov2/bluerov2_mpc/env/lib/python3.7/site-packages/numpy/core/include \
+	-I /usr/include/python3.7m \
 	acados_sim_solver_pyx.c \
 
 sim_cython: sim_cython_o
