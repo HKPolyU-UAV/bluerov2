@@ -20,7 +20,7 @@ def main():
     nu = model.u.size()[0]
     ny = nx + nu                # y is x and u concatenated for compactness of the loss function
     
-    N = 80
+    N = 60
 
     # set dimensions
     ocp.dims.N = N

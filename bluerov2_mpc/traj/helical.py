@@ -14,8 +14,8 @@ duration = 240                   # seconds
 r = 1.5
 v = 1.5
 
-x0 = 1.5                        
-y0 = 0
+x0 = 0.5                        
+y0 = 0.5
 z0 = -20
 
 # trajectory
