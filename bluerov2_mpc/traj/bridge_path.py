@@ -9,13 +9,17 @@ import numpy.matlib
 sample_time = 0.05                 #seconds
 v = 1.2
 angular_v = 0.3
-cycles = 12
-depth_interval = 2.85
 
-#points_matrix = np.array([[0,0,-34.5],[16,3.5,-34.5],[23,3.5,-34.5],[23,10.7,-34.5],[16,10.7,-34.5],[16,3.5,-34.5]])
 pier = np.array([[17.74002,5.259887],[21.34002,5.259887],[21.34002,8.97006],[17.74002,8.97006]])
 dis = 1.5
-
+camera_view = float(32*math.pi/180)
+depth_interval = dis*math.tan(camera_view)*2
+print(depth_interval)
+cycles = int(35/(dis*math.tan(camera_view)*2))
+print(cycles)
+#cycles = 19
+cycles = 2
+depth_interval = 1.8
 isRounded = True
 
 if isRounded == True:
@@ -58,7 +62,8 @@ local_path[:,0] = x
 local_path[:,1] = y
 local_path[:,5] = yaw
 traj = np.append(traj,local_path,axis=0) 
-
+cycle_start = t+1
+print(cycle_start)
 
 # Generate trajectory based on velocity
 for i in range(1,np.size(points)/2):
@@ -182,64 +187,28 @@ for i in range(1,np.size(points)/2):
     local_path[:,1] = y
     local_path[:,5] = yaw
     traj = np.append(traj,local_path,axis=0) 
-'''
-if isRounded==False:
-    d = np.abs(np.sqrt((points[4][0]-traj[-1,0])**2 + (points[0][1]-traj[0,1])**2))
-    t = int(d/v/sample_time)+1
-    local_path = np.zeros((t+1,16))
-    x_interval = (points[0][0] - traj[0,0])/t
-    x = np.arange(traj[0,0],points[0][0], x_interval)
-    x = np.append(x,points[0][0])
-    y_interval = (points[0][1] - traj[0,1])/t
-    y = np.arange(traj[0,1],points[0][1], y_interval)
-    y = np.append(y,points[0][1])
-    yaw = np.zeros(t+1)
-'''
 traj[:,2] = -34.5
 
+cycle_end = np.size(traj)/16-1
+print(traj[cycle_end,:])
+# repeat trajectory at difference depth
+print(traj[cycle_start,:])
 
-        
-'''
-# Generate trajectory based on velocity
-for i in range(1,np.size(points_matrix)/3):
-    # calculate absolute distance between points
-    d = np.abs(np.sqrt((points_matrix[i][0]-points_matrix[i-1][0])**2 + (points_matrix[i][1]-points_matrix[i-1][1])**2))
-    t = int(d/v/sample_time)+1
-    local_path = np.zeros((t+1,16))
+for i in range(1,cycles+1):
+    depth = traj[0,2] + i*depth_interval
     
-    #local_path[:,2] = -34.5 + (i-1)*depth_interval
-    # x trajectory
-    if points_matrix[i][0] - points_matrix[i-1][0] != 0:
-        x_interval = (points_matrix[i][0] - points_matrix[i-1][0])/t
-        x = np.arange(points_matrix[i-1][0],points_matrix[i][0], x_interval)
-        x = np.append(x,points_matrix[i][0])
-    else:
-        x = np.zeros(t+1)
-        x[:] = points_matrix[i][0]
+    repeat_matrix = np.zeros((cycle_end+1-cycle_start,16))
+    repeat_matrix[:,0] = traj[cycle_start:cycle_end+1,0]
+    repeat_matrix[:,1] = traj[cycle_start:cycle_end+1,1]
+    repeat_matrix[:,2] = depth
+    repeat_matrix[:,5] = traj[cycle_start:cycle_end+1,5] + i*math.pi*2
 
-    # y trajectory
-    if points_matrix[i][1] - points_matrix[i-1][1] != 0:
-        y_interval = (points_matrix[i][1] - points_matrix[i-1][1])/t
-        y = np.arange(points_matrix[i-1][1],points_matrix[i][1], y_interval)
-        y = np.append(y,points_matrix[i][1])
-    else:
-        y = np.zeros(t+1)
-        y[:] = points_matrix[i][1]
+    #cycle_matrix[:,5] = cycle_matrix[:,5] + i*math.pi*2.5
+    traj = np.append(traj,repeat_matrix,axis=0)
+
+
     
-    # yaw degree
-    yaw = np.zeros(t+1)
-    if points_matrix[i][0]!=points_matrix[i-1][0] and points_matrix[i][1]!=points_matrix[i-1][1]:
-        #initial_yaw = math.atan((points_matrix[1][1]-points_matrix[0][1])/(points_matrix[1][0]-points_matrix[0][0]))
-        yaw[:] = math.atan((points_matrix[1][1]-points_matrix[0][1])/(points_matrix[1][0]-points_matrix[0][0]))
-    else:
-        yaw[:] = 0.5*math.pi*(i-1)
-   
-    local_path[:,0] = x
-    local_path[:,1] = y
-    local_path[:,2] = -34.5
-    local_path[:,5] = yaw
-    traj = np.append(traj,local_path,axis=0)
-'''
+
 # write to txt
 np.savetxt('bridge_path.txt',traj,fmt='%f')
 
