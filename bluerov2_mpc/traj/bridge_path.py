@@ -7,16 +7,16 @@ import math
 import numpy.matlib
 # Parameters
 sample_time = 0.05                 #seconds
-v = 1
-angular_v = 0.5
+v = 1.2
+angular_v = 0.3
 cycles = 12
 depth_interval = 2.85
 
 #points_matrix = np.array([[0,0,-34.5],[16,3.5,-34.5],[23,3.5,-34.5],[23,10.7,-34.5],[16,10.7,-34.5],[16,3.5,-34.5]])
 pier = np.array([[17.74002,5.259887],[21.34002,5.259887],[21.34002,8.97006],[17.74002,8.97006]])
-dis = 1
+dis = 1.5
 
-isRounded = False
+isRounded = True
 
 if isRounded == True:
     points = np.array([[pier[0][0],pier[0][1]-dis],[pier[1][0],pier[1][1]-dis],
@@ -27,7 +27,7 @@ if isRounded == True:
 else:
     points = np.array([[pier[0][0]-dis,pier[0][1]-dis],[pier[1][0]+dis,pier[1][1]-dis],
                        [pier[2][0]+dis,pier[2][1]+dis],[pier[3][0]-dis,pier[3][1]+dis],
-                       [pier[0][0]-dis,pier[0][1]-dis]])
+                       [pier[0][0]-dis,pier[0][1]-dis],[pier[0][0],pier[0][1]-dis]])
 print(points)
 
 # Initialize trajectory with vehicle initial position and heading
@@ -94,7 +94,53 @@ for i in range(1,np.size(points)/2):
         # yaw angle
         yaw = np.zeros(t+1)
         yaw[:] = 0.5*math.pi + int(i/2)*0.5*math.pi
+        if isRounded==False:
+            yaw[:] = 0.5*math.pi*i
+            '''
+            if i==1:
+                for j in range(t+1):
+                    if x[j]>pier[1][0]:  
+                        index = j
+                        print(index)
+                        break
+                yaw[index:t+1] = np.linspace(0.5*math.pi,0.75*math.pi,t+1-index)
+            if i==2:
+                for j in range(t+1):
+                    if y[j]>pier[1][1]:
+                        index = j
+                        break
+                yaw[0:index] = np.linspace(0.75*math.pi,math.pi,index)
 
+                for j in range(t+1):
+                    if y[j]>pier[2][1]:
+                        index = j
+                        break
+                yaw[index:t+1] = np.linspace(math.pi,1.25*math.pi,t+1-index)
+            if i==3:
+                for j in range(t+1):
+                    if x[j]<pier[2][0]:
+                        index = j
+                        break
+                yaw[0:index] = np.linspace(1.25*math.pi,1.5*math.pi,index)
+                for j in range(t+1):
+                    if x[j]<pier[3][0]:
+                        index = j
+                        break
+                yaw[index:t+1] = np.linspace(1.5*math.pi,1.75*math.pi,t+1-index)
+            if i==4:
+                for j in range(t+1):
+                    if y[j]<pier[3][1]:
+                        index = j
+                        break
+                yaw[0:index] = np.linspace(1.75*math.pi,2*math.pi,index)
+                for j in range(t+1):
+                    if y[j]<pier[0][1]:
+                        index = j
+                        break
+                yaw[index:t+1] = np.linspace(2*math.pi,2.25*math.pi,t+1-index)
+            if i==5:
+                yaw[0:t+1] = np.linspace(2.25*math.pi,2.5*math.pi,t+1)
+            '''
     # Generate rounded angle
     else:
         pier_no = (i-2)/2+1
@@ -136,14 +182,22 @@ for i in range(1,np.size(points)/2):
     local_path[:,1] = y
     local_path[:,5] = yaw
     traj = np.append(traj,local_path,axis=0) 
-
+'''
+if isRounded==False:
+    d = np.abs(np.sqrt((points[4][0]-traj[-1,0])**2 + (points[0][1]-traj[0,1])**2))
+    t = int(d/v/sample_time)+1
+    local_path = np.zeros((t+1,16))
+    x_interval = (points[0][0] - traj[0,0])/t
+    x = np.arange(traj[0,0],points[0][0], x_interval)
+    x = np.append(x,points[0][0])
+    y_interval = (points[0][1] - traj[0,1])/t
+    y = np.arange(traj[0,1],points[0][1], y_interval)
+    y = np.append(y,points[0][1])
+    yaw = np.zeros(t+1)
+'''
 traj[:,2] = -34.5
 
-if isRounded==False:
-    for i in range(1,np.size(points)/2):
-        pier_no = (i-2)/2+1
-        if pier_no > 3:
-            pier_no = pier_no - 4
+
         
 '''
 # Generate trajectory based on velocity
