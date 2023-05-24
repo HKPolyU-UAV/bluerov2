@@ -196,14 +196,25 @@ print(traj[cycle_start,:])
 
 for i in range(1,cycles+1):
     depth = traj[0,2] + i*depth_interval
-    
     repeat_matrix = np.zeros((cycle_end+1-cycle_start,16))
     repeat_matrix[:,0] = traj[cycle_start:cycle_end+1,0]
     repeat_matrix[:,1] = traj[cycle_start:cycle_end+1,1]
     repeat_matrix[:,2] = depth
     repeat_matrix[:,5] = traj[cycle_start:cycle_end+1,5] + i*math.pi*2
 
-    #cycle_matrix[:,5] = cycle_matrix[:,5] + i*math.pi*2.5
+    print("cycle")
+    print(i)
+    t = int(depth_interval/v/sample_time)+1
+    local_path = np.zeros((t+1,16))
+    print(t+1)
+    local_path[:,0] = traj[cycle_start,0]
+    local_path[:,1] = traj[cycle_start,1]
+    d = np.linspace(traj[-1,2],depth,t+1)
+    print(np.size(d))
+    print(d)
+    local_path[:,2] = d
+    local_path[:,5] = repeat_matrix[0,5]
+    traj = np.append(traj,local_path,axis=0)
     traj = np.append(traj,repeat_matrix,axis=0)
 
 
