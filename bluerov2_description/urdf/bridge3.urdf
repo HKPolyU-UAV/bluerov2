@@ -3,15 +3,15 @@
      Commit Version: 1.5.1-0-g916b5db  Build Version: 1.5.7152.31018
      For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
 <robot
-  name="bridge2">
+  name="bridge3">
   <link
-    name="bridge2">
+    name="bridge3">
     <inertial>
       <origin
-        xyz="-2.6109E-05 -0.0299790000000009 -14.701"
+        xyz="-60 -0.0299790000000009 -4.701"
         rpy="0 0 0" />
       <mass
-        value="14568" />
+        value="1456.8" />
       <inertia
         ixx="7977300000"
         ixy="331.130000000001"
@@ -26,7 +26,7 @@
         rpy="1.5707963267949 0 0" />
       <geometry>
         <mesh
-          filename="package://bluerov2_description/meshes/bridge2.STL" />
+          filename="package://bluerov2_description/meshes/bridge3.STL" />
       </geometry>
       <material
         name="">
@@ -41,7 +41,7 @@
         rpy="1.5707963267949 0 0" />
       <geometry>
         <mesh
-          filename="package://bluerov2_description/meshes/bridge2.STL" />
+          filename="package://bluerov2_description/meshes/bridge3.STL" />
       </geometry>
     </collision>
   </link>

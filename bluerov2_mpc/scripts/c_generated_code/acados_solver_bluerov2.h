@@ -63,7 +63,7 @@
 #define BLUEROV2_NY0    16
 #define BLUEROV2_NY     16
 #define BLUEROV2_NYN    12
-#define BLUEROV2_N      40
+#define BLUEROV2_N      60
 #define BLUEROV2_NH     0
 #define BLUEROV2_NPHI   0
 #define BLUEROV2_NHN    0

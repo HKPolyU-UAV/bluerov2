@@ -379,7 +379,7 @@ void bluerov2_acados_create_5_set_nlp_in(bluerov2_solver_capsule* capsule, const
     if (new_time_steps) {
         bluerov2_acados_update_time_steps(capsule, N, new_time_steps);
     } else {// all time_steps are identical
-        double time_step = 0.025;
+        double time_step = 0.016666666666666666;
         for (int i = 0; i < N; i++)
         {
             ocp_nlp_in_set(nlp_config, nlp_dims, nlp_in, i, "Ts", &time_step);
@@ -509,8 +509,8 @@ void bluerov2_acados_create_5_set_nlp_in(bluerov2_solver_capsule* capsule, const
     double* lbx0 = lubx0;
     double* ubx0 = lubx0 + NBX0;
     // change only the non-zero elements:
-    lbx0[2] = -20;
-    ubx0[2] = -20;
+    lbx0[2] = -34.5;
+    ubx0[2] = -34.5;
 
     ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "idxbx", idxbx0);
     ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "lbx", lbx0);
@@ -547,14 +547,14 @@ void bluerov2_acados_create_5_set_nlp_in(bluerov2_solver_capsule* capsule, const
     double* lbu = lubu;
     double* ubu = lubu + NBU;
     
-    lbu[0] = -250;
-    ubu[0] = 250;
-    lbu[1] = -250;
-    ubu[1] = 250;
-    lbu[2] = -250;
-    ubu[2] = 250;
-    lbu[3] = -250;
-    ubu[3] = 250;
+    lbu[0] = -300;
+    ubu[0] = 300;
+    lbu[1] = -300;
+    ubu[1] = 300;
+    lbu[2] = -300;
+    ubu[2] = 300;
+    lbu[3] = -300;
+    ubu[3] = 300;
 
     for (int i = 0; i < N; i++)
     {
@@ -684,7 +684,7 @@ void bluerov2_acados_create_7_set_nlp_out(bluerov2_solver_capsule* capsule)
 
     // initialize with x0
     
-    x0[2] = -20;
+    x0[2] = -34.5;
 
 
     double* u0 = xu0 + NX;

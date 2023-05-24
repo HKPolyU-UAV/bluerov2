@@ -48,13 +48,13 @@ def main():
     
 
     # set constraints
-    u_min = np.array([-250, -250, -250, -250])
-    u_max = np.array([250, 250, 250, 250])
+    u_min = np.array([-300, -300, -300, -300])
+    u_max = np.array([300, 300, 300, 300])
     ocp.constraints.lbu = u_min
     ocp.constraints.ubu = u_max
     ocp.constraints.idxbu = np.array([0,1,2,3])         # indices of bounds on u
 
-    ocp.constraints.x0 = np.array([0.0, 0.0, -20, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+    ocp.constraints.x0 = np.array([0.0, 0.0, -34.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 
     # reference trajectory (will be overwritten later)
     x_ref = np.zeros(nx)

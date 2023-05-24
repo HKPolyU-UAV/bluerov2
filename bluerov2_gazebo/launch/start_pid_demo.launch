@@ -4,13 +4,13 @@
     <!-- Initial position and heading of the vehicle (wrt Gazebo's inertial frame)  -->
     <arg name="x" default="0"/>
     <arg name="y" default="0"/>
-    <arg name="z" default="-30"/>
-    <arg name="yaw" default="0"/>
+    <arg name="z" default="-34.5"/>
+    <arg name="yaw" default="0.215348"/>
 
     <arg name="use_ned_frame" default="false"/>
 
     <!-- Initialize the Gazebo world  -->
-    <include file="$(find uuv_gazebo_worlds)/launch/ocean_waves.launch"/>
+    <include file="$(find bluerov2_description)/launch/bridge.launch"/>
 
     <!-- Add the BlueROV2 vehicle to the world  -->
     <include file="$(find bluerov2_description)/launch/upload.launch">
