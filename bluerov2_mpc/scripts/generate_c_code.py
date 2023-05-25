@@ -20,14 +20,14 @@ def main():
     nu = model.u.size()[0]
     ny = nx + nu                # y is x and u concatenated for compactness of the loss function
     
-    N = 60
+    N = 50
 
     # set dimensions
     ocp.dims.N = N
 
     # set cost
     W_x = np.diag([100, 100, 150, 10, 10, 100, 10, 10, 10, 10, 10, 1])    #Q_mat
-    W_u = np.diag([0.001, 0.001, 0.0001, 0.0005])                           #R_mat
+    W_u = np.diag([0.01, 0.01, 0.0001, 0.0005])                           #R_mat
     W = block_diag(W_x, W_u)
     ocp.cost.W_e = W_x
     ocp.cost.W = W

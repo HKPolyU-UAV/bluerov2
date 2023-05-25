@@ -77,7 +77,7 @@ int bluerov2_acados_sim_create(sim_solver_capsule * capsule)
     bool tmp_bool;
 
     
-    double Tsim = 0.016666666666666666;
+    double Tsim = 0.02;
 
     
     // explicit ode
