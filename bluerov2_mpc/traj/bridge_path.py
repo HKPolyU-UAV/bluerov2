@@ -8,7 +8,7 @@ import numpy.matlib
 # Parameters
 sample_time = 0.05                 #seconds
 v = 1.2
-angular_v = 0.3
+turn_v = 0.3
 
 pier = np.array([[17.74002,5.259887],[21.34002,5.259887],[21.34002,8.97006],[17.74002,8.97006]])
 dis = 1.5
@@ -18,7 +18,7 @@ print(depth_interval)
 cycles = int(35/(dis*math.tan(camera_view)*2))
 print(cycles)
 #cycles = 19
-cycles = 2
+cycles = 1
 depth_interval = 1.8
 isRounded = True
 
@@ -36,8 +36,8 @@ print(points)
 
 # Initialize trajectory with vehicle initial position and heading
 traj = np.zeros((1,16))
-traj[0,0] = 0
-traj[0,1] = 0
+traj[0,0] = 10.5
+traj[0,1] = 2.5
 traj[0,2] = -34.5
 traj[0,5] = 0
 
@@ -46,12 +46,8 @@ traj[0,5] = 0
 d = np.abs(np.sqrt((points[0][0]-traj[0,0])**2 + (points[0][1]-traj[0,1])**2))
 t = int(d/v/sample_time)+1
 local_path = np.zeros((t+1,16))
-x_interval = (points[0][0] - traj[0,0])/t
-x = np.arange(traj[0,0],points[0][0], x_interval)
-x = np.append(x,points[0][0])
-y_interval = (points[0][1] - traj[0,1])/t
-y = np.arange(traj[0,1],points[0][1], y_interval)
-y = np.append(y,points[0][1])
+x = np.linspace(traj[0,0],points[0][0],t+1)
+y = np.linspace(traj[0,1],points[0][1],t+1)
 yaw = np.zeros(t+1)
 angle = math.atan((points[0][1]-traj[0,1])/(points[0][0]-traj[0,0]))
 yaw[:] = angle
@@ -81,18 +77,14 @@ for i in range(1,np.size(points)/2):
         local_path = np.zeros((t+1,16))
         # x coodinates
         if points[i][0] - points[i-1][0] != 0:
-            x_interval = (points[i][0] - points[i-1][0])/t
-            x = np.arange(points[i-1][0],points[i][0], x_interval)
-            x = np.append(x,points[i][0])
+            x = np.linspace(points[i-1][0],points[i][0],t+1)
         else:
             x = np.zeros(t+1)
             x[:] = points[i][0]
 
         # y coordinates
-        if points[i][1] - points[i-1][1] != 0:
-            y_interval = (points[i][1] - points[i-1][1])/t
-            y = np.arange(points[i-1][1],points[i][1], y_interval)
-            y = np.append(y,points[i][1])
+        if points[i][1] - points[i-1][1] != 0:         
+            y = np.linspace(points[i-1][1],points[i][1],t+1)
         else:
             y = np.zeros(t+1)
             y[:] = points[i][1]
@@ -155,9 +147,9 @@ for i in range(1,np.size(points)/2):
         print(pier_no)
        
         d = 2*math.pi*dis/4
-        time = d/angular_v
-        timestep = np.linspace(0,time,d/angular_v/sample_time)
-        angular_position = timestep*(angular_v/dis)
+        time = d/turn_v
+        timestep = np.linspace(0,time,d/turn_v/sample_time)
+        angular_position = timestep*(turn_v/dis)
         # x, y coordinates
         if points[i][0]>points[i-1][0] and points[i][1]>points[i-1][1]:
             x = pier[pier_no][0] + dis*np.cos(angular_position)[::-1]
@@ -202,23 +194,16 @@ for i in range(1,cycles+1):
     repeat_matrix[:,2] = depth
     repeat_matrix[:,5] = traj[cycle_start:cycle_end+1,5] + i*math.pi*2
 
-    print("cycle")
-    print(i)
     t = int(depth_interval/v/sample_time)+1
     local_path = np.zeros((t+1,16))
-    print(t+1)
     local_path[:,0] = traj[cycle_start,0]
     local_path[:,1] = traj[cycle_start,1]
     d = np.linspace(traj[-1,2],depth,t+1)
-    print(np.size(d))
-    print(d)
     local_path[:,2] = d
     local_path[:,5] = repeat_matrix[0,5]
     traj = np.append(traj,local_path,axis=0)
     traj = np.append(traj,repeat_matrix,axis=0)
 
-
-    
 
 # write to txt
 np.savetxt('bridge_path.txt',traj,fmt='%f')
