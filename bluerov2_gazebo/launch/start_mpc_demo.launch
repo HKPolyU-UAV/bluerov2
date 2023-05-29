@@ -25,6 +25,15 @@
     <!-- Start the MPC controller with its default parameters for the bluerov2 vehicle  -->
     <include file="$(find bluerov2_mpc)/launch/bridge_path.launch"/> 
 
+    <!-- Real-time 3d plot 
+    <node
+        name="plotter"
+        pkg="bluerov2_mpc"
+        type="python"
+        output="screen"
+        args="$(find bluerov2_mpc)/scripts/plot.py"
+    />
+    -->
     <!-- Initialize the recording fo the simulation according to the record flag  -->
     <include file="$(find uuv_gazebo)/launch/controller_demos/record_demo.launch">
       <arg name="record" value="$(arg record)"/>
