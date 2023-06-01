@@ -105,7 +105,7 @@ class NMPC
         uuv_gazebo_ros_plugins_msgs::FloatStamped thrust4;
         uuv_gazebo_ros_plugins_msgs::FloatStamped thrust5;
         
-        visualization_msgs::Marker marker;
+        //visualization_msgs::Marker marker;
 
         nav_msgs::Odometry ref_pose;
 
@@ -163,7 +163,7 @@ class NMPC
             thrust3_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/3/input",20);
             thrust4_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/4/input",20);
             thrust5_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/5/input",20);
-            marker_pub = nh.advertise<visualization_msgs::Marker>("/visualization_marker", 20);
+            //marker_pub = nh.advertise<visualization_msgs::Marker>("/visualization_marker", 20);
             ref_pose_pub = nh.advertise<nav_msgs::Odometry>("/bluerov2/mpc/reference",20);
             error_pose_pub = nh.advertise<nav_msgs::Odometry>("/bluerov2/mpc/error",20);
             control_input0_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/control_input/0",20);
@@ -377,6 +377,7 @@ class NMPC
             thrust4_pub.publish(thrust4);
             thrust5_pub.publish(thrust5);
 
+            /*
             // publish trajectory marker on rviz
             marker.header.frame_id = "map";
             marker.ns = "trajectory";
@@ -396,7 +397,7 @@ class NMPC
             marker.points.push_back(current_point);
             
             marker_pub.publish(marker);
-
+            */
             // publish reference pose
             tf2::Quaternion quat;
             quat.setRPY(0, 0, yaw_ref);

@@ -40,8 +40,11 @@ traj[0,0] = 10.5
 traj[0,1] = 2.5
 traj[0,2] = -34.5
 traj[0,5] = 0
-
-
+'''
+traj0 = traj
+for i in range(1,1200):
+    traj = np.append(traj,traj0,axis=0) 
+'''
 # original position to starting point
 d = np.abs(np.sqrt((points[0][0]-traj[0,0])**2 + (points[0][1]-traj[0,1])**2))
 t = int(d/v/sample_time)+1
@@ -58,6 +61,7 @@ local_path[:,0] = x
 local_path[:,1] = y
 local_path[:,5] = yaw
 traj = np.append(traj,local_path,axis=0) 
+#cycle_start = t+1+1199
 cycle_start = t+1
 print(cycle_start)
 
