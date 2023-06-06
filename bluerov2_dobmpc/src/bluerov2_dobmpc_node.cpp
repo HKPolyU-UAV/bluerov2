@@ -9,9 +9,11 @@ int main(int argc, char **argv)
     ros::Rate loop_rate(20);
 
     BLUEROV2_INTERFACE br(nh);
-
+    std::cout<< "br constructed"<<std::endl;
     while(ros::ok()){
+        std::cout<< "ros::ok, go to run"<<std::endl;
         br.run();
+        std::cout<< "run once"<<std::endl;
         ros::spinOnce();
         loop_rate.sleep();
     }

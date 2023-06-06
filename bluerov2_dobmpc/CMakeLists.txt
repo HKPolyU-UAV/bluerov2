@@ -30,6 +30,7 @@ set(bluerov2_model ${PROJECT_SOURCE_DIR}/scripts/c_generated_code)
 add_message_files(
   FILES
   Reference.msg
+  Pose.msg
 )
 
 generate_messages(

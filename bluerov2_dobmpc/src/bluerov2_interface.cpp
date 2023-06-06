@@ -17,8 +17,8 @@ BLUEROV2_INTERFACE::BLUEROV2_INTERFACE(ros::NodeHandle& nh){
 	else{
 		ROS_INFO_STREAM("Number of steps of selected trajectory: " << number_of_steps << std::endl);
 	}
-
-    is_sub = false;
+    std::cout<< "bluerov2_interface initialized"<<std::endl;
+    //is_sub = false;
 
     // ros subsriber & publisher
     pose_sub = nh.subscribe<nav_msgs::Odometry>("/bluerov2/pose_gt", 20, &BLUEROV2_INTERFACE::pose_cb, this);
@@ -74,8 +74,12 @@ geometry_msgs::Quaternion BLUEROV2_INTERFACE::rpy2q(const float& euler_phi, cons
 
 void BLUEROV2_INTERFACE::ref_cb(int line_to_read)
 {
+    mpc_ref.ref_pose.resize(BLUEROV2_N+1);
+    mpc_ref.ref_twist.resize(BLUEROV2_N+1);
+    std::cout<< "start ref_cb"<<std::endl;
     if (BLUEROV2_N+line_to_read+1 <= number_of_steps)  // All ref points within the file
     {
+        std::cout<< "all ref points within the file"<<std::endl;
         for (unsigned int i = 0; i <= BLUEROV2_NY; i++)  // Fill all horizon with file data
         {
             mpc_ref.ref_pose[i].position.x = trajectory[i+line_to_read][0];
@@ -92,18 +96,14 @@ void BLUEROV2_INTERFACE::ref_cb(int line_to_read)
             mpc_ref.ref_twist[i].angular.x = trajectory[i+line_to_read][9];
             mpc_ref.ref_twist[i].angular.y = trajectory[i+line_to_read][10];
             mpc_ref.ref_twist[i].angular.z = trajectory[i+line_to_read][11];
-            /*
-            for (unsigned int j = 0; j <= BLUEROV2_NY; j++)
-            {
-                acados_in.yref[i][j] = trajectory[i+line_to_read][j];
-            }
-            */
         }
     }
     else if(line_to_read < number_of_steps)    // Part of ref points within the file
     {
+        std::cout<< "Part of ref points within the file"<<std::endl;
         for (unsigned int i = 0; i < number_of_steps-line_to_read; i++)    // Fill part of horizon with file data
         {
+            std::cout<< "Fill part of horizon with file data"<<std::endl;
             mpc_ref.ref_pose[i].position.x = trajectory[i+line_to_read][0];
             mpc_ref.ref_pose[i].position.y = trajectory[i+line_to_read][1];
             mpc_ref.ref_pose[i].position.z = trajectory[i+line_to_read][2];
@@ -128,6 +128,7 @@ void BLUEROV2_INTERFACE::ref_cb(int line_to_read)
 
         for (unsigned int i = number_of_steps-line_to_read; i <= BLUEROV2_N; i++)  // Fill the rest horizon with the last point
         {
+            std::cout<< "Fill the rest horizon with the last point"<<std::endl;
             mpc_ref.ref_pose[i].position.x = trajectory[number_of_steps-1][0];
             mpc_ref.ref_pose[i].position.y = trajectory[number_of_steps-1][1];
             mpc_ref.ref_pose[i].position.z = trajectory[number_of_steps-1][2];
@@ -152,6 +153,7 @@ void BLUEROV2_INTERFACE::ref_cb(int line_to_read)
     }
     else    // none of ref points within the file
     {
+        std::cout<<"none of ref points within the file"<<std::endl;
         for (unsigned int i = 0; i <= BLUEROV2_N; i++)  // Fill all horizon with the last point
         {
             mpc_ref.ref_pose[i].position.x = trajectory[number_of_steps-1][0];
@@ -176,12 +178,13 @@ void BLUEROV2_INTERFACE::ref_cb(int line_to_read)
             */
         }
     }
+    std::cout<< "mpc_ref filled"<<std::endl;
 }
 
 // get current pose
 void BLUEROV2_INTERFACE::pose_cb(const nav_msgs::Odometry::ConstPtr& msg)
 {
-    is_sub = true;
+    //is_sub = true;
     pose_gt.header.stamp = msg->header.stamp;
     pose_gt.pose = msg->pose;
     pose_gt.twist = msg->twist;
@@ -190,22 +193,28 @@ void BLUEROV2_INTERFACE::pose_cb(const nav_msgs::Odometry::ConstPtr& msg)
 // call acados solver with inputs: current pose, reference, parameter
 // publish thrust
 void BLUEROV2_INTERFACE::run(){
+    std::cout<< "start run"<<std::endl;
     ref_cb(line_number);
+    std::cout<< "ref_cb"<<std::endl;
     line_number++;
-    if(is_sub==true){
-        thrusts = controller.solve(pose_gt,mpc_ref,solver_param);
-        thrust0 = thrusts[0];
-        thrust1 = thrusts[1];
-        thrust2 = thrusts[2];
-        thrust3 = thrusts[3];
-        thrust4 = thrusts[4];
-        thrust5 = thrusts[5];
+    //is_sub = true;
+    
+    std::cout<< "go to solve"<<std::endl;
 
-        thrust0_pub.publish(thrust0);
-        thrust1_pub.publish(thrust1);
-        thrust2_pub.publish(thrust2);
-        thrust3_pub.publish(thrust3);
-        thrust4_pub.publish(thrust4);
-        thrust5_pub.publish(thrust5);
-    }
+    //std::cout<<pose_gt<<std::endl;
+    thrusts = controller.solve(pose_gt,mpc_ref,solver_param);
+    thrust0 = thrusts[0];
+    thrust1 = thrusts[1];
+    thrust2 = thrusts[2];
+    thrust3 = thrusts[3];
+    thrust4 = thrusts[4];
+    thrust5 = thrusts[5];
+    std::cout<< "start publish"<<std::endl;
+    thrust0_pub.publish(thrust0);
+    thrust1_pub.publish(thrust1);
+    thrust2_pub.publish(thrust2);
+    thrust3_pub.publish(thrust3);
+    thrust4_pub.publish(thrust4);
+    thrust5_pub.publish(thrust5);
+    
 }

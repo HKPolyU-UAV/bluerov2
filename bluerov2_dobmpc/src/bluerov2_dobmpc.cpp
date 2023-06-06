@@ -3,6 +3,7 @@
 // Initialize MPC
 BLUEROV2_DOBMPC::BLUEROV2_DOBMPC()
 {
+    //pose_sub = nh.subscribe<nav_msgs::Odometry>("/bluerov2/pose_gt", 20, &BLUEROV2_DOBMPC::pose_cb, this);
     int create_status = 1;
     create_status = bluerov2_acados_create(mpc_capsule);
     if (create_status != 0){
@@ -54,6 +55,7 @@ std::vector<uuv_gazebo_ros_plugins_msgs::FloatStamped> BLUEROV2_DOBMPC::solve(co
     }
 
     local_euler = q2rpy(pose.pose.pose.orientation);
+    std::cout<<local_euler.psi<<std::endl;
 
     // solve discontinue yaw control
     if (abs(acados_in.yref[0][5] - local_euler.psi) > M_PI)
@@ -120,5 +122,23 @@ std::vector<uuv_gazebo_ros_plugins_msgs::FloatStamped> BLUEROV2_DOBMPC::solve(co
     thrusts.push_back(thrust3);
     thrusts.push_back(thrust4);
     thrusts.push_back(thrust5);
+
+    // print reference, current pose, control inputs, thrusts...
+    if(cout_counter > 2){ //reduce cout rate
+        std::cout << "------------------------------------------------------------------------------------------------" << std::endl;
+        std::cout << "x_ref:    " << acados_in.yref[0][0] << "\ty_ref:   " << acados_in.yref[0][1] << "\tz_ref:    " << acados_in.yref[0][2] << "\tyaw_ref:    " << acados_in.yref[0][5] << std::endl;
+        std::cout << "x_gt:     " << acados_in.x0[0] << "\ty_gt:     " << acados_in.x0[1] << "\tz_gt:     " << acados_in.x0[2] << "\tyaw_gt:     " << local_euler.psi << std::endl;
+        std::cout << "roll_gt:        " << acados_in.x0[3] << "\t\tpitch_gt:        " << acados_in.x0[4] << std::endl;
+        std::cout << "u1    : " << acados_out.u0[0] << "\tu2:    " << acados_out.u0[1] << "\tu3:    " << acados_out.u0[2] << "\tu4:    " << acados_out.u0[3] << std::endl;
+        std::cout << "t0:  " << thrust0.data << "\tt1:  " << thrust1.data << "\tt2:  " << thrust2.data << "\tt3:  " << thrust3.data << "\tt4:  " << thrust4.data << "\tt5:  " << thrust5.data << std::endl;
+        std::cout << "solve_time: "<< acados_out.cpu_time << "\tkkt_res: " << acados_out.kkt_res << "\tacados_status: " << acados_out.status << std::endl;
+        std::cout << "ros_time:   " << std::fixed << ros::Time::now().toSec() << std::endl;
+        std::cout << "------------------------------------------------------------------------------------------------" << std::endl;
+        cout_counter = 0;
+    }
+    else{
+        cout_counter++;
+        }
+
     return thrusts;
 }
