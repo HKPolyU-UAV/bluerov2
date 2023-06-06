@@ -169,6 +169,13 @@ int bluerov2_acados_sim_create(sim_solver_capsule * capsule)
     capsule->acados_sim_solver = bluerov2_sim_solver;
 
 
+    /* initialize parameter values */
+    double* p = calloc(np, sizeof(double));
+    
+
+    bluerov2_acados_sim_update_params(capsule, p, np);
+    free(p);
+
 
     /* initialize input */
     // x

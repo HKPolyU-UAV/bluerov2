@@ -28,6 +28,7 @@ extern "C" {
 #define casadi_s0 CASADI_PREFIX(s0)
 #define casadi_s1 CASADI_PREFIX(s1)
 #define casadi_s2 CASADI_PREFIX(s2)
+#define casadi_s3 CASADI_PREFIX(s3)
 
 /* Symbol visibility in DLLs */
 #ifndef CASADI_SYMBOL_EXPORT
@@ -46,9 +47,10 @@ extern "C" {
 
 static const casadi_int casadi_s0[16] = {12, 1, 0, 12, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
 static const casadi_int casadi_s1[3] = {0, 0, 0};
-static const casadi_int casadi_s2[15] = {12, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+static const casadi_int casadi_s2[7] = {3, 1, 0, 3, 0, 1, 2};
+static const casadi_int casadi_s3[15] = {12, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-/* bluerov2_cost_y_e_hess:(i0[12],i1[],i2[],i3[12],i4[])->(o0[12x12,0nz]) */
+/* bluerov2_cost_y_e_hess:(i0[12],i1[],i2[],i3[12],i4[3])->(o0[12x12,0nz]) */
 static int casadi_f0(const casadi_real** arg, casadi_real** res, casadi_int* iw, casadi_real* w, int mem) {
   return 0;
 }
@@ -115,14 +117,14 @@ CASADI_SYMBOL_EXPORT const casadi_int* bluerov2_cost_y_e_hess_sparsity_in(casadi
     case 1: return casadi_s1;
     case 2: return casadi_s1;
     case 3: return casadi_s0;
-    case 4: return casadi_s1;
+    case 4: return casadi_s2;
     default: return 0;
   }
 }
 
 CASADI_SYMBOL_EXPORT const casadi_int* bluerov2_cost_y_e_hess_sparsity_out(casadi_int i) {
   switch (i) {
-    case 0: return casadi_s2;
+    case 0: return casadi_s3;
     default: return 0;
   }
 }

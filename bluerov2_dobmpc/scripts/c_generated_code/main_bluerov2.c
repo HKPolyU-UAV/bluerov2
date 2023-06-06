@@ -166,6 +166,17 @@ int main()
     u0[1] = 0.0;
     u0[2] = 0.0;
     u0[3] = 0.0;
+    // set parameters
+    double p[NP];
+    p[0] = 0;
+    p[1] = 0;
+    p[2] = 0;
+
+    for (int ii = 0; ii <= N; ii++)
+    {
+        bluerov2_acados_update_params(acados_ocp_capsule, ii, p, NP);
+    }
+  
 
     // prepare evaluation
     int NTIMINGS = 1;

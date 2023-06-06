@@ -30,6 +30,12 @@ def export_bluerov2_model() -> AcadosModel:
     u4 = SX.sym('u4')               # control signal regard to yaw
     sym_u = vertcat(u1,u2,u3,u4)
 
+    # parameters (new added)
+    disturbance_x = SX.sym('disturbance_x')
+    disturbance_y = SX.sym('disturbance_y')
+    disturbance_z = SX.sym('disturbance_z')
+    sym_p = vertcat(disturbance_x,disturbance_y,disturbance_z)
+
     # xdot for f_impl
     x_dot = SX.sym('x_dot')
     y_dot = SX.sym('y_dot')
@@ -98,9 +104,9 @@ def export_bluerov2_model() -> AcadosModel:
 
     # dynamics
     
-    du = M_inv[0,0]*(Kt0+m*r*v-m*q*w-bouyancy*sin(theta))
-    dv = M_inv[1,1]*(Kt1-m*r*u+m*p*w+bouyancy*cos(theta)*sin(phi))
-    dw = M_inv[2,2]*(Kt2+m*q*u-m*p*v+bouyancy*cos(theta)*cos(phi))
+    du = M_inv[0,0]*(Kt0+m*r*v-m*q*w-bouyancy*sin(theta))+disturbance_x
+    dv = M_inv[1,1]*(Kt1-m*r*u+m*p*w+bouyancy*cos(theta)*sin(phi))+disturbance_y
+    dw = M_inv[2,2]*(Kt2+m*q*u-m*p*v+bouyancy*cos(theta)*cos(phi))+disturbance_z
     dp = M_inv[3,3]*(Kt3+(Iy-Iz)*q*r-m*ZG*g*cos(theta)*sin(phi))
     dq = M_inv[4,4]*(Kt4+(Iz-Ix)*p*r-m*ZG*g*sin(theta))
     dr = M_inv[5,5]*(Kt5-(Iy-Ix)*p*q)
@@ -134,6 +140,7 @@ def export_bluerov2_model() -> AcadosModel:
     model.x = sym_x
     model.xdot = sym_xdot
     model.u = sym_u
+    model.p = sym_p
     model.cost_y_expr = cost_y_expr
     model.cost_y_expr_e = sym_x
     #model.con_h_expr = h_expr

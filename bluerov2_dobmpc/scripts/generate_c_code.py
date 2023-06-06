@@ -19,12 +19,16 @@ def main():
     nx = model.x.size()[0]
     nu = model.u.size()[0]
     ny = nx + nu                # y is x and u concatenated for compactness of the loss function
-    
+    nparam = model.p.size()[0]
+
     N = 100
 
     # set dimensions
     ocp.dims.N = N
 
+    # set parameters (new added)
+    ocp.parameter_values = np.zeros((nparam, ))
+    
     # set cost
     W_x = np.diag([100, 100, 150, 10, 10, 100, 10, 10, 10, 10, 10, 10])    #Q_mat
     W_u = np.diag([0.008, 0.008, 0.0001, 0.0001])                           #R_mat

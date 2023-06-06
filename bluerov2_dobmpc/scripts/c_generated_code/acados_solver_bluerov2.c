@@ -300,7 +300,7 @@ void bluerov2_acados_create_3_create_and_set_functions(bluerov2_solver_capsule* 
         capsule->__CAPSULE_FNC__.casadi_sparsity_in = & __MODEL_BASE_FNC__ ## _sparsity_in; \
         capsule->__CAPSULE_FNC__.casadi_sparsity_out = & __MODEL_BASE_FNC__ ## _sparsity_out; \
         capsule->__CAPSULE_FNC__.casadi_work = & __MODEL_BASE_FNC__ ## _work; \
-        external_function_param_casadi_create(&capsule->__CAPSULE_FNC__ , 0); \
+        external_function_param_casadi_create(&capsule->__CAPSULE_FNC__ , 3); \
     }while(false)
 
 
@@ -353,7 +353,14 @@ void bluerov2_acados_create_3_create_and_set_functions(bluerov2_solver_capsule* 
  * Internal function for bluerov2_acados_create: step 4
  */
 void bluerov2_acados_create_4_set_default_parameters(bluerov2_solver_capsule* capsule) {
-    // no parameters defined
+    const int N = capsule->nlp_solver_plan->N;
+    // initialize parameters to nominal value
+    double* p = calloc(NP, sizeof(double));
+
+    for (int i = 0; i <= N; i++) {
+        bluerov2_acados_update_params(capsule, i, p, NP);
+    }
+    free(p);
 }
 
 
@@ -829,7 +836,7 @@ int bluerov2_acados_update_params(bluerov2_solver_capsule* capsule, int stage, d
 {
     int solver_status = 0;
 
-    int casadi_np = 0;
+    int casadi_np = 3;
     if (casadi_np != np) {
         printf("acados_update_params: trying to set %i parameters for external functions."
             " External function has %i parameters. Exiting.\n", np, casadi_np);
@@ -880,7 +887,7 @@ int bluerov2_acados_update_params_sparse(bluerov2_solver_capsule * capsule, int 
 {
     int solver_status = 0;
 
-    int casadi_np = 0;
+    int casadi_np = 3;
     if (casadi_np < n_update) {
         printf("bluerov2_acados_update_params_sparse: trying to set %d parameters for external functions."
             " External function has %d parameters. Exiting.\n", n_update, casadi_np);
@@ -895,6 +902,42 @@ int bluerov2_acados_update_params_sparse(bluerov2_solver_capsule * capsule, int 
     //     }
     //     printf("param %d value %e\n", idx[i], p[i]);
     // }
+    const int N = capsule->nlp_solver_plan->N;
+    if (stage < N && stage >= 0)
+    {
+        capsule->forw_vde_casadi[stage].set_param_sparse(capsule->forw_vde_casadi+stage, n_update, idx, p);
+        capsule->expl_ode_fun[stage].set_param_sparse(capsule->expl_ode_fun+stage, n_update, idx, p);
+    
+
+        // constraints
+    
+
+        // cost
+        if (stage == 0)
+        {
+            capsule->cost_y_0_fun.set_param_sparse(&capsule->cost_y_0_fun, n_update, idx, p);
+            capsule->cost_y_0_fun_jac_ut_xt.set_param_sparse(&capsule->cost_y_0_fun_jac_ut_xt, n_update, idx, p);
+            capsule->cost_y_0_hess.set_param_sparse(&capsule->cost_y_0_hess, n_update, idx, p);
+        }
+        else // 0 < stage < N
+        {
+            capsule->cost_y_fun[stage-1].set_param_sparse(capsule->cost_y_fun+stage-1, n_update, idx, p);
+            capsule->cost_y_fun_jac_ut_xt[stage-1].set_param_sparse(capsule->cost_y_fun_jac_ut_xt+stage-1, n_update, idx, p);
+            capsule->cost_y_hess[stage-1].set_param_sparse(capsule->cost_y_hess+stage-1, n_update, idx, p);
+        }
+    }
+
+    else // stage == N
+    {
+        // terminal shooting node has no dynamics
+        // cost
+        capsule->cost_y_e_fun.set_param_sparse(&capsule->cost_y_e_fun, n_update, idx, p);
+        capsule->cost_y_e_fun_jac_ut_xt.set_param_sparse(&capsule->cost_y_e_fun_jac_ut_xt, n_update, idx, p);
+        capsule->cost_y_e_hess.set_param_sparse(&capsule->cost_y_e_hess, n_update, idx, p);
+        // constraints
+    
+    }
+
 
     return 0;
 }

@@ -83,7 +83,7 @@ class NMPC
         ros::Publisher thrust4_pub;
         ros::Publisher thrust5_pub;
 
-        ros::Publisher marker_pub;
+        //ros::Publisher marker_pub;
 
         ros::Publisher ref_pose_pub;
 
