@@ -1,2 +1,5 @@
 auto_yaw: false
 ref_traj: $(find bluerov2_mpc)/traj/circle.txt
+disturbance_x: 0.0
+disturbance_y: 0.0
+disturbance_z: 0.0

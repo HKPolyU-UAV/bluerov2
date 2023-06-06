@@ -1,9 +1,12 @@
-#include <bluerov2_interface.h>
+#include <bluerov2_dobmpc/bluerov2_interface.h>
 
 BLUEROV2_INTERFACE::BLUEROV2_INTERFACE(ros::NodeHandle& nh){
     // set yaw control mode
     nh.getParam("/bluerov2_dobmpc_node/auto_yaw",AUTO_YAW);
     nh.getParam("/bluerov2_dobmpc_node/ref_traj", REF_TRAJ);
+    nh.getParam("/bluerov2_dobmpc_node/disturbance_x", solver_param.disturbance_x);
+    nh.getParam("/bluerov2_dobmpc_node/disturbance_y", solver_param.disturbance_y);
+    nh.getParam("/bluerov2_dobmpc_node/disturbance_z", solver_param.disturbance_z);
 
     // Pre-load the trajectory
     const char * c = REF_TRAJ.c_str();
@@ -15,7 +18,7 @@ BLUEROV2_INTERFACE::BLUEROV2_INTERFACE(ros::NodeHandle& nh){
 		ROS_INFO_STREAM("Number of steps of selected trajectory: " << number_of_steps << std::endl);
 	}
 
-
+    is_sub = false;
 
     // ros subsriber & publisher
     pose_sub = nh.subscribe<nav_msgs::Odometry>("/bluerov2/pose_gt", 20, &BLUEROV2_INTERFACE::pose_cb, this);
@@ -178,6 +181,7 @@ void BLUEROV2_INTERFACE::ref_cb(int line_to_read)
 // get current pose
 void BLUEROV2_INTERFACE::pose_cb(const nav_msgs::Odometry::ConstPtr& msg)
 {
+    is_sub = true;
     pose_gt.header.stamp = msg->header.stamp;
     pose_gt.pose = msg->pose;
     pose_gt.twist = msg->twist;
@@ -188,18 +192,20 @@ void BLUEROV2_INTERFACE::pose_cb(const nav_msgs::Odometry::ConstPtr& msg)
 void BLUEROV2_INTERFACE::run(){
     ref_cb(line_number);
     line_number++;
-    thrusts = controller.solve(pose_gt,mpc_ref,solver_param);
-    thrust0 = thrusts[0];
-    thrust1 = thrusts[1];
-    thrust2 = thrusts[2];
-    thrust3 = thrusts[3];
-    thrust4 = thrusts[4];
-    thrust5 = thrusts[5];
+    if(is_sub==true){
+        thrusts = controller.solve(pose_gt,mpc_ref,solver_param);
+        thrust0 = thrusts[0];
+        thrust1 = thrusts[1];
+        thrust2 = thrusts[2];
+        thrust3 = thrusts[3];
+        thrust4 = thrusts[4];
+        thrust5 = thrusts[5];
 
-    thrust0_pub.publish(thrust0);
-    thrust1_pub.publish(thrust1);
-    thrust2_pub.publish(thrust2);
-    thrust3_pub.publish(thrust3);
-    thrust4_pub.publish(thrust4);
-    thrust5_pub.publish(thrust5);
+        thrust0_pub.publish(thrust0);
+        thrust1_pub.publish(thrust1);
+        thrust2_pub.publish(thrust2);
+        thrust3_pub.publish(thrust3);
+        thrust4_pub.publish(thrust4);
+        thrust5_pub.publish(thrust5);
+    }
 }

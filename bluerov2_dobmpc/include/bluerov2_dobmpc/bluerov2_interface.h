@@ -1,7 +1,7 @@
 #ifndef BLUEROV2_INTERFACE_H
 #define BLUEROV2_INTERFACE_H
 
-#include "bluerov2_dobmpc.h"
+#include "bluerov2_dobmpc/bluerov2_dobmpc.h"
 
 class BLUEROV2_INTERFACE{
     private:    
@@ -56,6 +56,7 @@ class BLUEROV2_INTERFACE{
     tf::Quaternion tf_quaternion;
     int cout_counter = 0;
     double logger_time;
+    bool is_sub;
 
     public:
 

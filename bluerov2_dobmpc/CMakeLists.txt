@@ -10,19 +10,23 @@ add_compile_options(-std=c++11)
 find_package(catkin REQUIRED COMPONENTS
   rospy
   roscpp
+  roslib
+  roslaunch
   uuv_gazebo_ros_plugins_msgs
   nav_msgs
   geometry_msgs
   message_generation
+  tf
+  std_msgs
 )
 
-find_package(
-  Eigen3 REQUIRED
-)
+find_package(Eigen3 REQUIRED)
+find_package(yaml-cpp REQUIRED)
 
 set(acados_include "/home/fyp/acados/include")
 set(acados_lib "/home/fyp/acados/lib")
 set(bluerov2_model ${PROJECT_SOURCE_DIR}/scripts/c_generated_code)
+
 add_message_files(
   FILES
   Reference.msg
@@ -34,15 +38,16 @@ generate_messages(
   nav_msgs
   geometry_msgs
   )
+
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES bluerov2_dobmpc
-# CATKIN_DEPENDS uuv_gazebo_plugins_msgs
+  INCLUDE_DIRS include
+  LIBRARIES bluerov2_dobmpc
+#  CATKIN_DEPENDS uuv_gazebo_plugins_msgs
 #  DEPENDS system_lib
 )
 
 include_directories(
-# include
+  include
   ${catkin_INCLUDE_DIRS}
   ${bluerov2_model}
   ${acados_include}

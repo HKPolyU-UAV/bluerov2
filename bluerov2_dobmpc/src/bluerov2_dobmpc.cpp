@@ -1,4 +1,4 @@
-#include <bluerov2_dobmpc.h>
+#include <bluerov2_dobmpc/bluerov2_dobmpc.h>
 
 // Initialize MPC
 BLUEROV2_DOBMPC::BLUEROV2_DOBMPC()

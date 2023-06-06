@@ -1,6 +1,6 @@
 #include <ros/ros.h>
 
-#include "bluerov2_interface.h"
+#include "bluerov2_dobmpc/bluerov2_interface.h"
 
 int main(int argc, char **argv)
 {
