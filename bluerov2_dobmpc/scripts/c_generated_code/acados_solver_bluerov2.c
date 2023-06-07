@@ -386,7 +386,7 @@ void bluerov2_acados_create_5_set_nlp_in(bluerov2_solver_capsule* capsule, const
     if (new_time_steps) {
         bluerov2_acados_update_time_steps(capsule, N, new_time_steps);
     } else {// all time_steps are identical
-        double time_step = 0.01;
+        double time_step = 0.0125;
         for (int i = 0; i < N; i++)
         {
             ocp_nlp_in_set(nlp_config, nlp_dims, nlp_in, i, "Ts", &time_step);
@@ -432,9 +432,9 @@ void bluerov2_acados_create_5_set_nlp_in(bluerov2_solver_capsule* capsule, const
     W_0[8+(NY0) * 8] = 10;
     W_0[9+(NY0) * 9] = 10;
     W_0[10+(NY0) * 10] = 10;
-    W_0[11+(NY0) * 11] = 10;
-    W_0[12+(NY0) * 12] = 0.008;
-    W_0[13+(NY0) * 13] = 0.008;
+    W_0[11+(NY0) * 11] = 1;
+    W_0[12+(NY0) * 12] = 0.001;
+    W_0[13+(NY0) * 13] = 0.001;
     W_0[14+(NY0) * 14] = 0.0001;
     W_0[15+(NY0) * 15] = 0.0001;
     ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, 0, "W", W_0);
@@ -452,9 +452,9 @@ void bluerov2_acados_create_5_set_nlp_in(bluerov2_solver_capsule* capsule, const
     W[8+(NY) * 8] = 10;
     W[9+(NY) * 9] = 10;
     W[10+(NY) * 10] = 10;
-    W[11+(NY) * 11] = 10;
-    W[12+(NY) * 12] = 0.008;
-    W[13+(NY) * 13] = 0.008;
+    W[11+(NY) * 11] = 1;
+    W[12+(NY) * 12] = 0.001;
+    W[13+(NY) * 13] = 0.001;
     W[14+(NY) * 14] = 0.0001;
     W[15+(NY) * 15] = 0.0001;
 
@@ -476,7 +476,7 @@ void bluerov2_acados_create_5_set_nlp_in(bluerov2_solver_capsule* capsule, const
     W_e[8+(NYN) * 8] = 10;
     W_e[9+(NYN) * 9] = 10;
     W_e[10+(NYN) * 10] = 10;
-    W_e[11+(NYN) * 11] = 10;
+    W_e[11+(NYN) * 11] = 1;
     ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, N, "W", W_e);
     free(W_e);
     ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, 0, "nls_y_fun", &capsule->cost_y_0_fun);

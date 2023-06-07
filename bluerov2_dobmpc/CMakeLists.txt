@@ -64,8 +64,18 @@ add_executable(bluerov2_dobmpc_node
   src/bluerov2_dobmpc_node.cpp
   src/bluerov2_dobmpc.cpp
   src/bluerov2_interface.cpp)
+
+add_executable(bluerov2_dob_node 
+  src/bluerov2_dob_node.cpp
+  src/bluerov2_dob.cpp)
   
 target_link_libraries(bluerov2_dobmpc_node
+  ${bluerov2_model}/libacados_ocp_solver_bluerov2.so
+  ${acados_lib}/libacados.so
+  ${catkin_LIBRARIES}
+)
+
+target_link_libraries(bluerov2_dob_node
   ${bluerov2_model}/libacados_ocp_solver_bluerov2.so
   ${acados_lib}/libacados.so
   ${catkin_LIBRARIES}
