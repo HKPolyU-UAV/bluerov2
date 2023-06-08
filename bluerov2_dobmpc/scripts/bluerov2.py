@@ -110,14 +110,7 @@ def export_bluerov2_model() -> AcadosModel:
     dp = M_inv[3,3]*(Kt3+(Iy-Iz)*q*r-m*ZG*g*cos(theta)*sin(phi))
     dq = M_inv[4,4]*(Kt4+(Iz-Ix)*p*r-m*ZG*g*sin(theta))
     dr = M_inv[5,5]*(Kt5-(Iy-Ix)*p*q)
-    '''
-    du = M_inv[0,0]*(Kt0)
-    dv = M_inv[1,1]*(Kt1)
-    dw = M_inv[2,2]*(Kt2)
-    dp = M_inv[3,3]*(Kt3)
-    dq = M_inv[4,4]*(Kt4)
-    dr = M_inv[5,5]*(Kt5)
-    '''
+   
     dx = (cos(psi)*cos(theta))*u + (-sin(psi)*cos(phi)+cos(psi)*sin(theta)*sin(phi))*v + (sin(psi)*sin(phi)+cos(psi)*cos(phi)*sin(theta))*w
     dy = (sin(psi)*cos(theta))*u + (cos(psi)*cos(phi)+sin(phi)*sin(theta)*sin(psi))*v + (-cos(psi)*sin(phi)+sin(theta)*sin(psi)*cos(phi))*w
     dz = (-sin(theta))*u + (cos(theta)*sin(phi))*v + (cos(theta)*cos(phi))*w
