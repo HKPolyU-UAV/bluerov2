@@ -5,7 +5,7 @@
     <arg name="x" default="0"/>
     <arg name="y" default="0"/>
     <arg name="z" default="-20"/>
-    <arg name="yaw" default="0.5"/>
+    <arg name="yaw" default="0"/>
 
     <arg name="use_ned_frame" default="false"/>
 

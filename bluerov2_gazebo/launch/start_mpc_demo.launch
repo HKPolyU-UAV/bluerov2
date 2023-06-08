@@ -2,16 +2,16 @@
     <!-- Flag to start recoding a rosbag  -->
     <arg name="record" default="false"/>
     <!-- Initial position and heading of the vehicle (wrt Gazebo's inertial frame)  -->
-    <arg name="x" default="10.5"/>
-    <arg name="y" default="2.5"/>
-    <arg name="z" default="-34.5"/>
+    <arg name="x" default="0"/>
+    <arg name="y" default="0"/>
+    <arg name="z" default="-20"/>
     <arg name="yaw" default="0"/>
 
     <arg name="use_ned_frame" default="false"/>
 
     <!-- Initialize the Gazebo world  -->
     <!--<include file="$(find uuv_gazebo_worlds)/launch/mangalia.launch"/>-->
-    <include file="$(find bluerov2_description)/launch/bridge.launch"/>
+    <include file="$(find bluerov2_description)/launch/ocean_waves.launch"/>
 
     <!-- Add the BlueROV2 vehicle to the world  -->
     <include file="$(find bluerov2_description)/launch/upload.launch">
@@ -23,7 +23,7 @@
     </include>
 
     <!-- Start the MPC controller with its default parameters for the bluerov2 vehicle  -->
-    <include file="$(find bluerov2_mpc)/launch/bridge_path.launch"/> 
+    <include file="$(find bluerov2_mpc)/launch/circle.launch"/> 
 
     <!-- Real-time 3d plot 
     <node

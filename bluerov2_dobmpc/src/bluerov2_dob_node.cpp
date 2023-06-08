@@ -11,7 +11,10 @@ int main(int argc, char **argv)
     //std::cout<< "br constructed"<<std::endl;
     while(ros::ok()){
         //std::cout<< "ros::ok, go to run"<<std::endl;
-        br.solve();
+        if(br.is_start==true)
+        {
+            br.solve();
+        }
         //std::cout<< "run once"<<std::endl;
         ros::spinOnce();
         loop_rate.sleep();

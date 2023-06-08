@@ -84,11 +84,15 @@ class BLUEROV2_DOB{
     uuv_gazebo_ros_plugins_msgs::FloatStamped thrust4;
     uuv_gazebo_ros_plugins_msgs::FloatStamped thrust5;
     Euler local_euler;
-    Euler ref_euler;
-    std::vector<uuv_gazebo_ros_plugins_msgs::FloatStamped> thrusts;
-
     nav_msgs::Odometry pose_gt;
-    geometry_msgs::Quaternion ref_quat;
+    nav_msgs::Odometry ref_pose;
+    nav_msgs::Odometry error_pose;
+
+    uuv_gazebo_ros_plugins_msgs::FloatStamped control_input0;
+    uuv_gazebo_ros_plugins_msgs::FloatStamped control_input1;
+    uuv_gazebo_ros_plugins_msgs::FloatStamped control_input2;
+    uuv_gazebo_ros_plugins_msgs::FloatStamped control_input3;
+    
 
     // Acados variables
     SolverInput acados_in;
@@ -107,6 +111,12 @@ class BLUEROV2_DOB{
     int cout_counter = 0;
 
     double logger_time;
+    float yaw_sum = 0;      // yaw degree as continous number
+    float pre_yaw = 0;      // former state yaw degree
+    float yaw_diff;         // yaw degree difference in every step
+    float yaw_ref;          // yaw degree reference in form of (-pi, pi)
+    float yaw_error;        // yaw degree error
+        
 
     // Time
     ros::Time current_time;
@@ -134,6 +144,8 @@ class BLUEROV2_DOB{
     int number_of_steps = 0;
     
     public:
+
+    bool is_start;
 
     BLUEROV2_DOB(ros::NodeHandle&);
     Euler q2rpy(const geometry_msgs::Quaternion&);

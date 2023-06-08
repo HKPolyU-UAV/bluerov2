@@ -37,13 +37,13 @@ traj[:,12] = 0                      # u1
 traj[:,13] = 0                      # u2
 traj[:,14] = 57.5                   # u3
 traj[:,15] = 0                      # u4
-
+'''
 for i in range(0,int(duration/sample_time+1)):
     if np.sin(traj[i,5])>=0:
         traj[i,5] = traj[i,5]%np.pi
     else:
         traj[i,5] = -np.pi + traj[i,5]%np.pi
     #traj[i,5] = np.sin(traj[i,5])
-
+'''
 # write to txt
 np.savetxt('yaw.txt',traj,fmt='%f')
