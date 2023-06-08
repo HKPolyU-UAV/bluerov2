@@ -118,12 +118,12 @@ void BLUEROV2_DOB::ref_cb(int line_to_read)
     if (BLUEROV2_N+line_to_read+1 <= number_of_steps)  // All ref points within the file
     {
         for (unsigned int i = 0; i <= BLUEROV2_N; i++)  // Fill all horizon with file data
-                {
-                    for (unsigned int j = 0; j <= BLUEROV2_NY; j++)
-                    {
-                        acados_in.yref[i][j] = trajectory[i+line_to_read][j];
-                    }
-                }
+        {
+            for (unsigned int j = 0; j <= BLUEROV2_NY; j++)
+            {
+                acados_in.yref[i][j] = trajectory[i+line_to_read][j];
+            }
+        }
         //std::cout<< "all ref points within the file"<<std::endl;
     }
     else if(line_to_read < number_of_steps)    // Part of ref points within the file
@@ -163,6 +163,20 @@ void BLUEROV2_DOB::ref_cb(int line_to_read)
         }
     }
     //std::cout<< "mpc_ref filled"<<std::endl;
+    for (unsigned int i = 1; i <= BLUEROV2_N; i++)
+    {
+        if(abs(acados_in.yref[i][5]-acados_in.yref[i-1][5]) > M_PI)
+        {
+            if(acados_in.yref[i][5]<0)
+            {
+                acados_in.yref[i][5] = acados_in.yref[i][5]+2*M_PI;
+            }
+            else
+            {
+                acados_in.yref[i][5] = acados_in.yref[i][5]-2*M_PI;
+            }
+        }
+    }
 }
 
 // solve MPC
