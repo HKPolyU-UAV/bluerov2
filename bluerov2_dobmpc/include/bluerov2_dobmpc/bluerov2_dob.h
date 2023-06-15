@@ -74,6 +74,9 @@ class BLUEROV2_DOB{
         double disturbance_x;
         double disturbance_y;
         double disturbance_z;
+        double disturbance_phi;
+        double disturbance_theta;
+        double disturbance_psi;
     };
 
     // ROS message variables

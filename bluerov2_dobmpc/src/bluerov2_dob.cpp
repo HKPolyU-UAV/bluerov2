@@ -9,6 +9,9 @@ BLUEROV2_DOB::BLUEROV2_DOB(ros::NodeHandle& nh)
     nh.getParam("/bluerov2_dob_node/disturbance_x", solver_param.disturbance_x);
     nh.getParam("/bluerov2_dob_node/disturbance_y", solver_param.disturbance_y);
     nh.getParam("/bluerov2_dob_node/disturbance_z", solver_param.disturbance_z);
+    nh.getParam("/bluerov2_dob_node/disturbance_phi", solver_param.disturbance_phi);
+    nh.getParam("/bluerov2_dob_node/disturbance_theta", solver_param.disturbance_theta);
+    nh.getParam("/bluerov2_dob_node/disturbance_psi", solver_param.disturbance_psi);
     
     // Pre-load the trajectory
     const char * c = REF_TRAJ.c_str();
@@ -258,6 +261,9 @@ void BLUEROV2_DOB::solve(){
     acados_param[0] = solver_param.disturbance_x;
     acados_param[1] = solver_param.disturbance_y;
     acados_param[2] = solver_param.disturbance_z;
+    acados_param[3] = solver_param.disturbance_phi;
+    acados_param[4] = solver_param.disturbance_theta;
+    acados_param[5] = solver_param.disturbance_psi;
 
     // change into form of (-pi, pi)
     if(sin(acados_in.yref[0][5]) >= 0)
