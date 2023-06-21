@@ -37,10 +37,12 @@ class BLUEROV2_DO{
     // ROS subsriber
     ros::Subscriber pose_gt_sub;
     ros::Subscriber ref_pose_sub;
-    ros::Subscriber control_input0_sub;
-    ros::Subscriber control_input1_sub;
-    ros::Subscriber control_input2_sub;
-    ros::Subscriber control_input3_sub;
+    ros::Subscriber thrust0_sub;
+    ros::Subscriber thrust1_sub;
+    ros::Subscriber thrust2_sub;
+    ros::Subscriber thrust3_sub;
+    ros::Subscriber thrust4_sub;
+    ros::Subscriber thrust5_sub;
 
     // ROS message variables
     //nav_msgs::Odometry pose_gt;
@@ -49,10 +51,12 @@ class BLUEROV2_DO{
     Euler ref_euler;
     pos local_pos;
     pos ref_pos;
-    uuv_gazebo_ros_plugins_msgs::FloatStamped control_input0;
-    uuv_gazebo_ros_plugins_msgs::FloatStamped control_input1;
-    uuv_gazebo_ros_plugins_msgs::FloatStamped control_input2;
-    uuv_gazebo_ros_plugins_msgs::FloatStamped control_input3;
+    uuv_gazebo_ros_plugins_msgs::FloatStamped thrust0;
+    uuv_gazebo_ros_plugins_msgs::FloatStamped thrust1;
+    uuv_gazebo_ros_plugins_msgs::FloatStamped thrust2;
+    uuv_gazebo_ros_plugins_msgs::FloatStamped thrust3;
+    uuv_gazebo_ros_plugins_msgs::FloatStamped thrust4;
+    uuv_gazebo_ros_plugins_msgs::FloatStamped thrust5;
 
     // system parameters
     double dt = 0.05;
@@ -67,6 +71,7 @@ class BLUEROV2_DO{
     VectorXd M_values(6);
     M_values << m + added_mass[0], m + added_mass[1], m + added_mass[2], Ix + added_mass[3], Iy + added_mass[4], Iz + added_mass[5];
     MatrixXd M = M_values.asDiagonal();
+    MatrixXd invM = M.inverse();
     MatrixXd Cv(6,1);
     MatrixXd C(6,6);
     MatrixXd K(6, 6);
@@ -76,18 +81,7 @@ class BLUEROV2_DO{
        0, 0, 0, 0, 0, 0,
        0, 0, 0, 0, 0, 0,
        0.167, -0.167, -0.175, 0.175, 0, 0;
-    MatrixXd t(6,1);
-    MatrixXd g(6,1);
-
-    // discrete model variables
-    MatrixXd Ad; // The 24*24 discrete-time state transition matrix that describes how the state vector evolves from one time step to the next. 
-    MatrixXd Bd; //The 24*4 discrete-time input matrix that describes how the control input affects the state vector at each time step. 
-    MatrixXd Gd; //The 24*1 discrete-time disturbance matrix that describes how the disturbance term affects the state vector at each time step. 
-    MatrixXd Cd; //The 12*24 measurement matrix that describes how the measured state variables relate to the actual state variables.
-
-    // Kalman filter variables
-    MatrixXd Q; // process noise covariance matrix
-    MatrixXd R; // measurement noise covariance matrix
+    VectorXd KAu(6);
 
     // other variables
     tf::Quaternion tf_quaternion;
@@ -95,24 +89,57 @@ class BLUEROV2_DO{
     std::string YAML_NAME;
     std::string yaml_path;
 
-    // Define system dynamics and measurement model functions
-    VectorXd f(VectorXd x, double u); // system dynamics function
-    VectorXd h(VectorXd x); // measurement model function
+    // Define system parameters
+    VectorXd u(6); // input
+    double dt = 0.05; // time step
+    int n = 18; // state dimension
+    int m = 18; // measurement dimension
+    VectorXd meas_y(m); //measurement vector
 
+    // Define initial state and covariance
+    VectorXd x0(n);
+    X0.fill(0);
+    //x0 << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0; // initial state
+    
+    P0 << MatrixXd::Identity(n,n);  // initial covariance
+    VectorXd esti_x(n);
+    MatrixXd esti_P(n, n);
+
+    // Define process noise and measurement noise covariances
+    MatrixXd noise_Q(n, n);
+    /*
+    noise_Q << 0.25*dt^4, 0.5*dt^3, 0, 0, 0, 0,
+                0.5*dt^3, dt^2, 0, 0, 0, 0,
+                0, 0, 0.25*dt^4, 0.5*dt^3, 0, 0,
+                0, 0, 0,5*dt^3, dt^2, 0, 0,
+                0, 0, 0, 0, 0.25*dt^4, 0.5*dt^3,
+                0, 0, 0, 0, 0.5*dt^3, dt^2; // process noise covariance
+    */
+    MatrixXd noise_R(m, m);
+    /*
+    noise_R << dt, 0, 0, 0, 0, 0,
+                0, dt, 0, 0, 0, 0,
+                0, 0, dt, 0, 0, 0,
+                0, 0, 0, dt, 0, 0,
+                0, 0, 0, 0, dt, 0,
+                0, 0, 0, 0, 0, dt; // measurement noise covariance
+    */
     public:
 
     BLUEROV2_DO(ros::NodeHandle&);
     void pose_gt_cb(const nav_msgs::Odometry::ConstPtr& msg);
     void ref_pose_cb(const nav_msgs::Odometry::ConstPtr& msg);
-    void control_input0_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg); 
-    void control_input1_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg); 
-    void control_input2_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg); 
-    void control_input3_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg); 
-    void c2d_euler();
-    VectorXd KalmanFilter(VectorXd z, MatrixXd Q, MatrixXd R, VectorXd x0, MatrixXd P0, VectorXd u);
+    void thrust0_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg); 
+    void thrust1_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg); 
+    void thrust2_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg); 
+    void thrust3_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg); 
+    void thrust4_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg); 
+    void thrust5_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg); 
+    // void c2d_euler();
+    // VectorXd KalmanFilter(VectorXd z, MatrixXd Q, MatrixXd R, VectorXd x0, MatrixXd P0, VectorXd u);
 
-    void EKF(VectorXd& x, MatrixXd& P, double u, VectorXd y, MatrixXd Q, MatrixXd R);
-    VectorXd f(VectorXd x, double u);
+    void EKF();
+    VectorXd f(VectorXd x, VectorXd u);
     VectorXd h(VectorXd x);
     MatrixXd compute_jacobian_F(VectorXd x, double u);
     MatrixXd compute_jacobian_H(VectorXd x);

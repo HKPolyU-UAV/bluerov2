@@ -6,10 +6,16 @@ BLUEROV2_DO::BLUEROV2_DO(ros::NodeHandle& nh)
     yaml_path = package_path + YAML_NAME;
     pose_gt_sub = nh.subscribe<nav_msgs::Odometry>("/bluerov2/pose_gt", 20, &BLUEROV2_DO::pose_gt_cb, this);
     ref_pose_sub = nh.subscribe<nav_msgs::Odometry>("/bluerov2/mpc/reference", 20, &BLUEROV2_DO::ref_pose_cb, this);
-    control_input0_sub = nh.subscribe<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/control_input/0", 20, &BLUEROV2_DO::control_input0_cb, this);
-    control_input1_sub = nh.subscribe<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/control_input/1", 20, &BLUEROV2_DO::control_input1_cb, this);
-    control_input2_sub = nh.subscribe<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/control_input/2", 20, &BLUEROV2_DO::control_input2_cb, this);
-    control_input3_sub = nh.subscribe<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/control_input/3", 20, &BLUEROV2_DO::control_input3_cb, this);
+    thrust0_sub = nh.subscribe<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/0/input", 20, &BLUEROV2_DO::thrust0_cb, this);
+    thrust1_sub = nh.subscribe<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/1/input", 20, &BLUEROV2_DO::thrust1_cb, this);
+    thrust2_sub = nh.subscribe<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/2/input", 20, &BLUEROV2_DO::thrust2_cb, this);
+    thrust3_sub = nh.subscribe<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/3/input", 20, &BLUEROV2_DO::thrust3_cb, this);
+    thrust2_sub = nh.subscribe<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/4/input", 20, &BLUEROV2_DO::thrust4_cb, this);
+    thrust3_sub = nh.subscribe<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/5/input", 20, &BLUEROV2_DO::thrust5_cb, this);
+
+    // Initialize estimate state and covariance
+    esti_x = x0;
+    esti_P = P0;
 }
 
 void BLUEROV2_DO::pose_gt_cb(const nav_msgs::Odometry::ConstPtr& pose)
@@ -56,33 +62,43 @@ void BLUEROV2_DO::ref_pose_cb(const nav_msgs::Odometry::ConstPtr& pose)
     ref_pos.r = pose->twist.twist.angular.z;
 }
 
-void BLUEROV2_DO::control_input0_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg)
+void BLUEROV2_DO::thrust0_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg)
 {
-    control_input0.data = msg->data;
+    thrust0.data = msg->data;
 }
 
-void BLUEROV2_DO::control_input1_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg)
+void BLUEROV2_DO::thrust1_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg)
 {
-    control_input1.data = msg->data;
+    thrust1.data = msg->data;
 }
 
-void BLUEROV2_DO::control_input2_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg)
+void BLUEROV2_DO::thrust2_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg)
 {
-    control_input2.data = msg->data;
+    thrust2.data = msg->data;
 }
 
-void BLUEROV2_DO::control_input3_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg)
+void BLUEROV2_DO::thrust3_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg)
 {
-    control_input3.data = msg->data;
+    thrust3.data = msg->data;
 }
 
+void BLUEROV2_DO::thrust4_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg)
+{
+    thrust4.data = msg->data;
+}
 
+void BLUEROV2_DO::thrust5_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg)
+{
+    thrust5.data = msg->data;
+}
 // Define EKF function
-void BLUEROV2_DO::EKF(VectorXd& x, MatrixXd& P, double u, VectorXd y, MatrixXd Q, MatrixXd R)
+// inputs: current state estimate x, current covariance estimate P, input u, measurement y, 
+//        process noise covariance Q, measuremnt noise covariance R
+void BLUEROV2_DO::EKF()
 {
-    // Define state and input dimensions
-    int n = x.size(); // state dimension
-    int m = y.size(); // measurement dimension
+    // get input u and measuremnet y
+    u << thrust0.data, thrust1.data, thrust2.data, thrust3.data, thrust4.data, thrust5.data;
+    meas_y << ref_pos.x, ref_pos.y, ref_pos.z, ref_euler.phi, ref_euler.theta, ref_euler.psi;
 
     // Define Jacobian matrices of system dynamics and measurement model
     MatrixXd F(n, n); // Jacobian of system dynamics
@@ -98,25 +114,35 @@ void BLUEROV2_DO::EKF(VectorXd& x, MatrixXd& P, double u, VectorXd y, MatrixXd Q
     VectorXd y_err(m); // measurement error
 
     // Prediction step: estimate state and covariance at time k+1|k
-    F = compute_jacobian_F(x, u); // compute Jacobian of system dynamics at current state and input
-    x_pred = f(x, u); // predict state at time k+1|k
-    P_pred = F * P * F.transpose() + Q; // predict covariance at time k+1|k
+    F = compute_jacobian_F(esti_x, u); // compute Jacobian of system dynamics at current state and input
+    x_pred = f(esti_x, u); // predict state at time k+1|k
+    P_pred = F * esti_P * F.transpose() + noise_Q; // predict covariance at time k+1|k
 
     // Update step: correct state and covariance using measurement at time k+1
     H = compute_jacobian_H(x_pred); // compute Jacobian of measurement model at predicted state
     y_pred = h(x_pred); // predict measurement at time k+1
-    y_err = y - y_pred; // compute measurement error
-    K = P_pred * H.transpose() * (H * P_pred * H.transpose() + R).inverse(); // compute Kalman gain
-    x = x_pred + K * y_err; // correct state estimate
-    P = (MatrixXd::Identity(n, n) - K * H) * P_pred; // correct covariance estimate
+    y_err = meas_y - y_pred; // compute measurement error
+    K = P_pred * H.transpose() * (H * P_pred * H.transpose() + noise_R).inverse(); // compute Kalman gain
+    esti_x = x_pred + K * y_err; // correct state estimate
+    esti_P = (MatrixXd::Identity(n, n) - K * H) * P_pred; // correct covariance estimate
 }
 
 // Define system dynamics function
-VectorXd BLUEROV2_DO::f(VectorXd x, double u)
+VectorXd BLUEROV2_DO::f(VectorXd x, VectorXd u)
 {
     // Define system dynamics
-    VectorXd xdot(x.size());
-    xdot << x(1), -x(0) + x(1) * u;
+    VectorXd xdot(n);
+
+    KAu = K*u.transpose();
+    xdot << x(6),x(7),x(8),x(9),(10),(11),                          // xdot
+            invM.coeff(0)(0)*(KAu(0)+x(12)+m*x(11)*x(7)-m*x(10)*x(8)-bouyancy*sin(x(4))),    // M^-1[tau+w-C-g]
+            invM.coeff(1)(1)*(KAu(1)+x(13)-m*x(11)*x(6)+m*x(9)*x(8)+bouyancy*cos(x(4))*sin(x(3))),
+            invM.coeff(2)(2)*(KAu(2)+x(14)+m*x(10)*x(6)-m*x(9)*x(7)+bouyancy*cos(x(4))*cos(x(3))),
+            invM.coeff(3)(3)*(KAu(3)+x(15)+(Iy-Iz)*x(10)*x(11)-m*ZG*g*cos(x(4))*sin(x(3))),
+            invM.coeff(4)(4)*(KAu(4)+x(16)+(Iz-Ix)*x(9)*x(11)-m*ZG*g*sin(x(4))),
+            invM.coeff(5)(5)*(KAu(5)+x(17)-(Iy-Ix)*x(9)*x(10)),
+            
+        
     return x + xdot * dt; // dt is the time step
 }
 
@@ -124,8 +150,10 @@ VectorXd BLUEROV2_DO::f(VectorXd x, double u)
 VectorXd BLUEROV2_DO::h(VectorXd x)
 {
     // Define measurement model
-    VectorXd y(1);
-    y << x(0);
+    VectorXd y(m);
+    
+
+
     return y;
 }
 
@@ -134,8 +162,7 @@ MatrixXd BLUEROV2_DO::compute_jacobian_F(VectorXd x, double u)
 {
     // Define Jacobian of system dynamics
     MatrixXd F(x.size(), x.size());
-    F << 1, dt,
-         -dt, 1 - dt * u;
+    
     return F;
 }
 
@@ -144,218 +171,24 @@ MatrixXd BLUEROV2_DO::compute_jacobian_H(VectorXd x)
 {
     // Define Jacobian of measurement model
     MatrixXd H(1, x.size());
-    H << 1, 0;
+    
     return H;
 }
 
-int main()
+int main(int argc, char **argv)
 {
-    // Define system parameters
-    double u = 1.0; // input
-    double dt = 0.1; // time step
-    int n = 2; // state dimension
-    int m = 1; // measurement dimension
-
-    // Define initial state and covariance
-    VectorXd x0(n);
-    x0 << 0.0, 0.0; // initial state
-    MatrixXd P0(n, n);
-    P0 << 1.0, 0.0,
-          0.0, 1.0; // initial covariance
-
-    // Define process noise and measurement noise covariances
-    MatrixXd Q(n, n);
-    Q << 0.1, 0.0,
-         0.0, 0.1; // process noise covariance
-    MatrixXd R(m, m);
-    R << 1.0; // measurement noise covariance
-
-    // Define time vector and measurement vector
-    int N = 100; // number of time steps
-    VectorXd t(N); // time vector
-    VectorXd y(N); // measurement vector
-    for (int i = 0; i < N; i++) {
-        t(i) = i * dt;
-        y(i) = sin(t(i)); // measurement is sin(t)
-    }
+    ros::init(argc, argv, "bluerov2_do_node");
+    ros::NodeHandle nh;
+    ros::Rate loop_rate(20);
 
     // Run EKF algorithm
-    VectorXd x = x0; // initialize state estimate
-    MatrixXd P = P0; // initialize covariance estimate
-    for (int i = 0; i < N; i++) {
-        EKF(x, P, u, VectorXd::Constant(1, y(i)), Q, R); // run EKF algorithm
-        cout << "t = " << t(i) << ", x = " << x.transpose() << endl; // print state estimate
+    BLUEROV2_DO do(nh);
+    while(ros::ok()){
+        do.EKF(); // run EKF algorithm
+        ros::spinOnce();
+        loop_rate.sleep();
     }
 
     return 0;
 }
 
-/*
-This function takes in the system parameters, state vector, control input, operating point (ref), sampling time, 
-and returns the discrete-time state-space model matrices. Note that this code assumes that the system has 6 measured states and 4 control inputs, 
-so you may need to adjust the size of the matrices accordingly for your specific system.
-x[k+1] = Ad * x[k] + Bd * u[k] + Gd 
-y[k] = Cd * x[k] 
-
-
-void BLUEROV2_DO::c2d_euler() 
-{                           
-    // Define the system model
-    
-    Cv(0,0) = -m*local_pos.r*local_pos.v + m*local_pos.q*local_pos.w;
-    Cv(1,0) = m*local_pos.r*local_pos.u - m*local_pos.p*local_pos.w;
-    Cv(2,0) = -m*local_pos.q*local_pos.u + m*local_pos.p*local_pos.v;
-    Cv(3,0) = (Iz-Iy)*local_pos.q*local_pos.r;
-    Cv(4,0) = (Ix-Iz)*local_pos.p*local_pos.r;
-    Cv(5,0) = (Iy-Ix)*local_pos.p*local_pos.q;
-    
-    t(0,0) = -control_input0.data+control_input1.data+control_input3.data;
-    t(1,0) = -control_input0.data-control_input1.data-control_input3.data;
-    t(2,0) = control_input0.data+control_input1.data-control_input3.data;
-    t(3,0) = control_input0.data-control_input1.data+control_input3.data;
-    t(4,0) = -control_input2.data;
-    t(5,0) = -control_input2.data;
-    g(0,0) = bouyancy*sin(local_euler.theta);
-    g(1,0) = -bouyancy*cos(local_euler.theta)*sin(local_euler.phi);
-    g(2,0) = -bouyancy*cos(local_euler.theta)*cos(local_euler.phi);
-    g(3,0) = m*ZG*g*cos(local_euler.theta)*sin(local_euler.phi);
-    g(4,0) = m*ZG*g*sin(local_euler.theta);
-    g(5,0) = 0;
-    // derivation of state vector using the continous-time system model
-    VectorXd f = M.inverse() * (K * t - Cv - g);
-
-    // Linearize the system around the operating point
-    MatrixXd A(12, 12);
-    A.setZero();
-    MatrixXd B(12, 4);
-    B.setZero();
-    VectorXd G(12);
-    G.setZero();
-
-    VectorXd x(12); // measured state vector
-    x << local_pos.x,local_pos.y,local_pos.z,local_euler.phi,local_euler.theta,local_euler.psi,local_pos.u,local_pos.v,local_pos.w,local_pos.p,local_pos.q,local_pos.r;
-    VectorXd x0(12); // operating point
-    x0 << ref_pos.x,ref_pos.y,ref_pos.z,ref_euler.phi,ref_euler.theta,ref_euler.psi,ref_pos.u,ref_pos.v,ref_pos.w,ref_pos.p,ref_pos.q,ref_pos.r;
-    VectorXd u0(12); //operating point
-    u0 << control_input0.data,control_input1.data,control_input2.data,control_input3.data;
-
-    for (int i = 0; i < 12; i++) {
-        VectorXd x_temp = x;
-        x_temp(i) = x0(i);
-        A.col(i) = (f - M.inverse() * (K * u - C * x_temp.segment(6, 6) - g)) / (x(i) - x0(i));
-    }
-    for (int i = 0; i < 4; i++) {
-        VectorXd u_temp = u;
-        u_temp(i) = u0(i);
-        B.col(i) = (f - M.inverse() * (K * u_temp - C * x.segment(6, 6) - g)) / (u(i) - u0(i));
-    }
-    G = f - A * x0 - B * u0;
-
-    // Discretize the continuous-time model using the Euler integration method
-    Ad = (MatrixXd::Identity(12, 12) + A * dt);
-    Bd = B * dt;
-    Gd = G * dt;
-
-    // Define the measurement equation
-    Cd = MatrixXd::Identity(6, 12);
-}
-*/
-/*
-In this function, the inputs are: 
--  z : the measurement vector, which includes all 12 states of x. 
--  A : the state transition matrix, which is a function of the system model. 
--  B : the input matrix, which is a function of the control allocation matrix. 
--  C : the measurement matrix, which maps the state vector to the measurement vector. 
--  Q : the process noise covariance matrix, which represents the uncertainty in the system model. 
--  R : the measurement noise covariance matrix, which represents the uncertainty in the measurements. 
--  x0 : the initial state estimate. 
--  P0 : the initial covariance estimate. 
--  u : the control input, which is a 4*1 matrix corresponds to surge, sway heave and yaw. 
-The output of the function is the estimate of the state vector, which includes the state variables of the system and the disturbance term.
-
-VectorXd BLUEROV2_DO::KalmanFilter(VectorXd z, MatrixXd Q, MatrixXd R, VectorXd x0, MatrixXd P0, VectorXd u)
-{
-    // Initialize variables
-    int n = x0.size(); // number of states
-    int m = z.size(); // number of measurements
-    VectorXd x = x0; // initial state estimate
-    MatrixXd P = P0; // initial covariance estimate
-    MatrixXd I = MatrixXd::Identity(n, n); // identity matrix
-    // Kalman filter loop
-    for (int i = 0; i < m; i++) {
-        // Prediction step
-        x = Ad * x + Bd * u; // state prediction
-        P = Ad * P * Ad.transpose() + Q; // covariance prediction
-        // Update step
-        VectorXd y = z - Cd * x; // measurement residual
-        MatrixXd S = Cd * P * Cd.transpose() + R; // innovation covariance
-        MatrixXd K = P * Cd.transpose() * S.inverse(); // Kalman gain
-        x = x + K * y; // state update
-        P = (I - K * Cd) * P; // covariance update
-    }
-    return x;
-}
-*/
-
-/*
-In this function, the inputs are: 
--  X : the design matrix, which includes the estimates of the state vector from the Kalman filter, as well as the control inputs. 
--  y : the response vector, which is the measurements of the system's response to external inputs. 
--  theta0 : the initial parameter estimate. 
--  lambda : the forgetting factor, which determines the rate at which past measurements are forgotten. 
-The output of the function is the estimate of the disturbance term. 
-VectorXd RecursiveLeastSquares(MatrixXd X, VectorXd y, VectorXd theta0, double lambda)
-{
-    // Initialize variables
-    int m = X.rows(); // number of samples
-    int n = X.cols(); // number of parameters
-    VectorXd theta = theta0; // initial parameter estimate
-    MatrixXd P = lambda * MatrixXd::Identity(n, n); // initial covariance estimate
-    // Recursive least squares loop
-    for (int i = 0; i < m; i++) {
-        // Update step
-        double e = y(i) - X.row(i) * theta; // prediction error
-        double k = (P * X.row(i).transpose()) / (1 + X.row(i) * P * X.row(i).transpose()); // Kalman gain
-        theta = theta + k * e; // parameter update
-        P = (P - k * X.row(i) * P) / lambda; // covariance update
-    }
-    return theta;
-}
-*/
-
-
-/*
-Kalman filter: 
-- Prediction step: 
-  - x(k|k-1) = A * x(k-1|k-1) + B * u(k-1) 
-  - P(k|k-1) = A * P(k-1|k-1) * A^T + Q 
-- Update step: 
-  - y(k) = z(k) - C * x(k|k-1) 
-  - S(k) = C * P(k|k-1) * C^T + R 
-  - K(k) = P(k|k-1) * C^T * S(k)^(-1) 
-  - x(k|k) = x(k|k-1) + K(k) * y(k) 
-  - P(k|k) = (I - K(k) * C) * P(k|k-1) 
- 
-Recursive least squares: 
-- Update step: 
-  - e(k) = y(k) - X(k) * theta(k-1) 
-  - k(k) = P(k-1) * X(k)^T * (X(k) * P(k-1) * X(k)^T + lambda)^(-1) 
-  - theta(k) = theta(k-1) + k(k) * e(k) 
-  - P(k) = (P(k-1) - k(k) * X(k) * P(k-1)) / lambda 
- 
-In these formulas, the variables are defined as follows: 
--  x : the state vector, which includes the state variables of the system and the disturbance term. 
--  u : the control input. 
--  z : the measurement vector, which includes all 12 states of x. 
--  A : the state transition matrix. 
--  B : the input matrix. 
--  C : the measurement matrix. 
--  Q : the process noise covariance matrix. 
--  R : the measurement noise covariance matrix. 
--  P : the covariance matrix. 
--  K : the Kalman gain. 
--  y : the response vector, which is the measurements of the system's response to external inputs. 
--  X : the design matrix, which includes the estimates of the state vector from the Kalman filter, as well as the control inputs. 
--  theta : the parameter vector, which represents the disturbance term. 
--  lambda : the forgetting factor, which determines the rate at which past measurements are forgotten.
-*/
