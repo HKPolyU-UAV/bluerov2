@@ -12,10 +12,27 @@ BLUEROV2_DO::BLUEROV2_DO(ros::NodeHandle& nh)
     thrust3_sub = nh.subscribe<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/3/input", 20, &BLUEROV2_DO::thrust3_cb, this);
     thrust2_sub = nh.subscribe<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/4/input", 20, &BLUEROV2_DO::thrust4_cb, this);
     thrust3_sub = nh.subscribe<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/5/input", 20, &BLUEROV2_DO::thrust5_cb, this);
-
+    
+    // Initialize system parameters
+    M_values << mass + added_mass[0], mass + added_mass[1], mass + added_mass[2], Ix + added_mass[3], Iy + added_mass[4], Iz + added_mass[5];
+    M = M_values.asDiagonal();
+    invM = M.inverse();
+    K << 0.707, 0.707, -0.707, -0.707, 0, 0,
+       0.707, -0.707, 0.707, -0.707, 0, 0,
+       0, 0, 0, 0, 1, 1,
+       0, 0, 0, 0, 0, 0,
+       0, 0, 0, 0, 0, 0,
+       0.167, -0.167, -0.175, 0.175, 0, 0;
+       
+    R_cov << pow(dt,4)/4,pow(dt,4)/4,pow(dt,4)/4,pow(dt,4)/4,pow(dt,4)/4,pow(dt,4)/4,
+            pow(dt,2),pow(dt,2),pow(dt,2),pow(dt,2),pow(dt,2),pow(dt,2),
+            1,1,1,1,1,1;
+    noise_R= R_cov.asDiagonal();
+    
     // Initialize estimate state and covariance
+    x0.fill(0);
     esti_x = x0;
-    esti_P = P0;
+    esti_P = P0;   
 }
 
 void BLUEROV2_DO::pose_gt_cb(const nav_msgs::Odometry::ConstPtr& pose)
@@ -98,14 +115,16 @@ void BLUEROV2_DO::EKF()
 {
     // get input u and measuremnet y
     u << thrust0.data, thrust1.data, thrust2.data, thrust3.data, thrust4.data, thrust5.data;
-    meas_y << ref_pos.x, ref_pos.y, ref_pos.z, ref_euler.phi, ref_euler.theta, ref_euler.psi;
+    meas_y << local_pos.x, local_pos.y, local_pos.z, local_euler.phi, local_euler.theta, local_euler.psi,
+            local_pos.u, local_pos.v, local_pos.w, local_pos.p, local_pos.q, local_pos.r,
+            thrust0.data, thrust1.data, thrust2.data, thrust3.data, thrust4.data, thrust5.data;
 
     // Define Jacobian matrices of system dynamics and measurement model
     MatrixXd F(n, n); // Jacobian of system dynamics
     MatrixXd H(m, n); // Jacobian of measurement model
 
     // Define Kalman gain matrix
-    MatrixXd K(n, m);
+    MatrixXd Kal(n, m);
 
     // Define prediction and update steps
     VectorXd x_pred(n); // predicted state
@@ -122,9 +141,9 @@ void BLUEROV2_DO::EKF()
     H = compute_jacobian_H(x_pred); // compute Jacobian of measurement model at predicted state
     y_pred = h(x_pred); // predict measurement at time k+1
     y_err = meas_y - y_pred; // compute measurement error
-    K = P_pred * H.transpose() * (H * P_pred * H.transpose() + noise_R).inverse(); // compute Kalman gain
-    esti_x = x_pred + K * y_err; // correct state estimate
-    esti_P = (MatrixXd::Identity(n, n) - K * H) * P_pred; // correct covariance estimate
+    Kal = P_pred * H.transpose() * (H * P_pred * H.transpose() + noise_R).inverse(); // compute Kalman gain
+    esti_x = x_pred + Kal * y_err; // correct state estimate
+    esti_P = (MatrixXd::Identity(n, n) - Kal * H) * P_pred; // correct covariance estimate
 }
 
 // Define system dynamics function
@@ -135,34 +154,48 @@ VectorXd BLUEROV2_DO::f(VectorXd x, VectorXd u)
 
     KAu = K*u.transpose();
     xdot << x(6),x(7),x(8),x(9),(10),(11),                          // xdot
-            invM.coeff(0)(0)*(KAu(0)+x(12)+m*x(11)*x(7)-m*x(10)*x(8)-bouyancy*sin(x(4))),    // M^-1[tau+w-C-g]
-            invM.coeff(1)(1)*(KAu(1)+x(13)-m*x(11)*x(6)+m*x(9)*x(8)+bouyancy*cos(x(4))*sin(x(3))),
-            invM.coeff(2)(2)*(KAu(2)+x(14)+m*x(10)*x(6)-m*x(9)*x(7)+bouyancy*cos(x(4))*cos(x(3))),
-            invM.coeff(3)(3)*(KAu(3)+x(15)+(Iy-Iz)*x(10)*x(11)-m*ZG*g*cos(x(4))*sin(x(3))),
-            invM.coeff(4)(4)*(KAu(4)+x(16)+(Iz-Ix)*x(9)*x(11)-m*ZG*g*sin(x(4))),
-            invM.coeff(5)(5)*(KAu(5)+x(17)-(Iy-Ix)*x(9)*x(10)),
+            invM(0,0)*(KAu(0)+x(12)+mass*x(11)*x(7)-mass*x(10)*x(8)-bouyancy*sin(x(4))),    // xddot: M^-1[tau+w-C-g]
+            invM(1,1)*(KAu(1)+x(13)-mass*x(11)*x(6)+mass*x(9)*x(8)+bouyancy*cos(x(4))*sin(x(3))),
+            invM(2,2)*(KAu(2)+x(14)+mass*x(10)*x(6)-mass*x(9)*x(7)+bouyancy*cos(x(4))*cos(x(3))),
+            invM(3,3)*(KAu(3)+x(15)+(Iy-Iz)*x(10)*x(11)-mass*ZG*g*cos(x(4))*sin(x(3))),
+            invM(4,4)*(KAu(4)+x(16)+(Iz-Ix)*x(9)*x(11)-mass*ZG*g*sin(x(4))),
+            invM(5,5)*(KAu(5)+x(17)-(Iy-Ix)*x(9)*x(10)),
+            Cp(0,0)*invM(0,0)*x(12),Cp(1,1)*invM(1,1)*x(13),Cp(2,2)*invM(2,2)*x(14),   // wdot
+            Cp(3,3)*invM(3,3)*x(15),Cp(4,4)*invM(4,4)*x(16),Cp(5,5)*invM(5,5)*x(17);   
             
-        
     return x + xdot * dt; // dt is the time step
 }
 
-// Define measurement model function
+// Define measurement model function (Z = Hx, Z: measurement vector [x,xdot,tau]; X: state vector [x,xdot,disturbance])
 VectorXd BLUEROV2_DO::h(VectorXd x)
 {
     // Define measurement model
     VectorXd y(m);
-    
-
+    y << x(0),x(1),x(2),x(3),x(4),x(5),
+        x(6),x(7),x(8),x(9),x(10),x(11),
+        Cp(0,0)*x(6)-mass*x(11)*x(7)+mass*x(10)*x(8)+bouyancy*sin(x(4))-x(12),        // M*xddot = p = c*xdot
+        Cp(1,1)*x(7)+mass*x(11)*x(6)-mass*x(9)*x(8)-bouyancy*cos(x(4))*sin(x(3))-x(13),
+        Cp(2,2)*x(8)-mass*x(10)*x(6)+mass*x(9)*x(7)-bouyancy*cos(x(4))*cos(x(3))-x(14),
+        Cp(3,3)*x(9)-(Iy-Iz)*x(10)*x(11)+mass*ZG*g*cos(x(4))*sin(x(3))-x(15),
+        Cp(4,4)*x(10)-(Iz-Ix)*x(9)*x(11)+mass*ZG*g*sin(x(4))-x(16),
+        Cp(5,5)*x(11)+(Iy-Ix)*x(9)*x(10)-x(17);
 
     return y;
 }
 
 // Define function to compute Jacobian of system dynamics at current state and input
-MatrixXd BLUEROV2_DO::compute_jacobian_F(VectorXd x, double u)
+MatrixXd BLUEROV2_DO::compute_jacobian_F(VectorXd x, VectorXd u)
 {
     // Define Jacobian of system dynamics
-    MatrixXd F(x.size(), x.size());
-    
+    MatrixXd F(n, n);
+    double h = 1e-6;                    // finite difference step size
+    VectorXd f0 = f(x, u);
+    for (int i = 0; i < n; i++){
+        VectorXd x1 = x;
+        x1(i) += h;
+        VectorXd f1 = f(x1, u);
+        F.col(i) = (f1-f0)/h;
+    }
     return F;
 }
 
@@ -170,25 +203,18 @@ MatrixXd BLUEROV2_DO::compute_jacobian_F(VectorXd x, double u)
 MatrixXd BLUEROV2_DO::compute_jacobian_H(VectorXd x)
 {
     // Define Jacobian of measurement model
-    MatrixXd H(1, x.size());
-    
+    MatrixXd H(m, m);
+    double d = 1e-6;                    // finite difference step size
+    VectorXd f0 = h(x);
+    for (int i = 0; i < n; i++){
+        VectorXd x1 = x;
+        x1(i) += d;
+        VectorXd f1 = h(x1);
+        H.col(i) = (f1-f0)/d;
+    }
+
     return H;
 }
 
-int main(int argc, char **argv)
-{
-    ros::init(argc, argv, "bluerov2_do_node");
-    ros::NodeHandle nh;
-    ros::Rate loop_rate(20);
 
-    // Run EKF algorithm
-    BLUEROV2_DO do(nh);
-    while(ros::ok()){
-        do.EKF(); // run EKF algorithm
-        ros::spinOnce();
-        loop_rate.sleep();
-    }
-
-    return 0;
-}
 

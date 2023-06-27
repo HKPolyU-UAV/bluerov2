@@ -12,7 +12,7 @@
 #include <fstream>
 #include <cmath>
 #include <vector>
-#include <Eigen/Dense>
+#include <eigen3/Eigen/Dense>
 using namespace Eigen;
 
 class BLUEROV2_DO{
@@ -45,8 +45,6 @@ class BLUEROV2_DO{
     ros::Subscriber thrust5_sub;
 
     // ROS message variables
-    //nav_msgs::Odometry pose_gt;
-    //nav_msgs::Odometry ref_pose;
     Euler local_euler;
     Euler ref_euler;
     pos local_pos;
@@ -60,7 +58,7 @@ class BLUEROV2_DO{
 
     // system parameters
     double dt = 0.05;
-    float m = 11.26;
+    float mass = 11.26;
     float Ix = 0.3;
     float Iy = 0.63;
     float Iz = 0.58;
@@ -68,20 +66,13 @@ class BLUEROV2_DO{
     float g = 9.81;
     float bouyancy = 0.2*g;
     float added_mass[6] = {1.7182,0,5.468,0,1.2481,0.4006};
-    VectorXd M_values(6);
-    M_values << m + added_mass[0], m + added_mass[1], m + added_mass[2], Ix + added_mass[3], Iy + added_mass[4], Iz + added_mass[5];
-    MatrixXd M = M_values.asDiagonal();
-    MatrixXd invM = M.inverse();
-    MatrixXd Cv(6,1);
-    MatrixXd C(6,6);
-    MatrixXd K(6, 6);
-    K << 0.707, 0.707, -0.707, -0.707, 0, 0,
-       0.707, -0.707, 0.707, -0.707, 0, 0,
-       0, 0, 0, 0, 1, 1,
-       0, 0, 0, 0, 0, 0,
-       0, 0, 0, 0, 0, 0,
-       0.167, -0.167, -0.175, 0.175, 0, 0;
-    VectorXd KAu(6);
+    Matrix<float,1,6> M_values;
+    Matrix<float,6,6> M;
+    Matrix<float,6,6> invM;
+    Matrix<float,6,1> Cv;
+    Matrix<float,6,6> C;
+    Matrix<float,6,6> K;
+    Matrix<float,1,6> KAu;
 
     // other variables
     tf::Quaternion tf_quaternion;
@@ -90,23 +81,20 @@ class BLUEROV2_DO{
     std::string yaml_path;
 
     // Define system parameters
-    VectorXd u(6); // input
-    double dt = 0.05; // time step
+    Matrix<float,1,6> u; // input
     int n = 18; // state dimension
     int m = 18; // measurement dimension
-    VectorXd meas_y(m); //measurement vector
+    Matrix<float,1,18> meas_y; //measurement vector
 
     // Define initial state and covariance
-    VectorXd x0(n);
-    X0.fill(0);
-    //x0 << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0; // initial state
-    
-    P0 << MatrixXd::Identity(n,n);  // initial covariance
-    VectorXd esti_x(n);
-    MatrixXd esti_P(n, n);
+    Matrix<float,1,18> x0;
+    MatrixXd P0 = MatrixXd::Identity(m, m);
+    Matrix<float,1,18> esti_x;
+    Matrix<float,18,18> esti_P;
 
     // Define process noise and measurement noise covariances
-    MatrixXd noise_Q(n, n);
+    Matrix<float,1,18> R_cov;
+    Matrix<float,18,18> noise_Q;
     /*
     noise_Q << 0.25*dt^4, 0.5*dt^3, 0, 0, 0, 0,
                 0.5*dt^3, dt^2, 0, 0, 0, 0,
@@ -115,15 +103,9 @@ class BLUEROV2_DO{
                 0, 0, 0, 0, 0.25*dt^4, 0.5*dt^3,
                 0, 0, 0, 0, 0.5*dt^3, dt^2; // process noise covariance
     */
-    MatrixXd noise_R(m, m);
-    /*
-    noise_R << dt, 0, 0, 0, 0, 0,
-                0, dt, 0, 0, 0, 0,
-                0, 0, dt, 0, 0, 0,
-                0, 0, 0, dt, 0, 0,
-                0, 0, 0, 0, dt, 0,
-                0, 0, 0, 0, 0, dt; // measurement noise covariance
-    */
+    MatrixXd noise_R = MatrixXd::Identity(m, m)*dt;
+    MatrixXd Cp = MatrixXd::Identity(6, 6);
+    
     public:
 
     BLUEROV2_DO(ros::NodeHandle&);
@@ -135,13 +117,11 @@ class BLUEROV2_DO{
     void thrust3_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg); 
     void thrust4_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg); 
     void thrust5_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg); 
-    // void c2d_euler();
-    // VectorXd KalmanFilter(VectorXd z, MatrixXd Q, MatrixXd R, VectorXd x0, MatrixXd P0, VectorXd u);
 
     void EKF();
     VectorXd f(VectorXd x, VectorXd u);
     VectorXd h(VectorXd x);
-    MatrixXd compute_jacobian_F(VectorXd x, double u);
+    MatrixXd compute_jacobian_F(VectorXd x, VectorXd u);
     MatrixXd compute_jacobian_H(VectorXd x);
 };
 
