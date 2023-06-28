@@ -34,21 +34,20 @@ class BLUEROV2_DO{
             double r;
         };
         
-    // ROS subsriber
+    // ROS subsriber & publisher
     ros::Subscriber pose_gt_sub;
-    //ros::Subscriber ref_pose_sub;
     ros::Subscriber thrust0_sub;
     ros::Subscriber thrust1_sub;
     ros::Subscriber thrust2_sub;
     ros::Subscriber thrust3_sub;
     ros::Subscriber thrust4_sub;
     ros::Subscriber thrust5_sub;
+    ros::Publisher esti_pose_pub;
 
     // ROS message variables
     Euler local_euler;
-    //Euler ref_euler;
     pos local_pos;
-    //pos ref_pos;
+    nav_msgs::Odometry esti_pose;
     uuv_gazebo_ros_plugins_msgs::FloatStamped thrust0;
     uuv_gazebo_ros_plugins_msgs::FloatStamped thrust1;
     uuv_gazebo_ros_plugins_msgs::FloatStamped thrust2;
@@ -96,14 +95,6 @@ class BLUEROV2_DO{
     // Define process noise and measurement noise covariances
     Matrix<double,1,18> Q_cov;
     Matrix<double,18,18> noise_Q;
-    /*
-    noise_Q << 0.25*dt^4, 0.5*dt^3, 0, 0, 0, 0,
-                0.5*dt^3, dt^2, 0, 0, 0, 0,
-                0, 0, 0.25*dt^4, 0.5*dt^3, 0, 0,
-                0, 0, 0,5*dt^3, dt^2, 0, 0,
-                0, 0, 0, 0, 0.25*dt^4, 0.5*dt^3,
-                0, 0, 0, 0, 0.5*dt^3, dt^2; // process noise covariance
-    */
     MatrixXd noise_R = MatrixXd::Identity(m, m)*dt;
     MatrixXd Cp = MatrixXd::Identity(6, 6);
     
@@ -111,7 +102,6 @@ class BLUEROV2_DO{
 
     BLUEROV2_DO(ros::NodeHandle&);
     void pose_gt_cb(const nav_msgs::Odometry::ConstPtr& msg);
-    void ref_pose_cb(const nav_msgs::Odometry::ConstPtr& msg);
     void thrust0_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg); 
     void thrust1_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg); 
     void thrust2_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg); 

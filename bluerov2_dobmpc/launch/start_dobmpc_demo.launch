@@ -32,20 +32,20 @@
 
 
 
-    <!-- Start the MPC controller with its default parameters for the bluerov2 vehicle  
+    <!-- Start the MPC controller with its default parameters for the bluerov2 vehicle --> 
     <include file="$(find bluerov2_dobmpc)/launch/dob.launch"/>
-    -->
-    <!-- Start the PID controller with its default parameters for the bluerov2 vehicle  -->
+    
+    <!-- Start the PID controller with its default parameters for the bluerov2 vehicle  
     <include file="$(find bluerov2_control)/launch/rov_pid_controller.launch"> 
         <arg name="uuv_name" value="bluerov2"/> 
         <arg name="model_name" value="bluerov2"/> 
         <arg name="use_ned_frame" value="$(arg use_ned_frame)"/> 
     </include> 
-    
+    -->
     <!-- Start disturbance observer --> 
     <include file ="$(find bluerov2_dobmpc)/launch/do.launch"/>
 
-    <!-- Generate Gauss-Markov models for producing random current velocities and angles -->
+    <!-- Generate Gauss-Markov models for producing random current velocities and angles 
     <include file="$(find bluerov2_control)/launch/set_gm_current.launch">
         <arg name="component" default="$(arg component_vel)"/>
         <arg name="mean" default="$(arg mean_vel)"/>
@@ -54,7 +54,17 @@
         <arg name="noise" default="$(arg noise_vel)"/>
         <arg name="mu" default="$(arg mu_vel)"/>
     </include>
+    
 
+    <include file="$(find uuv_control_utils)/launch/apply_body_wrench.launch">
+        <arg name="uuv_name" value="bluerov2"/>
+        <arg name="starting_time" default="0"/>
+        <arg name="duration" default="1000"/>
+        <arg name="force_x" default="10"/>
+        <arg name="force_y" default="0"/>
+        <arg name="force_z" default="0"/>
+    </include>
+    -->
     <!-- Real-time 3d plot 
     <node
         name="plotter"

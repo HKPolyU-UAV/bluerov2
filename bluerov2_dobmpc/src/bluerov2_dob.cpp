@@ -361,7 +361,7 @@ void BLUEROV2_DOB::solve(){
     control_input1_pub.publish(control_input1);
     control_input2_pub.publish(control_input2);
     control_input3_pub.publish(control_input3);
-
+    /*
     // print reference, current pose, control inputs, thrusts...
     if(cout_counter > 2){ //reduce cout rate
         std::cout << "------------------------------------------------------------------------------------------------" << std::endl;
@@ -378,6 +378,7 @@ void BLUEROV2_DOB::solve(){
     else{
         cout_counter++;
         }
+    */
 
     
 }
