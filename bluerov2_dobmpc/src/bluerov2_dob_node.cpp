@@ -8,14 +8,12 @@ int main(int argc, char **argv)
     ros::Rate loop_rate(20);
 
     BLUEROV2_DOB br(nh);
-    //std::cout<< "br constructed"<<std::endl;
     while(ros::ok()){
-        //std::cout<< "ros::ok, go to run"<<std::endl;
         if(br.is_start==true)
         {
             br.solve();
+            br.EKF();
         }
-        //std::cout<< "run once"<<std::endl;
         ros::spinOnce();
         loop_rate.sleep();
     }

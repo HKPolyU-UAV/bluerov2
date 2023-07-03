@@ -55,7 +55,7 @@ class BLUEROV2_DO{
     uuv_gazebo_ros_plugins_msgs::FloatStamped thrust4;
     uuv_gazebo_ros_plugins_msgs::FloatStamped thrust5;
 
-    // system parameters
+    // dynamics parameters
     double dt = 0.05;
     double mass = 11.26;
     double Ix = 0.3;

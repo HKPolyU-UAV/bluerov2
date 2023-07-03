@@ -31,8 +31,8 @@
 
 
 
-    <!-- Start the MPC controller with its default parameters for the bluerov2 vehicle 
-    <include file="$(find bluerov2_dobmpc)/launch/dob.launch"/> -->
+    <!-- Start the MPC controller with its default parameters for the bluerov2 vehicle -->
+    <include file="$(find bluerov2_dobmpc)/launch/dob.launch"/> 
     
     <!-- Start the PID controller with its default parameters for the bluerov2 vehicle  
     <include file="$(find bluerov2_control)/launch/rov_pid_controller.launch"> 
@@ -47,8 +47,8 @@
         <arg name="max_forward_speed" value="0.6"/>
     </include>
     -->
-    <!-- Start disturbance observer --> 
-    <include file ="$(find bluerov2_dobmpc)/launch/do.launch"/>
+    <!-- Start disturbance observer 
+    <include file ="$(find bluerov2_dobmpc)/launch/do.launch"/>-->
 
     <!-- Generate Gauss-Markov models for producing random current velocities and angles 
     <include file="$(find bluerov2_control)/launch/set_gm_current.launch">

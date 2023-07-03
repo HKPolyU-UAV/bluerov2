@@ -28,6 +28,8 @@
 #include "bluerov2_model/bluerov2_model.h"
 #include "acados_solver_bluerov2.h"
 
+using namespace Eigen;
+
 class BLUEROV2_DOB{
     private:
 
@@ -70,6 +72,18 @@ class BLUEROV2_DOB{
         double psi;
     };
 
+    struct pos{
+            double x;
+            double y;
+            double z;
+            double u;
+            double v;
+            double w;
+            double p;
+            double q;
+            double r;
+        };
+
     struct SolverParam{
         double disturbance_x;
         double disturbance_y;
@@ -87,9 +101,10 @@ class BLUEROV2_DOB{
     uuv_gazebo_ros_plugins_msgs::FloatStamped thrust4;
     uuv_gazebo_ros_plugins_msgs::FloatStamped thrust5;
     Euler local_euler;
-    nav_msgs::Odometry pose_gt;
+    pos local_pos;
     nav_msgs::Odometry ref_pose;
     nav_msgs::Odometry error_pose;
+    nav_msgs::Odometry esti_pose;
 
     uuv_gazebo_ros_plugins_msgs::FloatStamped control_input0;
     uuv_gazebo_ros_plugins_msgs::FloatStamped control_input1;
@@ -104,7 +119,40 @@ class BLUEROV2_DOB{
     int acados_status;   
     bluerov2_solver_capsule * mpc_capsule = bluerov2_acados_create_capsule();
 
-    // parameter
+    // dynamics parameters
+    double dt = 0.05;
+    double mass = 11.26;
+    double Ix = 0.3;
+    double Iy = 0.63;
+    double Iz = 0.58;
+    double ZG = 0.02;
+    double g = 9.81;
+    double bouyancy = 0.2*g;
+    double added_mass[6] = {1.7182,0,5.468,0,1.2481,0.4006};
+    Matrix<double,1,6> M_values;
+    Matrix<double,6,6> M;
+    Matrix<double,6,6> invM;
+    Matrix<double,6,1> Cv;
+    Matrix<double,6,6> C;
+    Matrix<double,6,6> K;
+    Matrix<double,6,1> KAu;
+
+    // EKF parameters
+    Matrix<double,6,1> meas_u;      // inputs
+    int n = 18;                     // state dimension
+    int m = 18;                     // measurement dimension
+    Matrix<double,18,1> meas_y;     // measurement vector
+    Matrix<double,1,18> x0;         // initial states
+    MatrixXd P0 = MatrixXd::Identity(m, m);     // initial covariance
+    Matrix<double,18,1> esti_x;     // estimate states
+    Matrix<double,18,18> esti_P;    // estimate covariance
+    Matrix<double,1,18> Q_cov;      // process noise value
+    Matrix<double,18,18> noise_Q;   // process noise matrix
+    MatrixXd noise_R = MatrixXd::Identity(m, m)*dt; // measurement noise matrix
+    Matrix<double,1,6> cp;          
+    Matrix<double,6,6> Cp;          // constant matrix to replace xddot
+    
+    // Acados parameter
     std::string REF_TRAJ;
     bool AUTO_YAW;
     SolverParam solver_param;
@@ -141,6 +189,8 @@ class BLUEROV2_DOB{
     ros::Publisher control_input2_pub;
     ros::Publisher control_input3_pub;
 
+    ros::Publisher esti_pose_pub;
+
     // Trajectory variables
     std::vector<std::vector<double>> trajectory;
     int line_number = 0;
@@ -150,13 +200,21 @@ class BLUEROV2_DOB{
 
     bool is_start;
 
-    BLUEROV2_DOB(ros::NodeHandle&);
-    Euler q2rpy(const geometry_msgs::Quaternion&);
-    geometry_msgs::Quaternion rpy2q(const Euler&);
-    int readDataFromFile(const char* fileName, std::vector<std::vector<double>> &data);
-    void ref_cb(int line_to_read);
-    void pose_cb(const nav_msgs::Odometry::ConstPtr& msg);  
-    void solve();
+    BLUEROV2_DOB(ros::NodeHandle&);                         // constructor
+    Euler q2rpy(const geometry_msgs::Quaternion&);          // quaternion to euler angle
+    geometry_msgs::Quaternion rpy2q(const Euler&);          // euler angle to quaternion
+    int readDataFromFile(const char* fileName, std::vector<std::vector<double>> &data);     // read trajectory
+    void ref_cb(int line_to_read);                          // fill N steps reference points into acados
+    void pose_cb(const nav_msgs::Odometry::ConstPtr& msg);  // get current position
+    void solve();                                           // solve MPC
+
+    // disturbance observer functions
+    void EKF();                                             // EKF predict and update
+    MatrixXd f(MatrixXd x, MatrixXd u);                     // system process model
+    MatrixXd h(MatrixXd x);                                 // measurement model
+    MatrixXd compute_jacobian_F(MatrixXd x, MatrixXd u);    // compute Jacobian of system process model
+    MatrixXd compute_jacobian_H(MatrixXd x);                // compute Jacobian of measurement model
+
 };
 
 #endif
