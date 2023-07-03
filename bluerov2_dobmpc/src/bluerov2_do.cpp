@@ -2,8 +2,8 @@
 
 BLUEROV2_DO::BLUEROV2_DO(ros::NodeHandle& nh)
 {
-    nh.getParam("bluerov2_do_node/yaml_name",YAML_NAME);
-    yaml_path = package_path + YAML_NAME;
+    //nh.getParam("bluerov2_do_node/yaml_name",YAML_NAME);
+    //yaml_path = package_path + YAML_NAME;
     pose_gt_sub = nh.subscribe<nav_msgs::Odometry>("/bluerov2/pose_gt", 20, &BLUEROV2_DO::pose_gt_cb, this);
     thrust0_sub = nh.subscribe<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/0/input", 20, &BLUEROV2_DO::thrust0_cb, this);
     thrust1_sub = nh.subscribe<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/1/input", 20, &BLUEROV2_DO::thrust1_cb, this);
@@ -26,17 +26,23 @@ BLUEROV2_DO::BLUEROV2_DO(ros::NodeHandle& nh)
        
     Q_cov << pow(dt,4)/4,pow(dt,4)/4,pow(dt,4)/4,pow(dt,4)/4,pow(dt,4)/4,pow(dt,4)/4,
             pow(dt,2),pow(dt,2),pow(dt,2),pow(dt,2),pow(dt,2),pow(dt,2),
-            1,1,1,1,1,1;
+            pow(dt,2),pow(dt,2),pow(dt,2),pow(dt,2),pow(dt,2),pow(dt,2);
     noise_Q= Q_cov.asDiagonal();
     
     // Initialize estimate state and covariance
-    x0.fill(0);
-    esti_x = x0;
-    esti_P = P0;   
+    esti_x << 0,0,-20,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0;
+    esti_P = P0;
+
+    // constant matrix 
+    cp << 7.1,8.6,7,7,7,7;
+    Cp = cp.asDiagonal();
+
+    is_start = false;
 }
 
 void BLUEROV2_DO::pose_gt_cb(const nav_msgs::Odometry::ConstPtr& pose)
 {
+    is_start = true;
     // get linear position x, y, z
     local_pos.x = pose->pose.pose.position.x;
     local_pos.y = pose->pose.pose.position.y;
@@ -94,9 +100,13 @@ void BLUEROV2_DO::EKF()
     
     // get input u and measuremnet y
     u << thrust0.data, thrust1.data, thrust2.data, thrust3.data, thrust4.data, thrust5.data;
+    /*
     meas_y << local_pos.x, local_pos.y, local_pos.z, local_euler.phi, local_euler.theta, local_euler.psi,
             local_pos.u, local_pos.v, local_pos.w, local_pos.p, local_pos.q, local_pos.r,
-            thrust0.data, thrust1.data, thrust2.data, thrust3.data, thrust4.data, thrust5.data;
+            thrust0.data, thrust1.data, thrust2.data, thrust3.data, thrust4.data, thrust5.data;*/
+    meas_y << local_pos.x, local_pos.y, local_pos.z, local_euler.phi, local_euler.theta, local_euler.psi,
+            local_pos.u, local_pos.v, local_pos.w, local_pos.p, local_pos.q, local_pos.r,
+            0,0,0,0,0,0;
     
     // Define Jacobian matrices of system dynamics and measurement model
     Matrix<double,18,18> F; // Jacobian of system dynamics
@@ -157,6 +167,7 @@ void BLUEROV2_DO::EKF()
         std::cout << "esti_u: " << esti_x(6) << "  esti_v: " << esti_x(7) << "  esti_w: " << esti_x(8) << " esti_p: " << esti_x(9) << "  esti_q: " << esti_x(10) << "  esti_r: " << esti_x(11) <<std::endl;
         std::cout << "disturbance x: " << esti_x(12) << "    disturbance y: " << esti_x(13) << "    disturbance z: " << esti_x(14) << std::endl;
         std::cout << "disturbance phi: " << esti_x(15) << "    disturbance theta: " << esti_x(16) << "    disturbance psi: " << esti_x(17) << std::endl;
+        std::cout << "ros_time:   " << std::fixed << ros::Time::now().toSec() << std::endl;
         std::cout << "---------------------------------------------------------------------------------------------------------------------" << std::endl;
         cout_counter = 0;
     }
@@ -178,12 +189,18 @@ MatrixXd BLUEROV2_DO::f(MatrixXd x, MatrixXd u)
             x(9) + (sin(x(5))*sin(x(4))/cos(x(4)))*x(10) + cos(x(3))*sin(x(4))/cos(x(4))*x(11),
             (cos(x(3)))*x(10) + (sin(x(3)))*x(11),
             (sin(x(3))/cos(x(4)))*x(10) + (cos(x(3))/cos(x(4)))*x(11),
-            invM(0,0)*(KAu(0)+x(12)+mass*x(11)*x(7)-mass*x(10)*x(8)-bouyancy*sin(x(4))),    // xddot: M^-1[tau+w-C-g]
-            invM(1,1)*(KAu(1)+x(13)-mass*x(11)*x(6)+mass*x(9)*x(8)+bouyancy*cos(x(4))*sin(x(3))),
-            invM(2,2)*(KAu(2)+x(14)+mass*x(10)*x(6)-mass*x(9)*x(7)+bouyancy*cos(x(4))*cos(x(3))),
-            invM(3,3)*(KAu(3)+x(15)+(Iy-Iz)*x(10)*x(11)-mass*ZG*g*cos(x(4))*sin(x(3))),
-            invM(4,4)*(KAu(4)+x(16)+(Iz-Ix)*x(9)*x(11)-mass*ZG*g*sin(x(4))),
-            invM(5,5)*(KAu(5)+x(17)-(Iy-Ix)*x(9)*x(10)),
+            invM(0,0)*(mass*x(11)*x(7)-mass*x(10)*x(8)-bouyancy*sin(x(4))),    // xddot: M^-1[tau+w-C-g]
+            invM(1,1)*(-mass*x(11)*x(6)+mass*x(9)*x(8)+bouyancy*cos(x(4))*sin(x(3))),
+            invM(2,2)*(mass*x(10)*x(6)-mass*x(9)*x(7)+bouyancy*cos(x(4))*cos(x(3))),
+            invM(3,3)*((Iy-Iz)*x(10)*x(11)-mass*ZG*g*cos(x(4))*sin(x(3))),
+            invM(4,4)*((Iz-Ix)*x(9)*x(11)-mass*ZG*g*sin(x(4))),
+            invM(5,5)*(-(Iy-Ix)*x(9)*x(10)),
+            // invM(0,0)*(KAu(0)+mass*x(11)*x(7)-mass*x(10)*x(8)-bouyancy*sin(x(4))),    // xddot: M^-1[tau+w-C-g]
+            // invM(1,1)*(KAu(1)-mass*x(11)*x(6)+mass*x(9)*x(8)+bouyancy*cos(x(4))*sin(x(3))),
+            // invM(2,2)*(KAu(2)+mass*x(10)*x(6)-mass*x(9)*x(7)+bouyancy*cos(x(4))*cos(x(3))),
+            // invM(3,3)*(KAu(3)+(Iy-Iz)*x(10)*x(11)-mass*ZG*g*cos(x(4))*sin(x(3))),
+            // invM(4,4)*(KAu(4)+(Iz-Ix)*x(9)*x(11)-mass*ZG*g*sin(x(4))),
+            // invM(5,5)*(KAu(5)-(Iy-Ix)*x(9)*x(10)),
             Cp(0,0)*invM(0,0)*x(12),Cp(1,1)*invM(1,1)*x(13),Cp(2,2)*invM(2,2)*x(14),   // wdot
             Cp(3,3)*invM(3,3)*x(15),Cp(4,4)*invM(4,4)*x(16),Cp(5,5)*invM(5,5)*x(17);   
             
@@ -212,14 +229,15 @@ MatrixXd BLUEROV2_DO::compute_jacobian_F(MatrixXd x, MatrixXd u)
 {
     // Define Jacobian of system dynamics
     Matrix<double,18,18> F;
-    double h = 1e-6;                    // finite difference step size
+    double d = 1e-6;                    // finite difference step size
     VectorXd f0 = f(x, u);
     for (int i = 0; i < n; i++){
         VectorXd x1 = x;
-        x1(i) += h;
+        x1(i) += d;
         VectorXd f1 = f(x1, u);
-        F.col(i) = (f1-f0)/h;
+        F.col(i) = (f1-f0)/d;
     }
+    
     return F;
 }
 
@@ -236,7 +254,7 @@ MatrixXd BLUEROV2_DO::compute_jacobian_H(MatrixXd x)
         VectorXd f1 = h(x1);
         H.col(i) = (f1-f0)/d;
     }
-
+    //std::cout<< H << std::endl;
     return H;
 }
 

@@ -18,7 +18,6 @@
     <arg name="mu_vel" default="0.0"/>
 
     <!-- Initialize the Gazebo world  -->
-    <!--<include file="$(find uuv_gazebo_worlds)/launch/mangalia.launch"/>-->
     <include file="$(find bluerov2_description)/launch/ocean_waves.launch"/>
 
     <!-- Add the BlueROV2 vehicle to the world  -->
@@ -32,8 +31,8 @@
 
 
 
-    <!-- Start the MPC controller with its default parameters for the bluerov2 vehicle --> 
-    <include file="$(find bluerov2_dobmpc)/launch/dob.launch"/>
+    <!-- Start the MPC controller with its default parameters for the bluerov2 vehicle 
+    <include file="$(find bluerov2_dobmpc)/launch/dob.launch"/> -->
     
     <!-- Start the PID controller with its default parameters for the bluerov2 vehicle  
     <include file="$(find bluerov2_control)/launch/rov_pid_controller.launch"> 
@@ -41,6 +40,12 @@
         <arg name="model_name" value="bluerov2"/> 
         <arg name="use_ned_frame" value="$(arg use_ned_frame)"/> 
     </include> 
+    <include file="$(find uuv_control_utils)/launch/start_circular_trajectory.launch">
+        <arg name="uuv_name" value="bluerov2"/>
+        <arg name="radius" value="5"/>
+        <arg name="center_z" value="-25"/>
+        <arg name="max_forward_speed" value="0.6"/>
+    </include>
     -->
     <!-- Start disturbance observer --> 
     <include file ="$(find bluerov2_dobmpc)/launch/do.launch"/>
@@ -54,17 +59,17 @@
         <arg name="noise" default="$(arg noise_vel)"/>
         <arg name="mu" default="$(arg mu_vel)"/>
     </include>
-    
+    -->
 
     <include file="$(find uuv_control_utils)/launch/apply_body_wrench.launch">
         <arg name="uuv_name" value="bluerov2"/>
-        <arg name="starting_time" default="0"/>
-        <arg name="duration" default="1000"/>
+        <arg name="starting_time" default="10"/>
+        <arg name="duration" default="10000"/>
         <arg name="force_x" default="10"/>
         <arg name="force_y" default="0"/>
         <arg name="force_z" default="0"/>
     </include>
-    -->
+    
     <!-- Real-time 3d plot 
     <node
         name="plotter"

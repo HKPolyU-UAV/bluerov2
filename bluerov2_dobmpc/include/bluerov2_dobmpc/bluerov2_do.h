@@ -96,9 +96,15 @@ class BLUEROV2_DO{
     Matrix<double,1,18> Q_cov;
     Matrix<double,18,18> noise_Q;
     MatrixXd noise_R = MatrixXd::Identity(m, m)*dt;
-    MatrixXd Cp = MatrixXd::Identity(6, 6);
+
+    // constant matrix
+    Matrix<double,1,6> cp;
+    Matrix<double,6,6> Cp;
+
     
     public:
+
+    bool is_start;
 
     BLUEROV2_DO(ros::NodeHandle&);
     void pose_gt_cb(const nav_msgs::Odometry::ConstPtr& msg);

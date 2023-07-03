@@ -11,7 +11,9 @@ int main(int argc, char **argv)
     BLUEROV2_DO brdo(nh);
 
     while(ros::ok()){
-        brdo.EKF(); // run EKF algorithm
+        if(brdo.is_start==true){
+            brdo.EKF(); // run EKF algorithm
+        }
         ros::spinOnce();
         loop_rate.sleep();
     }

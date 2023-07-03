@@ -422,11 +422,11 @@ void bluerov2_acados_create_5_set_nlp_in(bluerov2_solver_capsule* capsule, const
    double* W_0 = calloc(NY0*NY0, sizeof(double));
     // change only the non-zero elements:
     W_0[0+(NY0) * 0] = 105;
-    W_0[1+(NY0) * 1] = 110;
+    W_0[1+(NY0) * 1] = 80;
     W_0[2+(NY0) * 2] = 150;
     W_0[3+(NY0) * 3] = 10;
     W_0[4+(NY0) * 4] = 10;
-    W_0[5+(NY0) * 5] = 100;
+    W_0[5+(NY0) * 5] = 120;
     W_0[6+(NY0) * 6] = 10;
     W_0[7+(NY0) * 7] = 10;
     W_0[8+(NY0) * 8] = 10;
@@ -434,7 +434,7 @@ void bluerov2_acados_create_5_set_nlp_in(bluerov2_solver_capsule* capsule, const
     W_0[10+(NY0) * 10] = 10;
     W_0[11+(NY0) * 11] = 10;
     W_0[12+(NY0) * 12] = 0.002;
-    W_0[13+(NY0) * 13] = 0.003;
+    W_0[13+(NY0) * 13] = 0.008;
     W_0[14+(NY0) * 14] = 0.0001;
     W_0[15+(NY0) * 15] = 0.0001;
     ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, 0, "W", W_0);
@@ -442,11 +442,11 @@ void bluerov2_acados_create_5_set_nlp_in(bluerov2_solver_capsule* capsule, const
     double* W = calloc(NY*NY, sizeof(double));
     // change only the non-zero elements:
     W[0+(NY) * 0] = 105;
-    W[1+(NY) * 1] = 110;
+    W[1+(NY) * 1] = 80;
     W[2+(NY) * 2] = 150;
     W[3+(NY) * 3] = 10;
     W[4+(NY) * 4] = 10;
-    W[5+(NY) * 5] = 100;
+    W[5+(NY) * 5] = 120;
     W[6+(NY) * 6] = 10;
     W[7+(NY) * 7] = 10;
     W[8+(NY) * 8] = 10;
@@ -454,7 +454,7 @@ void bluerov2_acados_create_5_set_nlp_in(bluerov2_solver_capsule* capsule, const
     W[10+(NY) * 10] = 10;
     W[11+(NY) * 11] = 10;
     W[12+(NY) * 12] = 0.002;
-    W[13+(NY) * 13] = 0.003;
+    W[13+(NY) * 13] = 0.008;
     W[14+(NY) * 14] = 0.0001;
     W[15+(NY) * 15] = 0.0001;
 
@@ -466,11 +466,11 @@ void bluerov2_acados_create_5_set_nlp_in(bluerov2_solver_capsule* capsule, const
     double* W_e = calloc(NYN*NYN, sizeof(double));
     // change only the non-zero elements:
     W_e[0+(NYN) * 0] = 105;
-    W_e[1+(NYN) * 1] = 110;
+    W_e[1+(NYN) * 1] = 80;
     W_e[2+(NYN) * 2] = 150;
     W_e[3+(NYN) * 3] = 10;
     W_e[4+(NYN) * 4] = 10;
-    W_e[5+(NYN) * 5] = 100;
+    W_e[5+(NYN) * 5] = 120;
     W_e[6+(NYN) * 6] = 10;
     W_e[7+(NYN) * 7] = 10;
     W_e[8+(NYN) * 8] = 10;
