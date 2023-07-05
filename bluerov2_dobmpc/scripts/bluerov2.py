@@ -61,7 +61,7 @@ def export_bluerov2_model() -> AcadosModel:
     Iz = 0.58
     ZG = 0.02
     g = 9.81
-    bouyancy = 0.2*g                                # net bouyancy forcy
+    bouyancy = -0.66                                # net bouyancy forcy
     
     added_mass = np.array([1.7182,0,5.468,0,1.2481,0.4006])
     M = np.diag([m+added_mass[0], m+added_mass[1], m+added_mass[2], Ix+added_mass[3], Iy+added_mass[4], Iz+added_mass[5]]) # M_RB + M_A

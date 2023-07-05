@@ -10,6 +10,7 @@
 #include <uuv_gazebo_ros_plugins_msgs/FloatStamped.h>
 #include <nav_msgs/Odometry.h>
 #include <bluerov2_dobmpc/Reference.h>
+#include <gazebo_msgs/GetLinkState.h>
 
 #include <iostream>
 #include <fstream>
@@ -93,6 +94,15 @@ class BLUEROV2_DOB{
         double disturbance_psi;
     };
 
+    struct thrust{
+        double t0;
+        double t1;
+        double t2;
+        double t3;
+        double t4;
+        double t5;
+    };
+
     // ROS message variables
     uuv_gazebo_ros_plugins_msgs::FloatStamped thrust0;
     uuv_gazebo_ros_plugins_msgs::FloatStamped thrust1;
@@ -102,10 +112,12 @@ class BLUEROV2_DOB{
     uuv_gazebo_ros_plugins_msgs::FloatStamped thrust5;
     Euler local_euler;
     pos local_pos;
+    thrust current_t;
     nav_msgs::Odometry ref_pose;
     nav_msgs::Odometry error_pose;
     nav_msgs::Odometry esti_pose;
-
+    nav_msgs::Odometry esti_disturbance;
+    std::vector<ros::Subscriber> subscribers;
     uuv_gazebo_ros_plugins_msgs::FloatStamped control_input0;
     uuv_gazebo_ros_plugins_msgs::FloatStamped control_input1;
     uuv_gazebo_ros_plugins_msgs::FloatStamped control_input2;
@@ -127,7 +139,7 @@ class BLUEROV2_DOB{
     double Iz = 0.58;
     double ZG = 0.02;
     double g = 9.81;
-    double bouyancy = 0.2*g;
+    double bouyancy = -0.66;
     double added_mass[6] = {1.7182,0,5.468,0,1.2481,0.4006};
     Matrix<double,1,6> M_values;
     Matrix<double,6,6> M;
@@ -190,6 +202,7 @@ class BLUEROV2_DOB{
     ros::Publisher control_input3_pub;
 
     ros::Publisher esti_pose_pub;
+    ros::Publisher esti_disturbance_pub;
 
     // Trajectory variables
     std::vector<std::vector<double>> trajectory;
@@ -209,6 +222,7 @@ class BLUEROV2_DOB{
     void solve();                                           // solve MPC
 
     // disturbance observer functions
+    void thrusts_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg, int index); // read current thrusts
     void EKF();                                             // EKF predict and update
     MatrixXd f(MatrixXd x, MatrixXd u);                     // system process model
     MatrixXd h(MatrixXd x);                                 // measurement model

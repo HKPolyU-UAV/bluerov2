@@ -8,6 +8,11 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <nav_msgs/Odometry.h>
 #include <uuv_gazebo_ros_plugins_msgs/FloatStamped.h>
+// #include <gazebo_msgs/srv/ApplyBodyWrench.h>
+#include <geometry_msgs/Point.h>
+#include <geometry_msgs/Wrench.h>
+#include <geometry_msgs/Vector3.h>
+#include <sensor_msgs/Imu.h>
 #include <iostream>
 #include <fstream>
 #include <cmath>
@@ -18,42 +23,47 @@ using namespace Eigen;
 class BLUEROV2_DO{
     private:
     struct Euler{
-            double phi;
-            double theta;
-            double psi;
-        };
+        double phi;
+        double theta;
+        double psi;
+    };
     struct pos{
-            double x;
-            double y;
-            double z;
-            double u;
-            double v;
-            double w;
-            double p;
-            double q;
-            double r;
+        double x;
+        double y;
+        double z;
+        double u;
+        double v;
+        double w;
+        double p;
+        double q;
+        double r;
         };
+    // struct acc{
+    //     double x;
+    //     double y;
+    //     double z;
+    // };
         
-    // ROS subsriber & publisher
+    // ROS subsriber & publisher & service
     ros::Subscriber pose_gt_sub;
-    ros::Subscriber thrust0_sub;
-    ros::Subscriber thrust1_sub;
-    ros::Subscriber thrust2_sub;
-    ros::Subscriber thrust3_sub;
-    ros::Subscriber thrust4_sub;
-    ros::Subscriber thrust5_sub;
+    // ros::Subscriber imu_sub;
     ros::Publisher esti_pose_pub;
+    ros::Publisher esti_disturbance_pub;
+    ros::ServiceClient client;
 
     // ROS message variables
     Euler local_euler;
     pos local_pos;
+    // acc local_acc;
     nav_msgs::Odometry esti_pose;
+    nav_msgs::Odometry esti_disturbance;
     uuv_gazebo_ros_plugins_msgs::FloatStamped thrust0;
     uuv_gazebo_ros_plugins_msgs::FloatStamped thrust1;
     uuv_gazebo_ros_plugins_msgs::FloatStamped thrust2;
     uuv_gazebo_ros_plugins_msgs::FloatStamped thrust3;
     uuv_gazebo_ros_plugins_msgs::FloatStamped thrust4;
     uuv_gazebo_ros_plugins_msgs::FloatStamped thrust5;
+    std::vector<ros::Subscriber> subscribers;
 
     // dynamics parameters
     double dt = 0.05;
@@ -63,7 +73,7 @@ class BLUEROV2_DO{
     double Iz = 0.58;
     double ZG = 0.02;
     double g = 9.81;
-    double bouyancy = 0.2*g;
+    double bouyancy = -0.66;
     double added_mass[6] = {1.7182,0,5.468,0,1.2481,0.4006};
     Matrix<double,1,6> M_values;
     Matrix<double,6,6> M;
@@ -80,10 +90,10 @@ class BLUEROV2_DO{
     std::string yaml_path;
     int cout_counter = 0;
 
-    // Define system parameters
-    Matrix<double,6,1> u; // input
-    int n = 18; // state dimension
-    int m = 18; // measurement dimension
+    // Define EKF parameters
+    Matrix<double,6,1> meas_u;  // input
+    int n = 18;                 // state dimension
+    int m = 18;                 // measurement dimension
     Matrix<double,18,1> meas_y; //measurement vector
 
     // Define initial state and covariance
@@ -108,18 +118,17 @@ class BLUEROV2_DO{
 
     BLUEROV2_DO(ros::NodeHandle&);
     void pose_gt_cb(const nav_msgs::Odometry::ConstPtr& msg);
-    void thrust0_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg); 
-    void thrust1_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg); 
-    void thrust2_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg); 
-    void thrust3_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg); 
-    void thrust4_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg); 
-    void thrust5_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg); 
+    // void imu_cb(const sensor_msgs::Imu::ConstPtr& msg);
+    void thrusts_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg, int index);
 
     void EKF();
+    MatrixXd RK4(MatrixXd x, MatrixXd u);
     MatrixXd f(MatrixXd x, MatrixXd u);
     MatrixXd h(MatrixXd x);
     MatrixXd compute_jacobian_F(MatrixXd x, MatrixXd u);
     MatrixXd compute_jacobian_H(MatrixXd x);
+
+    // void applyBodyWrench();
 };
 
 

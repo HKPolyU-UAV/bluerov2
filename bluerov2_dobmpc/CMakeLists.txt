@@ -18,6 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   tf
   std_msgs
+  gazebo_msgs
 )
 
 find_package(Eigen3 REQUIRED)

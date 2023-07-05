@@ -12,7 +12,7 @@ int main(int argc, char **argv)
         if(br.is_start==true)
         {
             br.solve();
-            br.EKF();
+            // br.EKF();
         }
         ros::spinOnce();
         loop_rate.sleep();
