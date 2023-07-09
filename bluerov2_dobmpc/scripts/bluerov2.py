@@ -65,6 +65,10 @@ def export_bluerov2_model() -> AcadosModel:
     
     added_mass = np.array([1.7182,0,5.468,0,1.2481,0.4006])
     M = np.diag([m+added_mass[0], m+added_mass[1], m+added_mass[2], Ix+added_mass[3], Iy+added_mass[4], Iz+added_mass[5]]) # M_RB + M_A
+    M[0,4] = m*ZG
+    M[1,3] = -m*ZG
+    M[3,1] = -m*ZG
+    M[4,0] = m*ZG
     M_inv = np.linalg.inv(M)
     
     K = np.array([[0.707,0.707,-0.707,-0.707,0,0],
@@ -92,11 +96,11 @@ def export_bluerov2_model() -> AcadosModel:
 
     # dynamics
     
-    du = M_inv[0,0]*(Kt0+m*r*v-m*q*w-bouyancy*sin(theta)+disturbance_x)
-    dv = M_inv[1,1]*(Kt1-m*r*u+m*p*w+bouyancy*cos(theta)*sin(phi)+disturbance_y)
+    du = M_inv[0,0]*(Kt0+m*r*v-m*q*w-bouyancy*sin(theta)+disturbance_x) + M_inv[0,4]*(Kt4+(Iz-Ix)*p*r-m*ZG*g*sin(theta)+disturbance_theta)
+    dv = M_inv[1,1]*(Kt1-m*r*u+m*p*w+bouyancy*cos(theta)*sin(phi)+disturbance_y) + M_inv[1,3]*(Kt3+(Iy-Iz)*q*r-m*ZG*g*cos(theta)*sin(phi)+disturbance_phi)
     dw = M_inv[2,2]*(Kt2+m*q*u-m*p*v+bouyancy*cos(theta)*cos(phi)+disturbance_z)
-    dp = M_inv[3,3]*(Kt3+(Iy-Iz)*q*r-m*ZG*g*cos(theta)*sin(phi)+disturbance_phi)
-    dq = M_inv[4,4]*(Kt4+(Iz-Ix)*p*r-m*ZG*g*sin(theta)+disturbance_theta)
+    dp = M_inv[3,1]*(Kt1-m*r*u+m*p*w+bouyancy*cos(theta)*sin(phi)+disturbance_y) + M_inv[3,3]*(Kt3+(Iy-Iz)*q*r-m*ZG*g*cos(theta)*sin(phi)+disturbance_phi)
+    dq = M_inv[4,0]*(Kt0+m*r*v-m*q*w-bouyancy*sin(theta)+disturbance_x) + M_inv[4,4]*(Kt4+(Iz-Ix)*p*r-m*ZG*g*sin(theta)+disturbance_theta)
     dr = M_inv[5,5]*(Kt5-(Iy-Ix)*p*q+disturbance_psi)
    
     dx = (cos(psi)*cos(theta))*u + (-sin(psi)*cos(phi)+cos(psi)*sin(theta)*sin(phi))*v + (sin(psi)*sin(phi)+cos(psi)*cos(phi)*sin(theta))*w

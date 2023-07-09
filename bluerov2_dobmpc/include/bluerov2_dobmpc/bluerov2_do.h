@@ -82,6 +82,7 @@ class BLUEROV2_DO{
     Matrix<double,6,6> C;
     Matrix<double,6,6> K;
     Matrix<double,6,1> KAu;
+    Matrix<double,18,1> dx;
 
     // other variables
     tf::Quaternion tf_quaternion;
@@ -91,6 +92,7 @@ class BLUEROV2_DO{
     int cout_counter = 0;
 
     // Define EKF parameters
+    Matrix<double,6,1> wf_disturbance; // world frame disturbance 
     Matrix<double,6,1> meas_u;  // input
     int n = 18;                 // state dimension
     int m = 18;                 // measurement dimension
