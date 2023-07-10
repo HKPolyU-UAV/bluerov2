@@ -49,7 +49,7 @@
     </include>
     -->
     <!-- Start disturbance observer -->
-    <include file ="$(find bluerov2_dobmpc)/launch/do.launch"/>
+    <!-- <include file ="$(find bluerov2_dobmpc)/launch/do.launch"/> -->
 
     <!-- Generate Gauss-Markov models for producing random current velocities and angles 
     <include file="$(find bluerov2_control)/launch/set_gm_current.launch">
@@ -64,9 +64,9 @@
 
     <include file="$(find uuv_control_utils)/launch/apply_body_wrench.launch">
         <arg name="uuv_name" value="bluerov2"/>
-        <arg name="starting_time" default="5"/>
+        <arg name="starting_time" default="1"/>
         <arg name="duration" default="10000"/>
-        <arg name="force_x" default="10"/>
+        <arg name="force_x" default="100"/>
         <arg name="force_y" default="0"/>
         <arg name="force_z" default="0"/>
     </include>

@@ -79,12 +79,12 @@ def export_bluerov2_model() -> AcadosModel:
                   [0.167,-0.167,-0.175,0.175,0,0]])
     
     
-    t0 = -u1+u2+u4
-    t1 = -u1-u2-u4
-    t2 = u1+u2-u4                                  # control inputs to thrusts of each propeller
-    t3 = u1-u2+u4
-    t4 = -u3
-    t5 = -u3
+    t0 = (-u1+u2+u4)/0.026546960744430276
+    t1 = (-u1-u2-u4)/0.026546960744430276
+    t2 = (u1+u2-u4)/0.026546960744430276                                  # control inputs to thrusts of each propeller
+    t3 = (u1-u2+u4)/0.026546960744430276
+    t4 = -u3/0.026546960744430276
+    t5 = -u3/0.026546960744430276
     
     Kt0 = K[0,0]*t0+K[0,1]*t1+K[0,2]*t2+K[0,3]*t3+K[0,4]*t4+K[0,5]*t5
     Kt1 = K[1,0]*t0+K[1,1]*t1+K[1,2]*t2+K[1,3]*t3+K[1,4]*t4+K[1,5]*t5

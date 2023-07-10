@@ -31,7 +31,7 @@ def main():
     
     # set cost
     W_x = np.diag([105, 80, 150, 10, 10, 120, 10, 10, 10, 10, 10, 10])    #Q_mat
-    W_u = np.diag([0.002, 0.008, 0.0001, 0.0001])                           #R_mat
+    W_u = np.diag([2, 8, 0.1, 0.08])                           #R_mat
     W = block_diag(W_x, W_u)
     ocp.cost.W_e = W_x
     ocp.cost.W = W
@@ -52,13 +52,13 @@ def main():
     
 
     # set constraints
-    u_min = np.array([-500, -500, -500, -500])
-    u_max = np.array([500, 500, 500, 500])
+    u_min = np.array([-50, -50, -50, -50])
+    u_max = np.array([50, 50, 50, 50])
     ocp.constraints.lbu = u_min
     ocp.constraints.ubu = u_max
     ocp.constraints.idxbu = np.array([0,1,2,3])         # indices of bounds on u
 
-    ocp.constraints.x0 = np.array([0.0, 0.0, -34.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+    ocp.constraints.x0 = np.array([0.0, 0.0, -20, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 
     # reference trajectory (will be overwritten later)
     x_ref = np.zeros(nx)

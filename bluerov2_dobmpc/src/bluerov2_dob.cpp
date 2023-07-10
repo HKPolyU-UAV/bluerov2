@@ -34,6 +34,10 @@ BLUEROV2_DOB::BLUEROV2_DOB(ros::NodeHandle& nh)
     // Initialize EKF
     M_values << mass + added_mass[0], mass + added_mass[1], mass + added_mass[2], Ix + added_mass[3], Iy + added_mass[4], Iz + added_mass[5];
     M = M_values.asDiagonal();
+    M(0,4) = mass*ZG;
+    M(1,3) = -mass*ZG;
+    M(3,1) = -mass*ZG;
+    M(4,0) = mass*ZG;
     invM = M.inverse();
     K << 0.707, 0.707, -0.707, -0.707, 0, 0,
        0.707, -0.707, 0.707, -0.707, 0, 0,
@@ -290,13 +294,6 @@ void BLUEROV2_DOB::solve(){
     acados_param[4] = solver_param.disturbance_theta;
     acados_param[5] = solver_param.disturbance_psi;
 
-    // acados_param[0] = esti_x(12);
-    // acados_param[1] = esti_x(13);
-    // acados_param[2] = esti_x(14);
-    // acados_param[3] = esti_x(15);
-    // acados_param[4] = esti_x(16);
-    // acados_param[5] = esti_x(17);
-
     // change into form of (-pi, pi)
     if(sin(acados_in.yref[0][5]) >= 0)
     {
@@ -333,12 +330,12 @@ void BLUEROV2_DOB::solve(){
 
     ocp_nlp_out_get(mpc_capsule->nlp_config, mpc_capsule->nlp_dims, mpc_capsule->nlp_out, 0, "u", (void *)acados_out.u0);
     
-    thrust0.data=(-acados_out.u0[0]+acados_out.u0[1]+acados_out.u0[3]);
-    thrust1.data=(-acados_out.u0[0]-acados_out.u0[1]-acados_out.u0[3]);
-    thrust2.data=(acados_out.u0[0]+acados_out.u0[1]-acados_out.u0[3]);
-    thrust3.data=(acados_out.u0[0]-acados_out.u0[1]+acados_out.u0[3]);
-    thrust4.data=(-acados_out.u0[2]);
-    thrust5.data=(-acados_out.u0[2]);
+    thrust0.data=(-acados_out.u0[0]+acados_out.u0[1]+acados_out.u0[3])/0.026546960744430276;
+    thrust1.data=(-acados_out.u0[0]-acados_out.u0[1]-acados_out.u0[3])/0.026546960744430276;
+    thrust2.data=(acados_out.u0[0]+acados_out.u0[1]-acados_out.u0[3])/0.026546960744430276;
+    thrust3.data=(acados_out.u0[0]-acados_out.u0[1]+acados_out.u0[3])/0.026546960744430276;
+    thrust4.data=(-acados_out.u0[2])/0.026546960744430276;
+    thrust5.data=(-acados_out.u0[2])/0.026546960744430276;
     
     thrust0_pub.publish(thrust0);
     thrust1_pub.publish(thrust1);
@@ -471,7 +468,7 @@ void BLUEROV2_DOB::EKF()
     
     // Prediction step: estimate state and covariance at time k+1|k
     F = compute_jacobian_F(esti_x, meas_u);             // compute Jacobian of system dynamics at current state and input
-    x_pred = f(esti_x, meas_u);                         // predict state at time k+1|k
+    x_pred = RK4(esti_x, meas_u);                         // predict state at time k+1|k
     P_pred = F * esti_P * F.transpose() + noise_Q;      // predict covariance at time k+1|k
     
     // Update step: correct state and covariance using measurement at time k+1
@@ -481,6 +478,14 @@ void BLUEROV2_DOB::EKF()
     Kal = P_pred * H.transpose() * (H * P_pred * H.transpose() + noise_R).inverse();    // compute Kalman gain
     esti_x = x_pred + Kal * y_err;                          // correct state estimate
     esti_P = (MatrixXd::Identity(n, n) - Kal * H) * P_pred * (MatrixXd::Identity(n, n) - Kal * H).transpose() + Kal*noise_R*Kal.transpose(); // correct covariance estimate
+    
+    // body frame disturbance to inertial frame
+    wf_disturbance << (cos(meas_y(5))*cos(meas_y(4)))*esti_x(12) + (-sin(meas_y(5))*cos(meas_y(3))+cos(meas_y(5))*sin(meas_y(4))*sin(meas_y(3)))*esti_x(13) + (sin(meas_y(5))*sin(meas_y(3))+cos(meas_y(5))*cos(meas_y(3))*sin(meas_y(4)))*esti_x(14),
+            (sin(meas_y(5))*cos(meas_y(4)))*esti_x(12) + (cos(meas_y(5))*cos(meas_y(3))+sin(meas_y(3))*sin(meas_y(4))*sin(meas_y(5)))*esti_x(13) + (-cos(meas_y(5))*sin(meas_y(3))+sin(meas_y(4))*sin(meas_y(5))*cos(meas_y(3)))*esti_x(14),
+            (-sin(meas_y(4)))*esti_x(12) + (cos(meas_y(4))*sin(meas_y(3)))*esti_x(13) + (cos(meas_y(4))*cos(meas_y(3)))*esti_x(14),
+            esti_x(15) + (sin(meas_y(5))*sin(meas_y(4))/cos(meas_y(4)))*esti_x(16) + cos(meas_y(3))*sin(meas_y(4))/cos(meas_y(4))*esti_x(17),
+            (cos(meas_y(3)))*esti_x(16) + (sin(meas_y(3)))*esti_x(17),
+            (sin(meas_y(3))/cos(meas_y(4)))*esti_x(16) + (cos(meas_y(3))/cos(meas_y(4)))*esti_x(17);
     
     // publish estimate pose
     tf2::Quaternion quat;
@@ -506,13 +511,9 @@ void BLUEROV2_DOB::EKF()
     esti_pose_pub.publish(esti_pose);
 
     // publish estimate disturbance
-    tf2::Quaternion quat_d;
-    quat_d.setRPY(esti_x(15), esti_x(16), esti_x(17));
-    geometry_msgs::Quaternion quatd_msg;
-    tf2::convert(quat_d, quatd_msg);
-    esti_disturbance.pose.pose.position.x = esti_x(12);
-    esti_disturbance.pose.pose.position.y = esti_x(13);
-    esti_disturbance.pose.pose.position.z = esti_x(14);
+    esti_disturbance.pose.pose.position.x = wf_disturbance(0);
+    esti_disturbance.pose.pose.position.y = wf_disturbance(1);
+    esti_disturbance.pose.pose.position.z = wf_disturbance(2);
     esti_disturbance.header.stamp = ros::Time::now();
     esti_disturbance.header.frame_id = "odom_frame";
     esti_disturbance.child_frame_id = "base_link";
@@ -521,15 +522,15 @@ void BLUEROV2_DOB::EKF()
     // print estimate disturbance
     if(cout_counter > 2){
         std::cout << "---------------------------------------------------------------------------------------------------------------------" << std::endl;
-        std::cout << "thrust0: " << meas_u(0) << "  thrust1: " << meas_u(1) << "  thrust2: " << meas_u(2) << "  thrust3: " << meas_u(3) << "  thrust4: " << meas_u(4) << "  thrust5: " << meas_u(5) <<std::endl; 
+        // std::cout << "thrust0: " << meas_u(0) << "  thrust1: " << meas_u(1) << "  thrust2: " << meas_u(2) << "  thrust3: " << meas_u(3) << "  thrust4: " << meas_u(4) << "  thrust5: " << meas_u(5) <<std::endl; 
         std::cout << "tau_x:  " << meas_y(12) << "  tau_y:  " << meas_y(13) << "  tau_z:  " << meas_y(14) << "  tau_psi:  " << meas_y(17) << std::endl;
         std::cout << "ref_x:    " << acados_in.yref[0][0] << "\tref_y:   " << acados_in.yref[0][1] << "\tref_z:    " << acados_in.yref[0][2] << "\tref_yaw:    " << yaw_ref << std::endl;
         std::cout << "pos_x: " << meas_y(0) << "  pos_y: " << meas_y(1) << "  pos_z: " << meas_y(2) << " phi: " << meas_y(3) << "  theta: " << meas_y(4) << "  psi: " << meas_y(5) <<std::endl;
         std::cout << "esti_x: " << esti_x(0) << "  esti_y: " << esti_x(1) << "  esti_z: " << esti_x(2) << " esti_phi: " << esti_x(3) << "  esti_theta: " << esti_x(4) << "  esti_psi: " << esti_x(5) <<std::endl;
         //std::cout << "pos_u: " << meas_y(6) << "  pos_v: " << meas_y(7) << "  pos_w: " << meas_y(8) << " pos_p: " << meas_y(9) << "  pos_q: " << meas_y(10) << "  pos_r: " << meas_y(11) <<std::endl;
         //std::cout << "esti_u: " << esti_x(6) << "  esti_v: " << esti_x(7) << "  esti_w: " << esti_x(8) << " esti_p: " << esti_x(9) << "  esti_q: " << esti_x(10) << "  esti_r: " << esti_x(11) <<std::endl;
-        std::cout << "disturbance x: " << esti_x(12) << "    disturbance y: " << esti_x(13) << "    disturbance z: " << esti_x(14) << std::endl;
-        std::cout << "disturbance phi: " << esti_x(15) << "    disturbance theta: " << esti_x(16) << "    disturbance psi: " << esti_x(17) << std::endl;
+        std::cout << "disturbance x: " << wf_disturbance(0) << "    disturbance y: " << wf_disturbance(1) << "    disturbance z: " << wf_disturbance(2) << std::endl;
+        std::cout << "disturbance phi: " << wf_disturbance(3) << "    disturbance theta: " << wf_disturbance(4) << "    disturbance psi: " << wf_disturbance(5) << std::endl;
         std::cout << "solve_time: "<< acados_out.cpu_time << "\tkkt_res: " << acados_out.kkt_res << "\tacados_status: " << acados_out.status << std::endl;
         std::cout << "ros_time:   " << std::fixed << ros::Time::now().toSec() << std::endl;
         std::cout << "---------------------------------------------------------------------------------------------------------------------" << std::endl;
@@ -538,6 +539,22 @@ void BLUEROV2_DOB::EKF()
     else{
         cout_counter++;
     }
+}
+
+// 4th order RK for integration
+MatrixXd BLUEROV2_DOB::RK4(MatrixXd x, MatrixXd u)
+{
+    Matrix<double,18,1> k1;
+    Matrix<double,18,1> k2;
+    Matrix<double,18,1> k3;
+    Matrix<double,18,1> k4;
+
+    k1 = f(x, u) * dt;
+    k2 = f(x+k1/2, u) * dt;
+    k3 = f(x+k2/3, u) * dt;
+    k4 = f(x+k3, u) * dt;
+
+    return x + (k1+2*k2+2*k3+k4)/6;
 }
 
 // Define system dynamics function
@@ -559,10 +576,9 @@ MatrixXd BLUEROV2_DOB::f(MatrixXd x, MatrixXd u)
             invM(3,3)*(KAu(3)+(Iy-Iz)*x(10)*x(11)-mass*ZG*g*cos(x(4))*sin(x(3))),
             invM(4,4)*(KAu(4)+(Iz-Ix)*x(9)*x(11)-mass*ZG*g*sin(x(4))),
             invM(5,5)*(KAu(5)-(Iy-Ix)*x(9)*x(10)),
-            Cp(0,0)*invM(0,0)*x(12),Cp(1,1)*invM(1,1)*x(13),Cp(2,2)*invM(2,2)*x(14),   // wdot
-            Cp(3,3)*invM(3,3)*x(15),Cp(4,4)*invM(4,4)*x(16),Cp(5,5)*invM(5,5)*x(17);   
+            0,0,0,0,0,0; 
             
-    return x + xdot * dt; // dt is the time step
+    return xdot; // dt is the time step
 }
 
 // Define measurement model function (Z = Hx, Z: measurement vector [x,xdot,tau]; X: state vector [x,xdot,disturbance])
@@ -572,12 +588,12 @@ MatrixXd BLUEROV2_DOB::h(MatrixXd x)
     Matrix<double,18,1> y;
     y << x(0),x(1),x(2),x(3),x(4),x(5),
         x(6),x(7),x(8),x(9),x(10),x(11),
-        Cp(0,0)*x(6)-mass*x(11)*x(7)+mass*x(10)*x(8)+bouyancy*sin(x(4))-x(12),        // M*xddot = p = c*xdot
-        Cp(1,1)*x(7)+mass*x(11)*x(6)-mass*x(9)*x(8)-bouyancy*cos(x(4))*sin(x(3))-x(13),
-        Cp(2,2)*x(8)-mass*x(10)*x(6)+mass*x(9)*x(7)-bouyancy*cos(x(4))*cos(x(3))-x(14),
-        Cp(3,3)*x(9)-(Iy-Iz)*x(10)*x(11)+mass*ZG*g*cos(x(4))*sin(x(3))-x(15),
-        Cp(4,4)*x(10)-(Iz-Ix)*x(9)*x(11)+mass*ZG*g*sin(x(4))-x(16),
-        Cp(5,5)*x(11)+(Iy-Ix)*x(9)*x(10)-x(17);
+        -mass*x(11)*x(7)+mass*x(10)*x(8)+bouyancy*sin(x(4))-x(12),        
+        mass*x(11)*x(6)-mass*x(9)*x(8)-bouyancy*cos(x(4))*sin(x(3))-x(13),
+        -mass*x(10)*x(6)+mass*x(9)*x(7)-bouyancy*cos(x(4))*cos(x(3))-x(14),
+        -(Iy-Iz)*x(10)*x(11)+mass*ZG*g*cos(x(4))*sin(x(3))-x(15),
+        -(Iz-Ix)*x(9)*x(11)+mass*ZG*g*sin(x(4))-x(16),
+        (Iy-Ix)*x(9)*x(10)-x(17);
 
     return y;
 }
@@ -588,11 +604,11 @@ MatrixXd BLUEROV2_DOB::compute_jacobian_F(MatrixXd x, MatrixXd u)
     // Define Jacobian of system dynamics
     Matrix<double,18,18> F;
     double d = 1e-6;                    // finite difference step size
-    VectorXd f0 = f(x, u);
+    VectorXd f0 = RK4(x, u);
     for (int i = 0; i < n; i++){
         VectorXd x1 = x;
         x1(i) += d;
-        VectorXd f1 = f(x1, u);
+        VectorXd f1 = RK4(x1, u);
         F.col(i) = (f1-f0)/d;
     }
     

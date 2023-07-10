@@ -433,10 +433,10 @@ void bluerov2_acados_create_5_set_nlp_in(bluerov2_solver_capsule* capsule, const
     W_0[9+(NY0) * 9] = 10;
     W_0[10+(NY0) * 10] = 10;
     W_0[11+(NY0) * 11] = 10;
-    W_0[12+(NY0) * 12] = 0.002;
-    W_0[13+(NY0) * 13] = 0.008;
-    W_0[14+(NY0) * 14] = 0.0001;
-    W_0[15+(NY0) * 15] = 0.0001;
+    W_0[12+(NY0) * 12] = 2;
+    W_0[13+(NY0) * 13] = 8;
+    W_0[14+(NY0) * 14] = 0.1;
+    W_0[15+(NY0) * 15] = 0.1;
     ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, 0, "W", W_0);
     free(W_0);
     double* W = calloc(NY*NY, sizeof(double));
@@ -453,10 +453,10 @@ void bluerov2_acados_create_5_set_nlp_in(bluerov2_solver_capsule* capsule, const
     W[9+(NY) * 9] = 10;
     W[10+(NY) * 10] = 10;
     W[11+(NY) * 11] = 10;
-    W[12+(NY) * 12] = 0.002;
-    W[13+(NY) * 13] = 0.008;
-    W[14+(NY) * 14] = 0.0001;
-    W[15+(NY) * 15] = 0.0001;
+    W[12+(NY) * 12] = 2;
+    W[13+(NY) * 13] = 8;
+    W[14+(NY) * 14] = 0.1;
+    W[15+(NY) * 15] = 0.1;
 
     for (int i = 1; i < N; i++)
     {
@@ -516,8 +516,8 @@ void bluerov2_acados_create_5_set_nlp_in(bluerov2_solver_capsule* capsule, const
     double* lbx0 = lubx0;
     double* ubx0 = lubx0 + NBX0;
     // change only the non-zero elements:
-    lbx0[2] = -34.5;
-    ubx0[2] = -34.5;
+    lbx0[2] = -20;
+    ubx0[2] = -20;
 
     ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "idxbx", idxbx0);
     ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "lbx", lbx0);
@@ -554,14 +554,14 @@ void bluerov2_acados_create_5_set_nlp_in(bluerov2_solver_capsule* capsule, const
     double* lbu = lubu;
     double* ubu = lubu + NBU;
     
-    lbu[0] = -500;
-    ubu[0] = 500;
-    lbu[1] = -500;
-    ubu[1] = 500;
-    lbu[2] = -500;
-    ubu[2] = 500;
-    lbu[3] = -500;
-    ubu[3] = 500;
+    lbu[0] = -50;
+    ubu[0] = 50;
+    lbu[1] = -50;
+    ubu[1] = 50;
+    lbu[2] = -50;
+    ubu[2] = 50;
+    lbu[3] = -50;
+    ubu[3] = 50;
 
     for (int i = 0; i < N; i++)
     {
@@ -691,7 +691,7 @@ void bluerov2_acados_create_7_set_nlp_out(bluerov2_solver_capsule* capsule)
 
     // initialize with x0
     
-    x0[2] = -34.5;
+    x0[2] = -20;
 
 
     double* u0 = xu0 + NX;

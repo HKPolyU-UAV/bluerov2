@@ -150,6 +150,7 @@ class BLUEROV2_DOB{
     Matrix<double,6,1> KAu;
 
     // EKF parameters
+    Matrix<double,6,1> wf_disturbance; // world frame disturbance 
     Matrix<double,6,1> meas_u;      // inputs
     int n = 18;                     // state dimension
     int m = 18;                     // measurement dimension
@@ -223,7 +224,8 @@ class BLUEROV2_DOB{
 
     // disturbance observer functions
     void thrusts_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg, int index); // read current thrusts
-    void EKF();                                             // EKF predict and update
+    void EKF();  
+    MatrixXd RK4(MatrixXd x, MatrixXd u);                                           // EKF predict and update
     MatrixXd f(MatrixXd x, MatrixXd u);                     // system process model
     MatrixXd h(MatrixXd x);                                 // measurement model
     MatrixXd compute_jacobian_F(MatrixXd x, MatrixXd u);    // compute Jacobian of system process model
