@@ -11,11 +11,13 @@
 #include <nav_msgs/Odometry.h>
 #include <bluerov2_dobmpc/Reference.h>
 #include <gazebo_msgs/GetLinkState.h>
+#include <sensor_msgs/Imu.h>
 
 #include <iostream>
 #include <fstream>
 #include <cmath>
 #include <tuple>
+#include <iomanip>
 
 #include "acados/utils/print.h"
 #include "acados_c/ocp_nlp_interface.h"
@@ -85,6 +87,15 @@ class BLUEROV2_DOB{
             double r;
         };
 
+    struct acc{
+        double x;
+        double y;
+        double z;
+        double phi;
+        double theta;
+        double psi;
+    };
+
     struct SolverParam{
         double disturbance_x;
         double disturbance_y;
@@ -112,6 +123,8 @@ class BLUEROV2_DOB{
     uuv_gazebo_ros_plugins_msgs::FloatStamped thrust5;
     Euler local_euler;
     pos local_pos;
+    pos pre_pos;
+    acc local_acc;
     thrust current_t;
     nav_msgs::Odometry ref_pose;
     nav_msgs::Odometry error_pose;
@@ -127,7 +140,7 @@ class BLUEROV2_DOB{
     // Acados variables
     SolverInput acados_in;
     SolverOutput acados_out;
-    double acados_param[BLUEROV2_NP];  // disturbances
+    double acados_param[BLUEROV2_N+1][BLUEROV2_NP];  // disturbances
     int acados_status;   
     bluerov2_solver_capsule * mpc_capsule = bluerov2_acados_create_capsule();
 
@@ -140,14 +153,17 @@ class BLUEROV2_DOB{
     double ZG = 0.02;
     double g = 9.81;
     double bouyancy = -0.66;
+    double rotor_constant = 0.026546960744430276;
     double added_mass[6] = {1.7182,0,5.468,0,1.2481,0.4006};
-    Matrix<double,1,6> M_values;
-    Matrix<double,6,6> M;
-    Matrix<double,6,6> invM;
-    Matrix<double,6,1> Cv;
-    Matrix<double,6,6> C;
-    Matrix<double,6,6> K;
-    Matrix<double,6,1> KAu;
+    Matrix<double,1,6> M_values;    
+    Matrix<double,6,6> M;           // mass matrix
+    Matrix<double,6,6> invM;        // inverse mass matrix
+    Matrix<double,1,6> Dl_values;   
+    Matrix<double,6,6> Dl;          // linear hydrodynamic damping force
+    Matrix<double,6,6> K;           // propulsion matrix
+    Matrix<double,6,1> KAu;         // vehicle's generated forces and moments
+    Matrix<double,18,1> dx;
+
 
     // EKF parameters
     Matrix<double,6,1> wf_disturbance; // world frame disturbance 
@@ -155,15 +171,12 @@ class BLUEROV2_DOB{
     int n = 18;                     // state dimension
     int m = 18;                     // measurement dimension
     Matrix<double,18,1> meas_y;     // measurement vector
-    Matrix<double,1,18> x0;         // initial states
     MatrixXd P0 = MatrixXd::Identity(m, m);     // initial covariance
     Matrix<double,18,1> esti_x;     // estimate states
     Matrix<double,18,18> esti_P;    // estimate covariance
     Matrix<double,1,18> Q_cov;      // process noise value
     Matrix<double,18,18> noise_Q;   // process noise matrix
     MatrixXd noise_R = MatrixXd::Identity(m, m)*dt; // measurement noise matrix
-    Matrix<double,1,6> cp;          
-    Matrix<double,6,6> Cp;          // constant matrix to replace xddot
     
     // Acados parameter
     std::string REF_TRAJ;
@@ -204,6 +217,7 @@ class BLUEROV2_DOB{
 
     ros::Publisher esti_pose_pub;
     ros::Publisher esti_disturbance_pub;
+    // ros::Subscriber imu_sub;
 
     // Trajectory variables
     std::vector<std::vector<double>> trajectory;
@@ -224,6 +238,7 @@ class BLUEROV2_DOB{
 
     // disturbance observer functions
     void thrusts_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg, int index); // read current thrusts
+    // void imu_cb(const sensor_msgs::Imu::ConstPtr& msg);
     void EKF();  
     MatrixXd RK4(MatrixXd x, MatrixXd u);                                           // EKF predict and update
     MatrixXd f(MatrixXd x, MatrixXd u);                     // system process model

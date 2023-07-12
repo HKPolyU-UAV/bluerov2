@@ -39,6 +39,10 @@ BLUEROV2_DOB::BLUEROV2_DOB(ros::NodeHandle& nh)
     M(3,1) = -mass*ZG;
     M(4,0) = mass*ZG;
     invM = M.inverse();
+
+    Dl_values << -11.7391, -20, -31.8678, -25, -44.9085, -5;
+    Dl = Dl_values.asDiagonal();
+
     K << 0.707, 0.707, -0.707, -0.707, 0, 0,
        0.707, -0.707, 0.707, -0.707, 0, 0,
        0, 0, 0, 0, 1, 1,
@@ -54,8 +58,6 @@ BLUEROV2_DOB::BLUEROV2_DOB(ros::NodeHandle& nh)
     esti_x << 0,0,-20,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0;
     esti_P = P0;
 
-    cp << 1.8,1.8,1.8,1.8,1.8,1.8;
-    Cp = cp.asDiagonal();
 
     // ros subsriber & publisher
     pose_sub = nh.subscribe<nav_msgs::Odometry>("/bluerov2/pose_gt", 20, &BLUEROV2_DOB::pose_cb, this);
@@ -79,7 +81,7 @@ BLUEROV2_DOB::BLUEROV2_DOB(ros::NodeHandle& nh)
         std::string topic = "/bluerov2/thrusters/" + std::to_string(i) + "/thrust";
         subscribers[i] = nh.subscribe<uuv_gazebo_ros_plugins_msgs::FloatStamped>(topic, 20, boost::bind(&BLUEROV2_DOB::thrusts_cb, this, _1, i));
     }
-    
+    // imu_sub = nh.subscribe<sensor_msgs::Imu>("/bluerov2/imu", 20, &BLUEROV2_DOB::imu_cb, this);
     // initialize
     for(unsigned int i=0; i < BLUEROV2_NU; i++) acados_out.u0[i] = 0.0;
     for(unsigned int i=0; i < BLUEROV2_NX; i++) acados_in.x0[i] = 0.0;
@@ -102,11 +104,23 @@ void BLUEROV2_DOB::pose_cb(const nav_msgs::Odometry::ConstPtr& pose)
     local_pos.u = pose->twist.twist.linear.x;
     local_pos.v = pose->twist.twist.linear.y;
     local_pos.w = pose->twist.twist.linear.z;
+    local_acc.x = (local_pos.u-pre_pos.u)/dt;
+    local_acc.y = (local_pos.v-pre_pos.v)/dt;
+    local_acc.z = (local_pos.w-pre_pos.w)/dt;
+    pre_pos.u = local_pos.u;
+    pre_pos.v = local_pos.v;
+    pre_pos.w = local_pos.w;
 
     // get angular velocity p, q, r
     local_pos.p = pose->twist.twist.angular.x;
     local_pos.q = pose->twist.twist.angular.y;
     local_pos.r = pose->twist.twist.angular.z;
+    local_acc.phi = (local_pos.p-pre_pos.p)/dt;
+    local_acc.theta = (local_pos.q-pre_pos.q)/dt;
+    local_acc.psi = (local_pos.r-pre_pos.r)/dt;
+    pre_pos.p = local_pos.p;
+    pre_pos.q = local_pos.q;
+    pre_pos.r = local_pos.r;
     }
 
 // quaternion to euler angle
@@ -239,7 +253,7 @@ void BLUEROV2_DOB::solve(){
         }
     }
     */
-   // identify turning direction
+    // identify turning direction
     if (pre_yaw >= 0 && local_euler.psi >=0)
     {
         yaw_diff = local_euler.psi - pre_yaw;
@@ -274,6 +288,7 @@ void BLUEROV2_DOB::solve(){
     yaw_sum = yaw_sum + yaw_diff;
     pre_yaw = local_euler.psi;
 
+    // set initial states
     acados_in.x0[x] = local_pos.x;
     acados_in.x0[y] = local_pos.y;
     acados_in.x0[z] = local_pos.z;
@@ -286,13 +301,23 @@ void BLUEROV2_DOB::solve(){
     acados_in.x0[p] = local_pos.p;
     acados_in.x0[q] = local_pos.q;
     acados_in.x0[r] = local_pos.r;
+    ocp_nlp_constraints_model_set(mpc_capsule->nlp_config,mpc_capsule->nlp_dims,mpc_capsule->nlp_in, 0, "lbx", acados_in.x0);
+    ocp_nlp_constraints_model_set(mpc_capsule->nlp_config,mpc_capsule->nlp_dims,mpc_capsule->nlp_in, 0, "ubx", acados_in.x0);
 
-    acados_param[0] = solver_param.disturbance_x;
-    acados_param[1] = solver_param.disturbance_y;
-    acados_param[2] = solver_param.disturbance_z;
-    acados_param[3] = solver_param.disturbance_phi;
-    acados_param[4] = solver_param.disturbance_theta;
-    acados_param[5] = solver_param.disturbance_psi;
+    // set parameters
+    for (int i = 0; i < BLUEROV2_N+1; i++)
+    {
+        acados_param[i][0] = esti_x(12)/rotor_constant;
+        acados_param[i][1] = esti_x(13)/rotor_constant;
+        acados_param[i][2] = esti_x(14)/rotor_constant;
+        // acados_param[i][0] = solver_param.disturbance_x;
+        // acados_param[i][1] = solver_param.disturbance_y;
+        // acados_param[i][2] = solver_param.disturbance_z;
+        acados_param[i][3] = solver_param.disturbance_phi;
+        acados_param[i][4] = solver_param.disturbance_theta;
+        acados_param[i][5] = solver_param.disturbance_psi;
+        bluerov2_acados_update_params(mpc_capsule,i,acados_param[i],BLUEROV2_NP);
+    }
 
     // change into form of (-pi, pi)
     if(sin(acados_in.yref[0][5]) >= 0)
@@ -303,20 +328,14 @@ void BLUEROV2_DOB::solve(){
         yaw_ref = -M_PI + fmod(acados_in.yref[0][5],M_PI);
     }
 
-    for (unsigned int i = 0; i <= BLUEROV2_N; i++){
-        bluerov2_acados_update_params(mpc_capsule,i,acados_param,BLUEROV2_NP);
-    }
-
-    ocp_nlp_constraints_model_set(mpc_capsule->nlp_config,mpc_capsule->nlp_dims,mpc_capsule->nlp_in, 0, "lbx", acados_in.x0);
-    ocp_nlp_constraints_model_set(mpc_capsule->nlp_config,mpc_capsule->nlp_dims,mpc_capsule->nlp_in, 0, "ubx", acados_in.x0);
-    
+    // set reference
     ref_cb(line_number); 
     line_number++;
-    
     for (unsigned int i = 0; i <= BLUEROV2_N; i++){
         ocp_nlp_cost_model_set(mpc_capsule->nlp_config, mpc_capsule->nlp_dims, mpc_capsule->nlp_in, i, "yref", acados_in.yref[i]);
     }
 
+    // Solve OCP
     acados_status = bluerov2_acados_solve(mpc_capsule);
 
     if (acados_status != 0){
@@ -330,12 +349,12 @@ void BLUEROV2_DOB::solve(){
 
     ocp_nlp_out_get(mpc_capsule->nlp_config, mpc_capsule->nlp_dims, mpc_capsule->nlp_out, 0, "u", (void *)acados_out.u0);
     
-    thrust0.data=(-acados_out.u0[0]+acados_out.u0[1]+acados_out.u0[3])/0.026546960744430276;
-    thrust1.data=(-acados_out.u0[0]-acados_out.u0[1]-acados_out.u0[3])/0.026546960744430276;
-    thrust2.data=(acados_out.u0[0]+acados_out.u0[1]-acados_out.u0[3])/0.026546960744430276;
-    thrust3.data=(acados_out.u0[0]-acados_out.u0[1]+acados_out.u0[3])/0.026546960744430276;
-    thrust4.data=(-acados_out.u0[2])/0.026546960744430276;
-    thrust5.data=(-acados_out.u0[2])/0.026546960744430276;
+    thrust0.data=(-acados_out.u0[0]+acados_out.u0[1]+acados_out.u0[3])/rotor_constant;
+    thrust1.data=(-acados_out.u0[0]-acados_out.u0[1]-acados_out.u0[3])/rotor_constant;
+    thrust2.data=(acados_out.u0[0]+acados_out.u0[1]-acados_out.u0[3])/rotor_constant;
+    thrust3.data=(acados_out.u0[0]-acados_out.u0[1]+acados_out.u0[3])/rotor_constant;
+    thrust4.data=(-acados_out.u0[2])/rotor_constant;
+    thrust5.data=(-acados_out.u0[2])/rotor_constant;
     
     thrust0_pub.publish(thrust0);
     thrust1_pub.publish(thrust1);
@@ -391,24 +410,16 @@ void BLUEROV2_DOB::solve(){
     control_input2_pub.publish(control_input2);
     control_input3_pub.publish(control_input3);
     
-    // print reference, current pose, control inputs, thrusts...
-    // if(cout_counter > 2){ //reduce cout rate
-    //     std::cout << "------------------------------------------------------------------------------------------------" << std::endl;
-    //     std::cout << "x_ref:    " << acados_in.yref[0][0] << "\ty_ref:   " << acados_in.yref[0][1] << "\tz_ref:    " << acados_in.yref[0][2] << "\tyaw_ref:    " << yaw_ref << std::endl;
-    //     std::cout << "x_gt:     " << acados_in.x0[0] << "\ty_gt:     " << acados_in.x0[1] << "\tz_gt:     " << acados_in.x0[2] << "\tyaw_gt:     " << local_euler.psi << std::endl;
-    //     std::cout << "roll_gt:        " << acados_in.x0[3] << "\t\tpitch_gt:        " << acados_in.x0[4] << std::endl;
-    //     std::cout << "u1    : " << acados_out.u0[0] << "\tu2:    " << acados_out.u0[1] << "\tu3:    " << acados_out.u0[2] << "\tu4:    " << acados_out.u0[3] << std::endl;
-    //     std::cout << "t0:  " << thrust0.data << "\tt1:  " << thrust1.data << "\tt2:  " << thrust2.data << "\tt3:  " << thrust3.data << "\tt4:  " << thrust4.data << "\tt5:  " << thrust5.data << std::endl;
-    //     std::cout << "solve_time: "<< acados_out.cpu_time << "\tkkt_res: " << acados_out.kkt_res << "\tacados_status: " << acados_out.status << std::endl;
-    //     std::cout << "ros_time:   " << std::fixed << ros::Time::now().toSec() << std::endl;
-    //     std::cout << "------------------------------------------------------------------------------------------------" << std::endl;
-    //     cout_counter = 0;
-    // }
-    // else{
-    //     cout_counter++;
-    //     }
-    
 }
+
+// void BLUEROV2_DOB::imu_cb(const sensor_msgs::Imu::ConstPtr& msg)
+// {
+//     // get linear position x, y, z
+//     local_acc.x = round(msg->linear_acceleration.x*10000)/10000;
+//     local_acc.y = round(msg->linear_acceleration.y*10000)/10000;
+//     local_acc.z = round(msg->linear_acceleration.z*10000)/10000-g;
+    
+// }
 
 void BLUEROV2_DOB::thrusts_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg, int index)
 {
@@ -468,7 +479,8 @@ void BLUEROV2_DOB::EKF()
     
     // Prediction step: estimate state and covariance at time k+1|k
     F = compute_jacobian_F(esti_x, meas_u);             // compute Jacobian of system dynamics at current state and input
-    x_pred = RK4(esti_x, meas_u);                         // predict state at time k+1|k
+    x_pred = RK4(esti_x, meas_u);                       // predict state at time k+1|k
+    // dx = f(esti_x, meas_u);                             // acceleration
     P_pred = F * esti_P * F.transpose() + noise_Q;      // predict covariance at time k+1|k
     
     // Update step: correct state and covariance using measurement at time k+1
@@ -522,15 +534,15 @@ void BLUEROV2_DOB::EKF()
     // print estimate disturbance
     if(cout_counter > 2){
         std::cout << "---------------------------------------------------------------------------------------------------------------------" << std::endl;
-        // std::cout << "thrust0: " << meas_u(0) << "  thrust1: " << meas_u(1) << "  thrust2: " << meas_u(2) << "  thrust3: " << meas_u(3) << "  thrust4: " << meas_u(4) << "  thrust5: " << meas_u(5) <<std::endl; 
         std::cout << "tau_x:  " << meas_y(12) << "  tau_y:  " << meas_y(13) << "  tau_z:  " << meas_y(14) << "  tau_psi:  " << meas_y(17) << std::endl;
+        std::cout << "acc_x:  " << local_acc.x << "  acc_y:  " << local_acc.y << "  acc_z:  " << local_acc.z << std::endl;
         std::cout << "ref_x:    " << acados_in.yref[0][0] << "\tref_y:   " << acados_in.yref[0][1] << "\tref_z:    " << acados_in.yref[0][2] << "\tref_yaw:    " << yaw_ref << std::endl;
         std::cout << "pos_x: " << meas_y(0) << "  pos_y: " << meas_y(1) << "  pos_z: " << meas_y(2) << " phi: " << meas_y(3) << "  theta: " << meas_y(4) << "  psi: " << meas_y(5) <<std::endl;
         std::cout << "esti_x: " << esti_x(0) << "  esti_y: " << esti_x(1) << "  esti_z: " << esti_x(2) << " esti_phi: " << esti_x(3) << "  esti_theta: " << esti_x(4) << "  esti_psi: " << esti_x(5) <<std::endl;
-        //std::cout << "pos_u: " << meas_y(6) << "  pos_v: " << meas_y(7) << "  pos_w: " << meas_y(8) << " pos_p: " << meas_y(9) << "  pos_q: " << meas_y(10) << "  pos_r: " << meas_y(11) <<std::endl;
-        //std::cout << "esti_u: " << esti_x(6) << "  esti_v: " << esti_x(7) << "  esti_w: " << esti_x(8) << " esti_p: " << esti_x(9) << "  esti_q: " << esti_x(10) << "  esti_r: " << esti_x(11) <<std::endl;
-        std::cout << "disturbance x: " << wf_disturbance(0) << "    disturbance y: " << wf_disturbance(1) << "    disturbance z: " << wf_disturbance(2) << std::endl;
-        std::cout << "disturbance phi: " << wf_disturbance(3) << "    disturbance theta: " << wf_disturbance(4) << "    disturbance psi: " << wf_disturbance(5) << std::endl;
+        std::cout << "error_x:  " << error_pose.pose.pose.position.x << "  error_y:  " << error_pose.pose.pose.position.y << "  error_z:  " << error_pose.pose.pose.position.z << std::endl;
+        std::cout << "(body frame) disturbance x: " << esti_x(12) << "    disturbance y: " << esti_x(13) << "    disturbance z: " << esti_x(14) << std::endl;
+        std::cout << "(world frame) disturbance x: " << wf_disturbance(0) << "    disturbance y: " << wf_disturbance(1) << "    disturbance z: " << wf_disturbance(2) << std::endl;
+        std::cout << "(world frame) disturbance phi: " << wf_disturbance(3) << "    disturbance theta: " << wf_disturbance(4) << "    disturbance psi: " << wf_disturbance(5) << std::endl;
         std::cout << "solve_time: "<< acados_out.cpu_time << "\tkkt_res: " << acados_out.kkt_res << "\tacados_status: " << acados_out.status << std::endl;
         std::cout << "ros_time:   " << std::fixed << ros::Time::now().toSec() << std::endl;
         std::cout << "---------------------------------------------------------------------------------------------------------------------" << std::endl;
@@ -570,13 +582,13 @@ MatrixXd BLUEROV2_DOB::f(MatrixXd x, MatrixXd u)
             x(9) + (sin(x(5))*sin(x(4))/cos(x(4)))*x(10) + cos(x(3))*sin(x(4))/cos(x(4))*x(11),
             (cos(x(3)))*x(10) + (sin(x(3)))*x(11),
             (sin(x(3))/cos(x(4)))*x(10) + (cos(x(3))/cos(x(4)))*x(11),
-            invM(0,0)*(KAu(0)+mass*x(11)*x(7)-mass*x(10)*x(8)-bouyancy*sin(x(4))),    // xddot: M^-1[tau+w-C-g]
-            invM(1,1)*(KAu(1)-mass*x(11)*x(6)+mass*x(9)*x(8)+bouyancy*cos(x(4))*sin(x(3))),
-            invM(2,2)*(KAu(2)+mass*x(10)*x(6)-mass*x(9)*x(7)+bouyancy*cos(x(4))*cos(x(3))),
-            invM(3,3)*(KAu(3)+(Iy-Iz)*x(10)*x(11)-mass*ZG*g*cos(x(4))*sin(x(3))),
-            invM(4,4)*(KAu(4)+(Iz-Ix)*x(9)*x(11)-mass*ZG*g*sin(x(4))),
-            invM(5,5)*(KAu(5)-(Iy-Ix)*x(9)*x(10)),
-            0,0,0,0,0,0; 
+            invM(0,0)*(KAu(0)+mass*x(11)*x(7)-mass*x(10)*x(8)-bouyancy*sin(x(4))+x(12)+Dl(0,0)*x(6)),    // xddot: M^-1[tau+w-C-g-D]
+            invM(1,1)*(KAu(1)-mass*x(11)*x(6)+mass*x(9)*x(8)+bouyancy*cos(x(4))*sin(x(3))+x(13)+Dl(1,1)*x(7)),
+            invM(2,2)*(KAu(2)+mass*x(10)*x(6)-mass*x(9)*x(7)+bouyancy*cos(x(4))*cos(x(3))+x(14)+Dl(2,2)*x(8)),
+            invM(3,3)*(KAu(3)+(Iy-Iz)*x(10)*x(11)-mass*ZG*g*cos(x(4))*sin(x(3))+x(15)+Dl(3,3)*x(9)),
+            invM(4,4)*(KAu(4)+(Iz-Ix)*x(9)*x(11)-mass*ZG*g*sin(x(4))+x(16)+Dl(4,4)*x(10)),
+            invM(5,5)*(KAu(5)-(Iy-Ix)*x(9)*x(10)+x(17)+Dl(5,5)*x(11)),
+            0,0,0,0,0,0;
             
     return xdot; // dt is the time step
 }
@@ -588,12 +600,24 @@ MatrixXd BLUEROV2_DOB::h(MatrixXd x)
     Matrix<double,18,1> y;
     y << x(0),x(1),x(2),x(3),x(4),x(5),
         x(6),x(7),x(8),x(9),x(10),x(11),
-        -mass*x(11)*x(7)+mass*x(10)*x(8)+bouyancy*sin(x(4))-x(12),        
-        mass*x(11)*x(6)-mass*x(9)*x(8)-bouyancy*cos(x(4))*sin(x(3))-x(13),
-        -mass*x(10)*x(6)+mass*x(9)*x(7)-bouyancy*cos(x(4))*cos(x(3))-x(14),
-        -(Iy-Iz)*x(10)*x(11)+mass*ZG*g*cos(x(4))*sin(x(3))-x(15),
-        -(Iz-Ix)*x(9)*x(11)+mass*ZG*g*sin(x(4))-x(16),
-        (Iy-Ix)*x(9)*x(10)-x(17);
+        // M(0,0)*((x(6)-pre_pos.u)/dt)-mass*x(11)*x(7)+mass*x(10)*x(8)+bouyancy*sin(x(4))-x(12)-Dl(0,0)*x(6),        
+        // M(1,1)*((x(7)-pre_pos.v)/dt)+mass*x(11)*x(6)-mass*x(9)*x(8)-bouyancy*cos(x(4))*sin(x(3))-x(13)-Dl(1,1)*x(7),
+        // M(2,2)*((x(8)-pre_pos.w)/dt)-mass*x(10)*x(6)+mass*x(9)*x(7)-bouyancy*cos(x(4))*cos(x(3))-x(14)-Dl(2,2)*x(8),
+        // M(3,3)*((x(9)-pre_pos.p)/dt)-(Iy-Iz)*x(10)*x(11)+mass*ZG*g*cos(x(4))*sin(x(3))-x(15)-Dl(3,3)*x(9),
+        // M(4,4)*((x(10)-pre_pos.q)/dt)-(Iz-Ix)*x(9)*x(11)+mass*ZG*g*sin(x(4))-x(16)-Dl(4,4)*x(10),
+        // M(5,5)*((x(11)-pre_pos.r)/dt)+(Iy-Ix)*x(9)*x(10)-x(17)-Dl(5,5)*x(11);
+        M(0,0)*local_acc.x-mass*x(11)*x(7)+mass*x(10)*x(8)+bouyancy*sin(x(4))-x(12)-Dl(0,0)*x(6),        
+        M(1,1)*local_acc.y+mass*x(11)*x(6)-mass*x(9)*x(8)-bouyancy*cos(x(4))*sin(x(3))-x(13)-Dl(1,1)*x(7),
+        M(2,2)*local_acc.z-mass*x(10)*x(6)+mass*x(9)*x(7)-bouyancy*cos(x(4))*cos(x(3))-x(14)-Dl(2,2)*x(8),
+        M(3,3)*local_acc.phi-(Iy-Iz)*x(10)*x(11)+mass*ZG*g*cos(x(4))*sin(x(3))-x(15)-Dl(3,3)*x(9),
+        M(4,4)*local_acc.theta-(Iz-Ix)*x(9)*x(11)+mass*ZG*g*sin(x(4))-x(16)-Dl(4,4)*x(10),
+        M(5,5)*local_acc.psi+(Iy-Ix)*x(9)*x(10)-x(17)-Dl(5,5)*x(11);
+    // pre_pos.u = x(6);
+    // pre_pos.v = x(7);
+    // pre_pos.w = x(8);
+    // pre_pos.p = x(9);
+    // pre_pos.q = x(10);
+    // pre_pos.r = x(11);
 
     return y;
 }

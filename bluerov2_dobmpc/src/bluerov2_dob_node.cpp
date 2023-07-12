@@ -11,8 +11,8 @@ int main(int argc, char **argv)
     while(ros::ok()){
         if(br.is_start==true)
         {
-            br.solve();
             br.EKF();
+            br.solve();
         }
         ros::spinOnce();
         loop_rate.sleep();

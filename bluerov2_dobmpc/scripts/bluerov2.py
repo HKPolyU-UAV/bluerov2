@@ -62,6 +62,7 @@ def export_bluerov2_model() -> AcadosModel:
     ZG = 0.02
     g = 9.81
     bouyancy = -0.66                                # net bouyancy forcy
+    rotor_constant = 0.026546960744430276
     
     added_mass = np.array([1.7182,0,5.468,0,1.2481,0.4006])
     M = np.diag([m+added_mass[0], m+added_mass[1], m+added_mass[2], Ix+added_mass[3], Iy+added_mass[4], Iz+added_mass[5]]) # M_RB + M_A
@@ -79,12 +80,12 @@ def export_bluerov2_model() -> AcadosModel:
                   [0.167,-0.167,-0.175,0.175,0,0]])
     
     
-    t0 = (-u1+u2+u4)/0.026546960744430276
-    t1 = (-u1-u2-u4)/0.026546960744430276
-    t2 = (u1+u2-u4)/0.026546960744430276                                  # control inputs to thrusts of each propeller
-    t3 = (u1-u2+u4)/0.026546960744430276
-    t4 = -u3/0.026546960744430276
-    t5 = -u3/0.026546960744430276
+    t0 = (-u1+u2+u4)/rotor_constant
+    t1 = (-u1-u2-u4)/rotor_constant
+    t2 = (u1+u2-u4)/rotor_constant                                 # control inputs to thrusts of each propeller
+    t3 = (u1-u2+u4)/rotor_constant
+    t4 = -u3/rotor_constant
+    t5 = -u3/rotor_constant
     
     Kt0 = K[0,0]*t0+K[0,1]*t1+K[0,2]*t2+K[0,3]*t3+K[0,4]*t4+K[0,5]*t5
     Kt1 = K[1,0]*t0+K[1,1]*t1+K[1,2]*t2+K[1,3]*t3+K[1,4]*t4+K[1,5]*t5
@@ -96,11 +97,11 @@ def export_bluerov2_model() -> AcadosModel:
 
     # dynamics
     
-    du = M_inv[0,0]*(Kt0+m*r*v-m*q*w-bouyancy*sin(theta)+disturbance_x) + M_inv[0,4]*(Kt4+(Iz-Ix)*p*r-m*ZG*g*sin(theta)+disturbance_theta)
-    dv = M_inv[1,1]*(Kt1-m*r*u+m*p*w+bouyancy*cos(theta)*sin(phi)+disturbance_y) + M_inv[1,3]*(Kt3+(Iy-Iz)*q*r-m*ZG*g*cos(theta)*sin(phi)+disturbance_phi)
+    du = M_inv[0,0]*(Kt0+m*r*v-m*q*w-bouyancy*sin(theta)+disturbance_x)
+    dv = M_inv[1,1]*(Kt1-m*r*u+m*p*w+bouyancy*cos(theta)*sin(phi)+disturbance_y)
     dw = M_inv[2,2]*(Kt2+m*q*u-m*p*v+bouyancy*cos(theta)*cos(phi)+disturbance_z)
-    dp = M_inv[3,1]*(Kt1-m*r*u+m*p*w+bouyancy*cos(theta)*sin(phi)+disturbance_y) + M_inv[3,3]*(Kt3+(Iy-Iz)*q*r-m*ZG*g*cos(theta)*sin(phi)+disturbance_phi)
-    dq = M_inv[4,0]*(Kt0+m*r*v-m*q*w-bouyancy*sin(theta)+disturbance_x) + M_inv[4,4]*(Kt4+(Iz-Ix)*p*r-m*ZG*g*sin(theta)+disturbance_theta)
+    dp = M_inv[3,3]*(Kt3+(Iy-Iz)*q*r-m*ZG*g*cos(theta)*sin(phi)+disturbance_phi)
+    dq = M_inv[4,4]*(Kt4+(Iz-Ix)*p*r-m*ZG*g*sin(theta)+disturbance_theta)
     dr = M_inv[5,5]*(Kt5-(Iy-Ix)*p*q+disturbance_psi)
    
     dx = (cos(psi)*cos(theta))*u + (-sin(psi)*cos(phi)+cos(psi)*sin(theta)*sin(phi))*v + (sin(psi)*sin(phi)+cos(psi)*cos(phi)*sin(theta))*w
