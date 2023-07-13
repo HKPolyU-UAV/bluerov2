@@ -11,6 +11,7 @@ int main(int argc, char **argv)
     while(ros::ok()){
         if(br.is_start==true)
         {
+            br.applyBodyWrench();
             br.EKF();
             br.solve();
         }

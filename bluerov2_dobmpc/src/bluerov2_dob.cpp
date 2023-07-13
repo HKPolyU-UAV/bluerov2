@@ -58,6 +58,13 @@ BLUEROV2_DOB::BLUEROV2_DOB(ros::NodeHandle& nh)
     esti_x << 0,0,-20,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0;
     esti_P = P0;
 
+    // Initialize body wrench force
+    applied_wrench.fx = 0.0;
+    applied_wrench.fy = 0.0;
+    applied_wrench.fz = 0.0;
+    applied_wrench.tx = 0.0;
+    applied_wrench.ty = 0.0;
+    applied_wrench.tz = 0.0;
 
     // ros subsriber & publisher
     pose_sub = nh.subscribe<nav_msgs::Odometry>("/bluerov2/pose_gt", 20, &BLUEROV2_DOB::pose_cb, this);
@@ -75,13 +82,16 @@ BLUEROV2_DOB::BLUEROV2_DOB(ros::NodeHandle& nh)
     control_input3_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/control_input/3",20);    
     esti_pose_pub = nh.advertise<nav_msgs::Odometry>("/bluerov2/ekf/pose",20);
     esti_disturbance_pub = nh.advertise<nav_msgs::Odometry>("/bluerov2/ekf/disturbance",20);
+    applied_disturbance_pub = nh.advertise<nav_msgs::Odometry>("/bluerov2/applied_disturbance",20);
     subscribers.resize(6);
     for (int i = 0; i < 6; i++)
     {
         std::string topic = "/bluerov2/thrusters/" + std::to_string(i) + "/thrust";
         subscribers[i] = nh.subscribe<uuv_gazebo_ros_plugins_msgs::FloatStamped>(topic, 20, boost::bind(&BLUEROV2_DOB::thrusts_cb, this, _1, i));
     }
+    client = nh.serviceClient<gazebo_msgs::ApplyBodyWrench>("/gazebo/apply_body_wrench");
     // imu_sub = nh.subscribe<sensor_msgs::Imu>("/bluerov2/imu", 20, &BLUEROV2_DOB::imu_cb, this);
+    
     // initialize
     for(unsigned int i=0; i < BLUEROV2_NU; i++) acados_out.u0[i] = 0.0;
     for(unsigned int i=0; i < BLUEROV2_NX; i++) acados_in.x0[i] = 0.0;
@@ -217,42 +227,12 @@ void BLUEROV2_DOB::ref_cb(int line_to_read)
         }
     }
     
-    /*
-    for (unsigned int i = 1; i <= BLUEROV2_N; i++)
-    {
-        if(abs(acados_in.yref[i][5]-acados_in.yref[i-1][5]) > M_PI)
-        {
-            if(acados_in.yref[i][5]<0)
-            {
-                acados_in.yref[i][5] = acados_in.yref[i][5]+2*M_PI;
-            }
-            else
-            {
-                acados_in.yref[i][5] = acados_in.yref[i][5]-2*M_PI;
-            }
-        }
-    }
-    */
 }
 
 // solve MPC
 // input: current pose, reference, parameter
 // output: thrust<0-5>
 void BLUEROV2_DOB::solve(){
-    /*
-    // solve discontinue yaw control
-    if (abs(acados_in.yref[0][5] - local_euler.psi) > M_PI)
-    {
-        if (acados_in.yref[0][5] > local_euler.psi)
-        {
-            local_euler.psi = local_euler.psi + 2*M_PI;
-        }
-        else
-        {
-            local_euler.psi = local_euler.psi - 2*M_PI;
-        }
-    }
-    */
     // identify turning direction
     if (pre_yaw >= 0 && local_euler.psi >=0)
     {
@@ -310,6 +290,9 @@ void BLUEROV2_DOB::solve(){
         acados_param[i][0] = esti_x(12)/rotor_constant;
         acados_param[i][1] = esti_x(13)/rotor_constant;
         acados_param[i][2] = esti_x(14)/rotor_constant;
+        // acados_param[i][3] = esti_x(15)/rotor_constant;
+        // acados_param[i][4] = esti_x(16)/rotor_constant;
+        // acados_param[i][5] = esti_x(17)/rotor_constant;
         // acados_param[i][0] = solver_param.disturbance_x;
         // acados_param[i][1] = solver_param.disturbance_y;
         // acados_param[i][2] = solver_param.disturbance_z;
@@ -526,20 +509,38 @@ void BLUEROV2_DOB::EKF()
     esti_disturbance.pose.pose.position.x = wf_disturbance(0);
     esti_disturbance.pose.pose.position.y = wf_disturbance(1);
     esti_disturbance.pose.pose.position.z = wf_disturbance(2);
+    esti_disturbance.twist.twist.angular.x = wf_disturbance(3);
+    esti_disturbance.twist.twist.angular.y = wf_disturbance(4);
+    esti_disturbance.twist.twist.angular.z = wf_disturbance(5);
     esti_disturbance.header.stamp = ros::Time::now();
     esti_disturbance.header.frame_id = "odom_frame";
     esti_disturbance.child_frame_id = "base_link";
     esti_disturbance_pub.publish(esti_disturbance);
+
+    // publish estimate disturbance
+    applied_disturbance.pose.pose.position.x = applied_wrench.fx;
+    applied_disturbance.pose.pose.position.y = applied_wrench.fy;
+    applied_disturbance.pose.pose.position.z = applied_wrench.fz;
+    applied_disturbance.twist.twist.angular.x = applied_wrench.tx;
+    applied_disturbance.twist.twist.angular.y = applied_wrench.ty;
+    applied_disturbance.twist.twist.angular.z = applied_wrench.tz;
+    applied_disturbance.header.stamp = ros::Time::now();
+    applied_disturbance.header.frame_id = "odom_frame";
+    applied_disturbance.child_frame_id = "base_link";
+    applied_disturbance_pub.publish(applied_disturbance);
 
     // print estimate disturbance
     if(cout_counter > 2){
         std::cout << "---------------------------------------------------------------------------------------------------------------------" << std::endl;
         std::cout << "tau_x:  " << meas_y(12) << "  tau_y:  " << meas_y(13) << "  tau_z:  " << meas_y(14) << "  tau_psi:  " << meas_y(17) << std::endl;
         std::cout << "acc_x:  " << local_acc.x << "  acc_y:  " << local_acc.y << "  acc_z:  " << local_acc.z << std::endl;
+        std::cout << "acc_phi:  " << local_acc.phi << "  acc_theta:  " << local_acc.theta << "  acc_psi:  " << local_acc.psi << std::endl;
         std::cout << "ref_x:    " << acados_in.yref[0][0] << "\tref_y:   " << acados_in.yref[0][1] << "\tref_z:    " << acados_in.yref[0][2] << "\tref_yaw:    " << yaw_ref << std::endl;
         std::cout << "pos_x: " << meas_y(0) << "  pos_y: " << meas_y(1) << "  pos_z: " << meas_y(2) << " phi: " << meas_y(3) << "  theta: " << meas_y(4) << "  psi: " << meas_y(5) <<std::endl;
         std::cout << "esti_x: " << esti_x(0) << "  esti_y: " << esti_x(1) << "  esti_z: " << esti_x(2) << " esti_phi: " << esti_x(3) << "  esti_theta: " << esti_x(4) << "  esti_psi: " << esti_x(5) <<std::endl;
         std::cout << "error_x:  " << error_pose.pose.pose.position.x << "  error_y:  " << error_pose.pose.pose.position.y << "  error_z:  " << error_pose.pose.pose.position.z << std::endl;
+        std::cout << "applied force x:  " << applied_wrench.fx << "\tforce y:  " << applied_wrench.fy << "\tforce_z:  " << applied_wrench.fz << std::endl;
+        std::cout << "applied torque x:  " << applied_wrench.tx << "\ttorque y:  " << applied_wrench.ty << "\ttorque_z:  " << applied_wrench.tz << std::endl;
         std::cout << "(body frame) disturbance x: " << esti_x(12) << "    disturbance y: " << esti_x(13) << "    disturbance z: " << esti_x(14) << std::endl;
         std::cout << "(world frame) disturbance x: " << wf_disturbance(0) << "    disturbance y: " << wf_disturbance(1) << "    disturbance z: " << wf_disturbance(2) << std::endl;
         std::cout << "(world frame) disturbance phi: " << wf_disturbance(3) << "    disturbance theta: " << wf_disturbance(4) << "    disturbance psi: " << wf_disturbance(5) << std::endl;
@@ -654,4 +655,36 @@ MatrixXd BLUEROV2_DOB::compute_jacobian_H(MatrixXd x)
     }
     //std::cout<< H << std::endl;
     return H;
+}
+
+void BLUEROV2_DOB::applyBodyWrench()
+{
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<double> distribution(0.0, 5.0);
+    // applied_wrench.fx = distribution(gen);
+
+    if(rand_counter > 10){
+        applied_wrench.fx = distribution(gen);
+        rand_counter = 0;
+    }
+    else{
+        rand_counter++;
+    }
+    
+    body_wrench.request.body_name = "bluerov2/base_link";
+    body_wrench.request.start_time = ros::Time(1);
+    body_wrench.request.reference_frame = "world";
+    body_wrench.request.duration = ros::Duration(1000);
+    body_wrench.request.reference_point.x = 0.0;
+    body_wrench.request.reference_point.y = 0.0;
+    body_wrench.request.reference_point.z = 0.0;
+    body_wrench.request.wrench.force.x = applied_wrench.fx;
+    body_wrench.request.wrench.force.y = applied_wrench.fy;
+    body_wrench.request.wrench.force.z = applied_wrench.fz;
+    body_wrench.request.wrench.torque.x = applied_wrench.tx;
+    body_wrench.request.wrench.torque.y = applied_wrench.ty;
+    body_wrench.request.wrench.torque.z = applied_wrench.tz;
+    client.call(body_wrench);
+    
 }

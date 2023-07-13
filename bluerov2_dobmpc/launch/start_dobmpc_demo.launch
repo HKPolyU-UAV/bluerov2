@@ -62,14 +62,15 @@
     </include>
     -->
 
-    <include file="$(find uuv_control_utils)/launch/apply_body_wrench.launch">
+    <!-- <include file="$(find uuv_control_utils)/launch/apply_body_wrench.launch">
         <arg name="uuv_name" value="bluerov2"/>
         <arg name="starting_time" default="1"/>
         <arg name="duration" default="10000"/>
         <arg name="force_x" default="10"/>
         <arg name="force_y" default="0"/>
         <arg name="force_z" default="0"/>
-    </include>
+        <arg name="torque_z" default="0"/>
+    </include> -->
     
     <!-- Real-time 3d plot 
     <node

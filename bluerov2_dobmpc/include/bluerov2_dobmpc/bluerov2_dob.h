@@ -12,12 +12,15 @@
 #include <bluerov2_dobmpc/Reference.h>
 #include <gazebo_msgs/GetLinkState.h>
 #include <sensor_msgs/Imu.h>
+#include <gazebo_msgs/ApplyBodyWrench.h>
+#include <gazebo_msgs/LinkState.h>
 
 #include <iostream>
 #include <fstream>
 #include <cmath>
 #include <tuple>
 #include <iomanip>
+#include <random>
 
 #include "acados/utils/print.h"
 #include "acados_c/ocp_nlp_interface.h"
@@ -114,6 +117,15 @@ class BLUEROV2_DOB{
         double t5;
     };
 
+    struct wrench{
+        double fx;
+        double fy;
+        double fz;
+        double tx;
+        double ty;
+        double tz;
+    };
+
     // ROS message variables
     uuv_gazebo_ros_plugins_msgs::FloatStamped thrust0;
     uuv_gazebo_ros_plugins_msgs::FloatStamped thrust1;
@@ -126,15 +138,19 @@ class BLUEROV2_DOB{
     pos pre_pos;
     acc local_acc;
     thrust current_t;
+    wrench applied_wrench;
     nav_msgs::Odometry ref_pose;
     nav_msgs::Odometry error_pose;
     nav_msgs::Odometry esti_pose;
     nav_msgs::Odometry esti_disturbance;
+    nav_msgs::Odometry applied_disturbance;
     std::vector<ros::Subscriber> subscribers;
     uuv_gazebo_ros_plugins_msgs::FloatStamped control_input0;
     uuv_gazebo_ros_plugins_msgs::FloatStamped control_input1;
     uuv_gazebo_ros_plugins_msgs::FloatStamped control_input2;
     uuv_gazebo_ros_plugins_msgs::FloatStamped control_input3;
+    gazebo_msgs::ApplyBodyWrench body_wrench;
+    
     
 
     // Acados variables
@@ -176,7 +192,7 @@ class BLUEROV2_DOB{
     Matrix<double,18,18> esti_P;    // estimate covariance
     Matrix<double,1,18> Q_cov;      // process noise value
     Matrix<double,18,18> noise_Q;   // process noise matrix
-    MatrixXd noise_R = MatrixXd::Identity(m, m)*dt; // measurement noise matrix
+    MatrixXd noise_R = MatrixXd::Identity(m, m)*(pow(dt,4)/4); // measurement noise matrix
     
     // Acados parameter
     std::string REF_TRAJ;
@@ -186,6 +202,7 @@ class BLUEROV2_DOB{
     // Other variables
     tf::Quaternion tf_quaternion;
     int cout_counter = 0;
+    int rand_counter = 0;
 
     double logger_time;
     float yaw_sum = 0;      // yaw degree as continous number
@@ -217,7 +234,9 @@ class BLUEROV2_DOB{
 
     ros::Publisher esti_pose_pub;
     ros::Publisher esti_disturbance_pub;
+    ros::Publisher applied_disturbance_pub;
     // ros::Subscriber imu_sub;
+    ros::ServiceClient client;
 
     // Trajectory variables
     std::vector<std::vector<double>> trajectory;
@@ -239,6 +258,7 @@ class BLUEROV2_DOB{
     // disturbance observer functions
     void thrusts_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg, int index); // read current thrusts
     // void imu_cb(const sensor_msgs::Imu::ConstPtr& msg);
+    void applyBodyWrench();
     void EKF();  
     MatrixXd RK4(MatrixXd x, MatrixXd u);                                           // EKF predict and update
     MatrixXd f(MatrixXd x, MatrixXd u);                     // system process model

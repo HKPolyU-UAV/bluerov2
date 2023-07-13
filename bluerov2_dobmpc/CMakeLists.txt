@@ -23,6 +23,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(Eigen3 REQUIRED)
 find_package(yaml-cpp REQUIRED)
+find_package(gazebo_msgs REQUIRED)
 
 set(acados_include "/home/fyp/acados/include")
 set(acados_lib "/home/fyp/acados/lib")
@@ -46,6 +47,7 @@ catkin_package(
   LIBRARIES bluerov2_dobmpc
 #  CATKIN_DEPENDS uuv_gazebo_plugins_msgs
 #  DEPENDS system_lib
+  CATKIN_DEPENDS gazebo_msgs
 )
 
 include_directories(
