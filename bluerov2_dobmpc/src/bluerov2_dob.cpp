@@ -661,7 +661,7 @@ void BLUEROV2_DOB::applyBodyWrench()
 {
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_real_distribution<double> distribution(0.0, 5.0);
+    std::uniform_real_distribution<double> distribution(-1.0, 1.0);
     // applied_wrench.fx = distribution(gen);
 
     if(rand_counter > 10){
