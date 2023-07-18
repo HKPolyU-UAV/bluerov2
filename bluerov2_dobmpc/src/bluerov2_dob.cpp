@@ -291,15 +291,15 @@ void BLUEROV2_DOB::solve(){
     // set parameters
     for (int i = 0; i < BLUEROV2_N+1; i++)
     {
-        // acados_param[i][0] = esti_x(12)/rotor_constant;
-        // acados_param[i][1] = esti_x(13)/rotor_constant;
-        // acados_param[i][2] = esti_x(14)/rotor_constant;
+        acados_param[i][0] = esti_x(12)/rotor_constant;
+        acados_param[i][1] = esti_x(13)/rotor_constant;
+        acados_param[i][2] = esti_x(14)/rotor_constant;
         // acados_param[i][3] = esti_x(15)/rotor_constant;
         // acados_param[i][4] = esti_x(16)/rotor_constant;
         // acados_param[i][5] = esti_x(17)/rotor_constant;
-        acados_param[i][0] = solver_param.disturbance_x;
-        acados_param[i][1] = solver_param.disturbance_y;
-        acados_param[i][2] = solver_param.disturbance_z;
+        // acados_param[i][0] = solver_param.disturbance_x;
+        // acados_param[i][1] = solver_param.disturbance_y;
+        // acados_param[i][2] = solver_param.disturbance_z;
         acados_param[i][3] = solver_param.disturbance_phi;
         acados_param[i][4] = solver_param.disturbance_theta;
         acados_param[i][5] = solver_param.disturbance_psi;
@@ -628,7 +628,6 @@ MatrixXd BLUEROV2_DOB::compute_jacobian_F(MatrixXd x, MatrixXd u)
         VectorXd f1 = RK4(x1, u);
         F.col(i) = (f1-f0)/d;
     }
-    
     return F;
 }
 
@@ -645,16 +644,18 @@ MatrixXd BLUEROV2_DOB::compute_jacobian_H(MatrixXd x)
         VectorXd f1 = h(x1);
         H.col(i) = (f1-f0)/d;
     }
-    //std::cout<< H << std::endl;
     return H;
 }
 
 void BLUEROV2_DOB::applyBodyWrench()
 {
+    // initialize periodic disturbance
+    // double amplitudeScalingFactor;
+
     // initialize random disturbance
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_real_distribution<double> distribution(0.0, 5.0);
+    std::uniform_real_distribution<double> distribution(0.0, 1.0);
 
     // initialize disturbance data from file
     std::vector<double> data_fx;
@@ -664,12 +665,26 @@ void BLUEROV2_DOB::applyBodyWrench()
     const char * fy_c = WRENCH_FY.c_str();
     const char * fz_c = WRENCH_FZ.c_str();
 
-    if(READ_WRENCH == false){
+    if(READ_WRENCH == 0){
+        // generate periodical disturbance
+        if(dis_time > periodic_counter*M_PI)
+        {
+            amplitudeScalingFactor_X = distribution(gen)*2+1;
+            amplitudeScalingFactor_Y = distribution(gen)*2+1;
+            amplitudeScalingFactor_Z = distribution(gen)*2+1;
+            periodic_counter++;
+        }
+        applied_wrench.fx = sin(dis_time)*amplitudeScalingFactor_X;
+        applied_wrench.fy = sin(dis_time)*amplitudeScalingFactor_Y;
+        applied_wrench.fz = sin(dis_time)*amplitudeScalingFactor_Z;
+        dis_time = dis_time+dt*4;
+    }
+    else if(READ_WRENCH == 1){
         // generate random disturbance
         if(rand_counter > 10){
-            applied_wrench.fx = distribution(gen);
-            applied_wrench.fy = distribution(gen);
-            applied_wrench.fz = distribution(gen);
+            applied_wrench.fx = distribution(gen)*5;
+            applied_wrench.fy = distribution(gen)*5;
+            applied_wrench.fz = distribution(gen)*5;
             applied_wrench.tx = distribution(gen);
             applied_wrench.ty = distribution(gen);
             applied_wrench.tz = distribution(gen);
@@ -715,8 +730,9 @@ void BLUEROV2_DOB::applyBodyWrench()
         fz_file.close();
     }
     
+    // call ros service apply_body_wrench
     body_wrench.request.body_name = "bluerov2/base_link";
-    body_wrench.request.start_time = ros::Time(1);
+    body_wrench.request.start_time = ros::Time(0.5);
     body_wrench.request.reference_frame = "world";
     body_wrench.request.duration = ros::Duration(1000);
     body_wrench.request.reference_point.x = 0.0;

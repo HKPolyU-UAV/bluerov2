@@ -200,7 +200,7 @@ class BLUEROV2_DOB{
     std::string WRENCH_FY;
     std::string WRENCH_FZ;
     bool AUTO_YAW;
-    bool READ_WRENCH;
+    int READ_WRENCH;        // 0: periodic disturbance; 1: random disturbance; 2: read wrench from text
     SolverParam solver_param;
 
     // Other variables
@@ -208,6 +208,11 @@ class BLUEROV2_DOB{
     int cout_counter = 0;
     int rand_counter = 0;
     int fx_counter = 0;
+    double dis_time = 0;
+    double periodic_counter = 0;
+    double amplitudeScalingFactor_X;
+    double amplitudeScalingFactor_Y;
+    double amplitudeScalingFactor_Z;
 
     double logger_time;
     float yaw_sum = 0;      // yaw degree as continous number
