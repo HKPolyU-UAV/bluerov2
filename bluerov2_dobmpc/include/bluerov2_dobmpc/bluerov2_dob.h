@@ -169,7 +169,7 @@ class BLUEROV2_DOB{
     double ZG = 0.02;
     double g = 9.81;
     double bouyancy = -0.66;
-    double rotor_constant = 0.020046960744430276;
+    double rotor_constant = 0.026546960744430276;
     double added_mass[6] = {1.7182,0,5.468,0,1.2481,0.4006};
     Matrix<double,1,6> M_values;    
     Matrix<double,6,6> M;           // mass matrix

@@ -59,7 +59,7 @@ BLUEROV2_DOB::BLUEROV2_DOB(ros::NodeHandle& nh)
             pow(dt,2),pow(dt,2),pow(dt,2),pow(dt,2),pow(dt,2),pow(dt,2);
     noise_Q= Q_cov.asDiagonal();
     
-    esti_x << 0,0,-20,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0;
+    esti_x << 0,0,-20,0,0,0,0,0,0,0,0,0,6,6,6,0,0,0;
     esti_P = P0;
 
     // Initialize body wrench force
@@ -291,15 +291,15 @@ void BLUEROV2_DOB::solve(){
     // set parameters
     for (int i = 0; i < BLUEROV2_N+1; i++)
     {
-        acados_param[i][0] = esti_x(12)/rotor_constant;
-        acados_param[i][1] = esti_x(13)/rotor_constant;
-        acados_param[i][2] = esti_x(14)/rotor_constant;
+        // acados_param[i][0] = esti_x(12)/rotor_constant;
+        // acados_param[i][1] = esti_x(13)/rotor_constant;
+        // acados_param[i][2] = esti_x(14)/rotor_constant;
         // acados_param[i][3] = esti_x(15)/rotor_constant;
         // acados_param[i][4] = esti_x(16)/rotor_constant;
         // acados_param[i][5] = esti_x(17)/rotor_constant;
-        // acados_param[i][0] = solver_param.disturbance_x;
-        // acados_param[i][1] = solver_param.disturbance_y;
-        // acados_param[i][2] = solver_param.disturbance_z;
+        acados_param[i][0] = solver_param.disturbance_x;
+        acados_param[i][1] = solver_param.disturbance_y;
+        acados_param[i][2] = solver_param.disturbance_z;
         acados_param[i][3] = solver_param.disturbance_phi;
         acados_param[i][4] = solver_param.disturbance_theta;
         acados_param[i][5] = solver_param.disturbance_psi;
@@ -443,6 +443,7 @@ void BLUEROV2_DOB::thrusts_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::C
 //        process noise covariance Q, measuremnt noise covariance R
 void BLUEROV2_DOB::EKF()
 {
+    // std::cout<<"esti_x12:    " << esti_x(12) << std::endl;
     // get input u and measuremnet y
     meas_u << current_t.t0, current_t.t1, current_t.t2, current_t.t3, current_t.t4, current_t.t5;
     Matrix<double,6,1> tau;
@@ -536,6 +537,7 @@ void BLUEROV2_DOB::EKF()
     // print estimate disturbance
     if(cout_counter > 2){
         std::cout << "---------------------------------------------------------------------------------------------------------------------" << std::endl;
+        // std::cout << "esti_x12:   " << esti_x(12) << "\t esti_x2:  " << esti_x(2) << std::endl;
         std::cout << "tau_x:  " << meas_y(12) << "  tau_y:  " << meas_y(13) << "  tau_z:  " << meas_y(14) << "  tau_psi:  " << meas_y(17) << std::endl;
         std::cout << "acc_x:  " << local_acc.x << "  acc_y:  " << local_acc.y << "  acc_z:  " << local_acc.z << std::endl;
         std::cout << "acc_phi:  " << local_acc.phi << "  acc_theta:  " << local_acc.theta << "  acc_psi:  " << local_acc.psi << std::endl;
@@ -669,15 +671,15 @@ void BLUEROV2_DOB::applyBodyWrench()
         // generate periodical disturbance
         if(dis_time > periodic_counter*M_PI)
         {
-            amplitudeScalingFactor_X = distribution(gen)*2+1;
-            amplitudeScalingFactor_Y = distribution(gen)*2+1;
-            amplitudeScalingFactor_Z = distribution(gen)*2+1;
+            amplitudeScalingFactor_X = distribution(gen)*6;
+            amplitudeScalingFactor_Y = distribution(gen)*6;
+            amplitudeScalingFactor_Z = distribution(gen)*6;
             periodic_counter++;
         }
-        applied_wrench.fx = sin(dis_time)*amplitudeScalingFactor_X;
-        applied_wrench.fy = sin(dis_time)*amplitudeScalingFactor_Y;
-        applied_wrench.fz = sin(dis_time)*amplitudeScalingFactor_Z;
-        dis_time = dis_time+dt*4;
+        applied_wrench.fx = sin(dis_time)*amplitudeScalingFactor_X+6;
+        applied_wrench.fy = sin(dis_time)*amplitudeScalingFactor_Y+6;
+        applied_wrench.fz = sin(dis_time)*amplitudeScalingFactor_Z+6;
+        dis_time = dis_time+dt*3;
     }
     else if(READ_WRENCH == 1){
         // generate random disturbance
@@ -694,8 +696,10 @@ void BLUEROV2_DOB::applyBodyWrench()
             rand_counter++;
         }
     }
-    else{
+    else if(READ_WRENCH == 2){
+        // std::cout << "read from file starts" << std::endl;
         // read disturbance from file
+        // read force x
         std::ifstream fx_file(fx_c);
         if (!fx_file.is_open()) {
             std::cerr << "Failed to open the file." << std::endl;
@@ -707,6 +711,7 @@ void BLUEROV2_DOB::applyBodyWrench()
         }
         fx_file.close();
 
+        // read force y
         std::ifstream fy_file(fy_c);
         if (!fy_file.is_open()) {
             std::cerr << "Failed to open the file." << std::endl;
@@ -718,6 +723,7 @@ void BLUEROV2_DOB::applyBodyWrench()
         }
         fy_file.close();
 
+        // read force z
         std::ifstream fz_file(fz_c);
         if (!fz_file.is_open()) {
             std::cerr << "Failed to open the file." << std::endl;
@@ -728,11 +734,15 @@ void BLUEROV2_DOB::applyBodyWrench()
             data_fz.push_back(value_fz); // Load the data into the vector
         }
         fz_file.close();
+        applied_wrench.fx  = data_fx[fx_counter];
+        applied_wrench.fy  = data_fy[fx_counter];
+        applied_wrench.fz  = data_fz[fx_counter];
+        fx_counter++;
     }
     
     // call ros service apply_body_wrench
     body_wrench.request.body_name = "bluerov2/base_link";
-    body_wrench.request.start_time = ros::Time(0.5);
+    body_wrench.request.start_time = ros::Time(0.0);
     body_wrench.request.reference_frame = "world";
     body_wrench.request.duration = ros::Duration(1000);
     body_wrench.request.reference_point.x = 0.0;

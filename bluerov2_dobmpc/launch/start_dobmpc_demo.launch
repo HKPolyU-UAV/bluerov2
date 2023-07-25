@@ -55,7 +55,7 @@
     <include file="$(find bluerov2_control)/launch/set_gm_current.launch">
         <arg name="component" default="$(arg component_vel)"/>
         <arg name="mean" default="$(arg mean_vel)"/>
-        <arg name="min" default="$(arg min_vel)"/>
+        <arg nam e="min" default="$(arg min_vel)"/>
         <arg name="max" default="$(arg max_vel)"/>
         <arg name="noise" default="$(arg noise_vel)"/>
         <arg name="mu" default="$(arg mu_vel)"/>
