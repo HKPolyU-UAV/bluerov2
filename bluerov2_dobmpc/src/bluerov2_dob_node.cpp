@@ -17,7 +17,7 @@ int main(int argc, char **argv)
 
         if (elapsed_time >= duration)
         {
-            ROS_INFO("Reached 20 seconds. Stopping the program.");
+            ROS_INFO("Reached 25 seconds. Stopping the program.");
             break;
         }
         

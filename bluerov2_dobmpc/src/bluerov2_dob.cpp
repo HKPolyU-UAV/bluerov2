@@ -10,6 +10,7 @@ BLUEROV2_DOB::BLUEROV2_DOB(ros::NodeHandle& nh)
     nh.getParam("/bluerov2_dob_node/applied_forcex", WRENCH_FX);
     nh.getParam("/bluerov2_dob_node/applied_forcey", WRENCH_FY);
     nh.getParam("/bluerov2_dob_node/applied_forcez", WRENCH_FZ);
+    nh.getParam("/bluerov2_dob_node/applied_torquez", WRENCH_TZ);
     nh.getParam("/bluerov2_dob_node/disturbance_x", solver_param.disturbance_x);
     nh.getParam("/bluerov2_dob_node/disturbance_y", solver_param.disturbance_y);
     nh.getParam("/bluerov2_dob_node/disturbance_z", solver_param.disturbance_z);
@@ -291,18 +292,22 @@ void BLUEROV2_DOB::solve(){
     // set parameters
     for (int i = 0; i < BLUEROV2_N+1; i++)
     {
-        // acados_param[i][0] = esti_x(12)/rotor_constant;
-        // acados_param[i][1] = esti_x(13)/rotor_constant;
-        // acados_param[i][2] = esti_x(14)/rotor_constant;
-        // acados_param[i][3] = esti_x(15)/rotor_constant;
-        // acados_param[i][4] = esti_x(16)/rotor_constant;
-        // acados_param[i][5] = esti_x(17)/rotor_constant;
-        acados_param[i][0] = solver_param.disturbance_x;
-        acados_param[i][1] = solver_param.disturbance_y;
-        acados_param[i][2] = solver_param.disturbance_z;
-        acados_param[i][3] = solver_param.disturbance_phi;
-        acados_param[i][4] = solver_param.disturbance_theta;
-        acados_param[i][5] = solver_param.disturbance_psi;
+        if(READ_WRENCH == 0){
+            acados_param[i][0] = solver_param.disturbance_x;
+            acados_param[i][1] = solver_param.disturbance_y;
+            acados_param[i][2] = solver_param.disturbance_z;
+            acados_param[i][3] = solver_param.disturbance_phi;
+            acados_param[i][4] = solver_param.disturbance_theta;
+            acados_param[i][5] = solver_param.disturbance_psi;
+        }
+        else if(READ_WRENCH == 2){
+            acados_param[i][0] = esti_x(12)/rotor_constant;
+            acados_param[i][1] = esti_x(13)/rotor_constant;
+            acados_param[i][2] = esti_x(14)/rotor_constant;
+            acados_param[i][3] = solver_param.disturbance_phi;
+            acados_param[i][4] = solver_param.disturbance_theta;
+            acados_param[i][5] = esti_x(17)/rotor_constant;
+        }
         bluerov2_acados_update_params(mpc_capsule,i,acados_param[i],BLUEROV2_NP);
     }
 
@@ -595,6 +600,12 @@ MatrixXd BLUEROV2_DOB::f(MatrixXd x, MatrixXd u)
             invM(3,3)*(KAu(3)+(Iy-Iz)*x(10)*x(11)-mass*ZG*g*cos(x(4))*sin(x(3))+x(15)+Dl(3,3)*x(9)),
             invM(4,4)*(KAu(4)+(Iz-Ix)*x(9)*x(11)-mass*ZG*g*sin(x(4))+x(16)+Dl(4,4)*x(10)),
             invM(5,5)*(KAu(5)-(Iy-Ix)*x(9)*x(10)+x(17)+Dl(5,5)*x(11)),
+            // invM(0,0)*(KAu(0)+mass*x(11)*x(7)-mass*x(10)*x(8)-bouyancy*sin(x(4))+x(12)+Dl(0,0)*x(6)-added_mass[2]*x(2)*x(4)),    // xddot: M^-1[tau+w-C-g-D]
+            // invM(1,1)*(KAu(1)-mass*x(11)*x(6)+mass*x(9)*x(8)+bouyancy*cos(x(4))*sin(x(3))+x(13)+Dl(1,1)*x(7)+added_mass[2]*x(2)*x(3)+added_mass[0]*x(0)*x(5)),
+            // invM(2,2)*(KAu(2)+mass*x(10)*x(6)-mass*x(9)*x(7)+bouyancy*cos(x(4))*cos(x(3))+x(14)+Dl(2,2)*x(8)+added_mass[1]*x(1)*x(3)-added_mass[0]*x(0)*x(4)),
+            // invM(3,3)*(KAu(3)+(Iy-Iz)*x(10)*x(11)-mass*ZG*g*cos(x(4))*sin(x(3))+x(15)+Dl(3,3)*x(9)+added_mass[2]*x(2)*x(1)-added_mass[1]*x(1)*x(2)+added_mass[5]*x(5)*x(4)-added_mass[4]*x(4)*x(5)),
+            // invM(4,4)*(KAu(4)+(Iz-Ix)*x(9)*x(11)-mass*ZG*g*sin(x(4))+x(16)+Dl(4,4)*x(10)-added_mass[2]*x(2)*x(0)+added_mass[0]*x(0)*x(2)-added_mass[5]*x(5)*x(3)+added_mass[3]*x(3)*x(5)),
+            // invM(5,5)*(KAu(5)-(Iy-Ix)*x(9)*x(10)+x(17)+Dl(5,5)*x(11)+added_mass[1]*x[1]*x(0)-added_mass[0]*x(0)*x(1)+added_mass[4]*x(4)*x(3)-added_mass[3]*x(3)*x(4)),
             0,0,0,0,0,0;
             
     return xdot; // dt is the time step
@@ -613,6 +624,12 @@ MatrixXd BLUEROV2_DOB::h(MatrixXd x)
         M(3,3)*local_acc.phi-(Iy-Iz)*x(10)*x(11)+mass*ZG*g*cos(x(4))*sin(x(3))-x(15)-Dl(3,3)*x(9),
         M(4,4)*local_acc.theta-(Iz-Ix)*x(9)*x(11)+mass*ZG*g*sin(x(4))-x(16)-Dl(4,4)*x(10),
         M(5,5)*local_acc.psi+(Iy-Ix)*x(9)*x(10)-x(17)-Dl(5,5)*x(11);
+        // M(0,0)*local_acc.x-mass*x(11)*x(7)+mass*x(10)*x(8)+bouyancy*sin(x(4))-x(12)-Dl(0,0)*x(6)+added_mass[2]*x(2)*x(4),        
+        // M(1,1)*local_acc.y+mass*x(11)*x(6)-mass*x(9)*x(8)-bouyancy*cos(x(4))*sin(x(3))-x(13)-Dl(1,1)*x(7)-added_mass[2]*x(2)*x(3)-added_mass[0]*x(0)*x(5),
+        // M(2,2)*local_acc.z-mass*x(10)*x(6)+mass*x(9)*x(7)-bouyancy*cos(x(4))*cos(x(3))-x(14)-Dl(2,2)*x(8)-added_mass[1]*x(1)*x(3)+added_mass[0]*x(0)*x(4),
+        // M(3,3)*local_acc.phi-(Iy-Iz)*x(10)*x(11)+mass*ZG*g*cos(x(4))*sin(x(3))-x(15)-Dl(3,3)*x(9)-added_mass[2]*x(2)*x(1)+added_mass[1]*x(1)*x(2)-added_mass[5]*x(5)*x(4)+added_mass[4]*x(4)*x(5),
+        // M(4,4)*local_acc.theta-(Iz-Ix)*x(9)*x(11)+mass*ZG*g*sin(x(4))-x(16)-Dl(4,4)*x(10)+added_mass[2]*x(2)*x(0)-added_mass[0]*x(0)*x(2)+added_mass[5]*x(5)*x(3)-added_mass[3]*x(3)*x(5),
+        // M(5,5)*local_acc.psi+(Iy-Ix)*x(9)*x(10)-x(17)-Dl(5,5)*x(11)-added_mass[1]*x[1]*x(0)+added_mass[0]*x(0)*x(1)-added_mass[4]*x(4)*x(3)+added_mass[3]*x(3)*x(4);
 
     return y;
 }
@@ -657,15 +674,17 @@ void BLUEROV2_DOB::applyBodyWrench()
     // initialize random disturbance
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_real_distribution<double> distribution(0.0, 1.0);
+    std::uniform_real_distribution<double> distribution(0.5, 1.0);
 
     // initialize disturbance data from file
     std::vector<double> data_fx;
     std::vector<double> data_fy;
     std::vector<double> data_fz;
+    std::vector<double> data_tz;
     const char * fx_c = WRENCH_FX.c_str();
     const char * fy_c = WRENCH_FY.c_str();
     const char * fz_c = WRENCH_FZ.c_str();
+    const char * tz_c = WRENCH_TZ.c_str();
 
     if(READ_WRENCH == 0){
         // generate periodical disturbance
@@ -674,12 +693,15 @@ void BLUEROV2_DOB::applyBodyWrench()
             amplitudeScalingFactor_X = distribution(gen)*6;
             amplitudeScalingFactor_Y = distribution(gen)*6;
             amplitudeScalingFactor_Z = distribution(gen)*6;
+            amplitudeScalingFactor_N = distribution(gen)*6;
             periodic_counter++;
         }
         applied_wrench.fx = sin(dis_time)*amplitudeScalingFactor_X+6;
         applied_wrench.fy = sin(dis_time)*amplitudeScalingFactor_Y+6;
         applied_wrench.fz = sin(dis_time)*amplitudeScalingFactor_Z+6;
-        dis_time = dis_time+dt*3;
+        applied_wrench.tz = (sin(dis_time)*amplitudeScalingFactor_Y)/3;
+        dis_time = dis_time+dt*2.5;
+        // std::cout << "amplitudeScalingFactor_Z:  " << amplitudeScalingFactor_Z << "  amplitudeScalingFactor_N:  " << amplitudeScalingFactor_N << std::endl;
     }
     else if(READ_WRENCH == 1){
         // generate random disturbance
@@ -734,9 +756,23 @@ void BLUEROV2_DOB::applyBodyWrench()
             data_fz.push_back(value_fz); // Load the data into the vector
         }
         fz_file.close();
+
+        // read torque z
+        std::ifstream tz_file(tz_c);
+        if (!tz_file.is_open()) {
+            std::cerr << "Failed to open the file." << std::endl;
+            return;
+        }
+        double value_tz;
+        while (tz_file >> value_tz) {
+            data_tz.push_back(value_tz); // Load the data into the vector
+        }
+        tz_file.close();
+
         applied_wrench.fx  = data_fx[fx_counter];
         applied_wrench.fy  = data_fy[fx_counter];
         applied_wrench.fz  = data_fz[fx_counter];
+        applied_wrench.tz  = data_tz[fx_counter];
         fx_counter++;
     }
     

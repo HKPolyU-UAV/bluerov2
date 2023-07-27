@@ -168,8 +168,8 @@ class BLUEROV2_DOB{
     double Iz = 0.58;
     double ZG = 0.02;
     double g = 9.81;
-    double bouyancy = -0.66;
-    double rotor_constant = 0.026546960744430276;
+    double bouyancy = 0.661618;
+    double rotor_constant = 0.028546960744430276;
     double added_mass[6] = {1.7182,0,5.468,0,1.2481,0.4006};
     Matrix<double,1,6> M_values;    
     Matrix<double,6,6> M;           // mass matrix
@@ -199,6 +199,7 @@ class BLUEROV2_DOB{
     std::string WRENCH_FX;
     std::string WRENCH_FY;
     std::string WRENCH_FZ;
+    std::string WRENCH_TZ;
     bool AUTO_YAW;
     int READ_WRENCH;        // 0: periodic disturbance; 1: random disturbance; 2: read wrench from text
     SolverParam solver_param;
@@ -213,6 +214,7 @@ class BLUEROV2_DOB{
     double amplitudeScalingFactor_X;
     double amplitudeScalingFactor_Y;
     double amplitudeScalingFactor_Z;
+    double amplitudeScalingFactor_N;
 
     double logger_time;
     float yaw_sum = 0;      // yaw degree as continous number
