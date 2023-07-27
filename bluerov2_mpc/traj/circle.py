@@ -11,10 +11,10 @@ import math
 sample_time = 0.05             # seconds
 duration = 240                   # seconds
 
-r = 5
+r = 2
 v = 1.5
 
-x0 = 5                        
+x0 = 0                       
 y0 = 0
 z0 = -20
 

@@ -2,10 +2,10 @@
     <!-- Flag to start recoding a rosbag  -->
     <arg name="record" default="false"/>
     <!-- Initial position and heading of the vehicle (wrt Gazebo's inertial frame)  -->
-    <arg name="x" default="0"/>
+    <arg name="x" default="2"/>
     <arg name="y" default="0"/>
     <arg name="z" default="-20"/>
-    <arg name="yaw" default="0"/>
+    <arg name="yaw" default="-1.570796"/>
 
     <arg name="use_ned_frame" default="false"/>
 
@@ -40,14 +40,18 @@
     <include file="$(find bluerov2_dobmpc)/launch/dob.launch"/> 
     
 
-    <!--
-    <include file="$(find uuv_control_utils)/launch/start_circular_trajectory.launch">
+    
+    <!-- <include file="$(find uuv_control_utils)/launch/start_circular_trajectory.launch">
         <arg name="uuv_name" value="bluerov2"/>
-        <arg name="radius" value="5"/>
-        <arg name="center_z" value="-25"/>
-        <arg name="max_forward_speed" value="0.6"/>
-    </include>
-    -->
+        <arg name="radius" value="2"/>
+        <arg name="center_x" value="0"/>
+        <arg name="center_y" value="0"/>
+        <arg name="center_z" value="-20"/>
+        <arg name="n_points" value="50"/>
+        <arg name="duration" default="100"/>
+        <arg name="max_forward_speed" value="50"/>
+    </include> -->
+   
     <!-- Start disturbance observer -->
     <!-- <include file ="$(find bluerov2_dobmpc)/launch/do.launch"/> -->
 
@@ -87,7 +91,7 @@
       <arg name="use_ned_frame" value="$(arg use_ned_frame)"/>
     </include>
 
-    <!-- Start RViz 
-    <node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find bluerov2_control)/rviz/bluerov2_control.rviz"/>
-    --> 
+    <!-- Start RViz --> 
+    <!-- <node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find bluerov2_control)/rviz/bluerov2_control.rviz"/> -->
+    
 </launch>

@@ -59,7 +59,7 @@ static int casadi_f0(const casadi_real** arg, casadi_real** res, casadi_int* iw,
   if (res[0]!=0) res[0][2]=a0;
   a0=arg[0]? arg[0][3] : 0;
   a1=cos(a0);
-  a2=-6.6000000000000003e-01;
+  a2=6.6000000000000003e-01;
   a3=arg[0]? arg[0][4] : 0;
   a4=cos(a3);
   a4=(a2*a4);

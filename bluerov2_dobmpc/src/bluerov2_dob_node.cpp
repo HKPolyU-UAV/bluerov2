@@ -8,7 +8,7 @@ int main(int argc, char **argv)
     ros::Rate loop_rate(20);
 
     ros::Time start_time = ros::Time::now();
-    ros::Duration duration(25.0); // Set the desired duration to 25 seconds
+    ros::Duration duration(50.0); // Set the desired duration to 25 seconds
 
     BLUEROV2_DOB br(nh);
     while(ros::ok()){
@@ -23,7 +23,7 @@ int main(int argc, char **argv)
         
         if(br.is_start==true)
         {
-            br.applyBodyWrench();
+            // br.applyBodyWrench();
             br.EKF();
             br.solve();
         }

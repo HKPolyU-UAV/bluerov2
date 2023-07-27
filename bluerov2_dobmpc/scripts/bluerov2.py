@@ -61,7 +61,7 @@ def export_bluerov2_model() -> AcadosModel:
     Iz = 0.58
     ZG = 0.02
     g = 9.81
-    bouyancy = -0.66                                # net bouyancy forcy
+    bouyancy = 0.66                                # net bouyancy forcy
     rotor_constant = 0.026546960744430276
     
     added_mass = np.array([1.7182,0,5.468,0,1.2481,0.4006])

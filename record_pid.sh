@@ -1,0 +1,2 @@
+rosbag record -O circle_pid /bluerov2/pose_gt /bluerov2/thrusters/0/thrust /bluerov2/thrusters/1/thrust /bluerov2/thrusters/2/thrust /bluerov2/thrusters/3/thrust /bluerov2/thrusters/4/thrust /bluerov2/thrusters/5/thrust /bluerov2/thrusters/0/input /bluerov2/thrusters/1/input /bluerov2/thrusters/2/input /bluerov2/thrusters/3/input /bluerov2/thrusters/4/input /bluerov2/thrusters/5/input /bluerov2/dp_controller/error /bluerov2/dp_controller/reference
+
