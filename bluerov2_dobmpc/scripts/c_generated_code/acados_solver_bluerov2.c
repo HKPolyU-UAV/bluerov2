@@ -426,15 +426,15 @@ void bluerov2_acados_create_5_set_nlp_in(bluerov2_solver_capsule* capsule, const
     W_0[2+(NY0) * 2] = 150;
     W_0[3+(NY0) * 3] = 10;
     W_0[4+(NY0) * 4] = 10;
-    W_0[5+(NY0) * 5] = 200;
+    W_0[5+(NY0) * 5] = 150;
     W_0[6+(NY0) * 6] = 10;
     W_0[7+(NY0) * 7] = 10;
     W_0[8+(NY0) * 8] = 10;
     W_0[9+(NY0) * 9] = 10;
     W_0[10+(NY0) * 10] = 10;
     W_0[11+(NY0) * 11] = 10;
-    W_0[12+(NY0) * 12] = 4;
-    W_0[13+(NY0) * 13] = 4;
+    W_0[12+(NY0) * 12] = 8;
+    W_0[13+(NY0) * 13] = 8;
     W_0[14+(NY0) * 14] = 0.1;
     W_0[15+(NY0) * 15] = 0.05;
     ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, 0, "W", W_0);
@@ -446,15 +446,15 @@ void bluerov2_acados_create_5_set_nlp_in(bluerov2_solver_capsule* capsule, const
     W[2+(NY) * 2] = 150;
     W[3+(NY) * 3] = 10;
     W[4+(NY) * 4] = 10;
-    W[5+(NY) * 5] = 200;
+    W[5+(NY) * 5] = 150;
     W[6+(NY) * 6] = 10;
     W[7+(NY) * 7] = 10;
     W[8+(NY) * 8] = 10;
     W[9+(NY) * 9] = 10;
     W[10+(NY) * 10] = 10;
     W[11+(NY) * 11] = 10;
-    W[12+(NY) * 12] = 4;
-    W[13+(NY) * 13] = 4;
+    W[12+(NY) * 12] = 8;
+    W[13+(NY) * 13] = 8;
     W[14+(NY) * 14] = 0.1;
     W[15+(NY) * 15] = 0.05;
 
@@ -470,7 +470,7 @@ void bluerov2_acados_create_5_set_nlp_in(bluerov2_solver_capsule* capsule, const
     W_e[2+(NYN) * 2] = 150;
     W_e[3+(NYN) * 3] = 10;
     W_e[4+(NYN) * 4] = 10;
-    W_e[5+(NYN) * 5] = 200;
+    W_e[5+(NYN) * 5] = 150;
     W_e[6+(NYN) * 6] = 10;
     W_e[7+(NYN) * 7] = 10;
     W_e[8+(NYN) * 8] = 10;

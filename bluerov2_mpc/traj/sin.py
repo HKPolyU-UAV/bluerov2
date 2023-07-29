@@ -25,12 +25,12 @@ t = np.append(t, duration)
 
 traj[:,0] = -r*np.cos(t*v/r)+x0     # x
 traj[:,1] = -r*np.sin(t*v/r)+y0     # y
-traj[:,2] = z0                      # z
+traj[:,2] = -1*np.sin(t*v/1)+z0                      # z
 traj[:,3] = 0                       # phi
 traj[:,4] = 0                       # theta
-traj[:,5] = t*v/r-0.5*np.pi         # psi
-traj[:,6] = v*np.sin(t*v/r)         # u
-traj[:,7] = -v*np.cos(t*v/r)        # v
+traj[:,5] =0         # psi
+traj[:,6] = 0      # u
+traj[:,7] = 0     # v
 traj[:,8] = 0                       # w
 traj[:,9] = 0                       # p
 traj[:,10] = 0                      # q
@@ -47,11 +47,5 @@ for i in range(0,int(duration/sample_time+1)):
         traj[i,5] = -np.pi + traj[i,5]%np.pi
     #traj[i,5] = np.sin(traj[i,5])
 '''
-sta = np.zeros((int(50/sample_time+1),16))
-sta[:,0] = -2
-sta[:,2] = z0
-sta[:,5] = -1.570796
-traj2 = np.concatenate((sta,traj))
-
 # write to txt
-np.savetxt('circle.txt',traj2,fmt='%f')
+np.savetxt('sin.txt',traj,fmt='%f')

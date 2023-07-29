@@ -2,10 +2,10 @@
     <!-- Flag to start recoding a rosbag  -->
     <arg name="record" default="false"/>
     <!-- Initial position and heading of the vehicle (wrt Gazebo's inertial frame)  -->
-    <arg name="x" default="2"/>
+    <arg name="x" default="0"/>
     <arg name="y" default="0"/>
     <arg name="z" default="-20"/>
-    <arg name="yaw" default="-1.570796"/>
+    <arg name="yaw" default="0"/>
 
     <arg name="use_ned_frame" default="false"/>
 
@@ -71,9 +71,9 @@
         <arg name="starting_time" default="1"/>
         <arg name="duration" default="10000"/>
         <arg name="force_x" default="10"/>
-        <arg name="force_y" default="0"/>
-        <arg name="force_z" default="0"/>
-        <arg name="torque_z" default="0"/>
+        <arg name="force_y" default="10"/>
+        <arg name="force_z" default="10"/>
+        <arg name="torque_z" default="1"/>
     </include> -->
     
     <!-- Real-time 3d plot 

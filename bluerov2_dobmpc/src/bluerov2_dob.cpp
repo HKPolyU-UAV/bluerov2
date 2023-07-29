@@ -705,18 +705,22 @@ void BLUEROV2_DOB::applyBodyWrench()
     }
     else if(READ_WRENCH == 1){
         // generate random disturbance
-        if(rand_counter > 10){
-            applied_wrench.fx = distribution(gen)*5;
-            applied_wrench.fy = distribution(gen)*5;
-            applied_wrench.fz = distribution(gen)*5;
-            applied_wrench.tx = distribution(gen);
-            applied_wrench.ty = distribution(gen);
-            applied_wrench.tz = distribution(gen);
-            rand_counter = 0;
-        }
-        else{
-            rand_counter++;
-        }
+        // if(rand_counter > 10){
+        //     applied_wrench.fx = distribution(gen)*5;
+        //     applied_wrench.fy = distribution(gen)*5;
+        //     applied_wrench.fz = distribution(gen)*5;
+        //     applied_wrench.tx = distribution(gen);
+        //     applied_wrench.ty = distribution(gen);
+        //     applied_wrench.tz = distribution(gen);
+        //     rand_counter = 0;
+        // }
+        // else{
+        //     rand_counter++;
+        // }
+        applied_wrench.fx = 10;
+        applied_wrench.fy = 10;
+        applied_wrench.fz = 10;
+        applied_wrench.tz = 0;
     }
     else if(READ_WRENCH == 2){
         // std::cout << "read from file starts" << std::endl;

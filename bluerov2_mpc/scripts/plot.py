@@ -3,53 +3,33 @@ from nav_msgs.msg import Odometry  # replace with the actual message type of pos
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 
-real_x, real_y, real_z = [], [], []
-ref_x, ref_y, ref_z = [], [], []
-gt_start = False
-ref_start = False
-def gt_callback(data):
-    global real_x, real_y, real_z
-    global gt_start
-    gt_start = True
-    real_x.append(data.pose.pose.position.x)
-    real_y.append(data.pose.pose.position.y)
-    real_z.append(data.pose.pose.position.z)
+x_errors = []
+y_errors = []
+z_errors = []
     
-def ref_callback(data):
-    global ref_start
-    ref_start = True
-    global ref_x, ref_y, ref_z
-    ref_x.append(data.pose.pose.position.x)
-    ref_y.append(data.pose.pose.position.y)
-    ref_z.append(data.pose.pose.position.z)
+def err_callback(data):
+    global x_errors, y_errors, z_errors
     
-rospy.init_node('plotter', anonymous=True)
-rospy.Subscriber('/bluerov2/pose_gt', Odometry, gt_callback)
-rospy.Subscriber('/bluerov2/mpc/reference', Odometry, ref_callback)
+    # Append the new error values to the global variables
+    x_errors.append(data.pose.pose.position.x)
+    y_errors.append(data.pose.pose.position.y)
+    z_errors.append(data.pose.pose.position.z)
 
-fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
-ax.set_xlabel('X')
-ax.set_ylabel('Y')
-ax.set_zlabel('Z')
-ax.set_xlim([10, 25])
-ax.set_ylim([0, 15])
-ax.set_zlim([-35, -2])
+    
+rospy.init_node('plotter_error', anonymous=True)
+# rospy.Subscriber('/bluerov2/pose_gt', Odometry, gt_callback)
+rospy.Subscriber('/bluerov2/mpc/error', Odometry, err_callback)
+
+fig, ax = plt.subplots()
+
 while not rospy.is_shutdown():
-    if gt_start==True and ref_start==True:
-        min_len = min(len(real_x),len(ref_x),len(real_y),len(ref_y),len(real_z),len(ref_z))
-        real_x = real_x[:min_len]
-        real_y = real_y[:min_len]
-        real_z = real_z[:min_len]
-        ref_x = ref_x[:min_len]
-        ref_y = ref_y[:min_len]
-        ref_z = ref_z[:min_len]
-        ax.plot(real_x, real_y, real_z, label='real', color='blue')
-        ax.plot(ref_x, ref_y, ref_z, label='reference', color='orange')
-        ax.legend()
-        plt.draw()
-        plt.pause(0.05)
-        current_time = rospy.Time.now()
-        print("Current ROS time: {} s {} ns".format(current_time.secs, current_time.nsecs))
+    plt.clf()
+    plt.bar(['X', 'Y', 'Z'], [x_errors[-1], y_errors[-1], z_errors[-1]])
+    plt.xlabel('Direction')
+    plt.ylabel('Error')
+    plt.ylim(-0.5, 0.5)
+    plt.title('Control Errors (m)')
+    plt.draw()
+    plt.pause(0.001)
 
 plt.show()

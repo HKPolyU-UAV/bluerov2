@@ -7,6 +7,7 @@ real_x, real_y = [], []
 ref_x, ref_y = [], []
 gt_start = False
 ref_start = False
+
 def gt_callback(data):
     global real_x, real_y
     global gt_start
@@ -34,12 +35,12 @@ while not rospy.is_shutdown():
         ax.clear()
         ax.set_xlabel('X')
         ax.set_ylabel('Y')
-        ax.set_xlim([10, 25])
-        ax.set_ylim([0, 15])
-        ax.plot(real_x[-20:], real_y[-20:], label='real', color='blue')
-        ax.plot(ref_x[-20:], ref_y[-20:], label='reference', color='orange')
-        ax.scatter(real_x[-1], real_y[-1], color='blue', marker='o', label='current')
-        ax.scatter(ref_x[-1], ref_y[-1], color='orange', marker='o', label='reference_current')
+        ax.set_xlim([-2.2, 2.2])
+        ax.set_ylim([-2.2, 2.2])
+        ax.plot(real_x[-20:], real_y[-20:], label='MPC', color='blue')
+        ax.plot(ref_x[-20:], ref_y[-20:], label='Reference', color='orange')
+        ax.scatter(real_x[-1], real_y[-1], color='blue', marker='o')
+        ax.scatter(ref_x[-1], ref_y[-1], color='orange', marker='o')
         ax.legend()
         plt.draw()
         plt.pause(0.05)
