@@ -6,6 +6,7 @@ BLUEROV2_DOB::BLUEROV2_DOB(ros::NodeHandle& nh)
     // read parameter
     nh.getParam("/bluerov2_dob_node/auto_yaw",AUTO_YAW);
     nh.getParam("/bluerov2_dob_node/read_wrench",READ_WRENCH);
+    nh.getParam("/bluerov2_dob_node/compensate_d",COMPENSATE_D);
     nh.getParam("/bluerov2_dob_node/ref_traj", REF_TRAJ);
     nh.getParam("/bluerov2_dob_node/applied_forcex", WRENCH_FX);
     nh.getParam("/bluerov2_dob_node/applied_forcey", WRENCH_FY);
@@ -119,23 +120,53 @@ void BLUEROV2_DOB::pose_cb(const nav_msgs::Odometry::ConstPtr& pose)
     local_pos.u = pose->twist.twist.linear.x;
     local_pos.v = pose->twist.twist.linear.y;
     local_pos.w = pose->twist.twist.linear.z;
-    local_acc.x = (local_pos.u-pre_pos.u)/dt;
-    local_acc.y = (local_pos.v-pre_pos.v)/dt;
-    local_acc.z = (local_pos.w-pre_pos.w)/dt;
-    pre_pos.u = local_pos.u;
-    pre_pos.v = local_pos.v;
-    pre_pos.w = local_pos.w;
+    // local_acc.x = (local_pos.u-pre_pos.u)/dt;
+    // local_acc.y = (local_pos.v-pre_pos.v)/dt;
+    // local_acc.z = (local_pos.w-pre_pos.w)/dt;
+    // pre_pos.u = local_pos.u;
+    // pre_pos.v = local_pos.v;
+    // pre_pos.w = local_pos.w;
 
     // get angular velocity p, q, r
     local_pos.p = pose->twist.twist.angular.x;
     local_pos.q = pose->twist.twist.angular.y;
     local_pos.r = pose->twist.twist.angular.z;
-    local_acc.phi = (local_pos.p-pre_pos.p)/dt;
-    local_acc.theta = (local_pos.q-pre_pos.q)/dt;
-    local_acc.psi = (local_pos.r-pre_pos.r)/dt;
-    pre_pos.p = local_pos.p;
-    pre_pos.q = local_pos.q;
-    pre_pos.r = local_pos.r;
+    // local_acc.phi = (local_pos.p-pre_pos.p)/dt;
+    // local_acc.theta = (local_pos.q-pre_pos.q)/dt;
+    // local_acc.psi = (local_pos.r-pre_pos.r)/dt;
+    // pre_pos.p = local_pos.p;
+    // pre_pos.q = local_pos.q;
+    // pre_pos.r = local_pos.r;
+
+    // inertial frame velocity to body frame
+    Matrix<double,3,1> v_linear_inertial;
+    Matrix<double,3,1> v_angular_inertial;
+
+    v_linear_inertial << local_pos.u, local_pos.v, local_pos.w;
+    v_angular_inertial << local_pos.p, local_pos.q, local_pos.r;
+
+    R_ib << cos(local_euler.psi)*cos(local_euler.theta), -sin(local_euler.psi)*cos(local_euler.phi)+cos(local_euler.psi)*sin(local_euler.theta)*sin(local_euler.phi), sin(local_euler.psi)*sin(local_euler.phi)+cos(local_euler.psi)*cos(local_euler.phi)*sin(local_euler.theta),
+            sin(local_euler.psi)*cos(local_euler.theta), cos(local_euler.psi)*cos(local_euler.phi)+sin(local_euler.phi)*sin(local_euler.theta)*sin(local_euler.psi), -cos(local_euler.psi)*sin(local_euler.phi)+sin(local_euler.theta)*sin(local_euler.psi)*cos(local_euler.phi),
+            -sin(local_euler.theta), cos(local_euler.theta)*sin(local_euler.phi), cos(local_euler.theta)*cos(local_euler.phi);
+    T_ib << 1, sin(local_euler.psi)*sin(local_euler.theta)/cos(local_euler.theta), cos(local_euler.phi)*sin(local_euler.theta)/cos(local_euler.theta),
+            0, cos(local_euler.phi), sin(local_euler.phi),
+            0, sin(local_euler.phi)/cos(local_euler.theta), cos(local_euler.phi)/cos(local_euler.theta);
+    v_linear_body = R_ib.inverse()*v_linear_inertial;
+    v_angular_body = T_ib.inverse()*v_angular_inertial;
+
+    body_acc.x = (v_linear_body[0]-pre_body_pos.u)/dt;
+    body_acc.y = (v_linear_body[1]-pre_body_pos.v)/dt;
+    body_acc.z = (v_linear_body[2]-pre_body_pos.w)/dt;
+    body_acc.phi = (v_angular_body[0]-pre_body_pos.p)/dt;
+    body_acc.theta = (v_angular_body[1]-pre_body_pos.q)/dt;
+    body_acc.psi = (v_angular_body[2]-pre_body_pos.r)/dt;
+
+    pre_body_pos.u = v_linear_body[0];
+    pre_body_pos.v = v_linear_body[1];
+    pre_body_pos.w = v_linear_body[2];
+    pre_body_pos.p = v_angular_body[0];
+    pre_body_pos.q = v_angular_body[1];
+    pre_body_pos.r = v_angular_body[2];
     }
 
 // quaternion to euler angle
@@ -280,19 +311,19 @@ void BLUEROV2_DOB::solve(){
     acados_in.x0[phi] = local_euler.phi;
     acados_in.x0[theta] = local_euler.theta;
     acados_in.x0[psi] = yaw_sum;
-    acados_in.x0[u] = local_pos.u;
-    acados_in.x0[v] = local_pos.v;
-    acados_in.x0[w] = local_pos.w;
-    acados_in.x0[p] = local_pos.p;
-    acados_in.x0[q] = local_pos.q;
-    acados_in.x0[r] = local_pos.r;
+    acados_in.x0[u] = v_linear_body[0];
+    acados_in.x0[v] = v_linear_body[1];
+    acados_in.x0[w] = v_linear_body[2];
+    acados_in.x0[p] = v_angular_body[0];
+    acados_in.x0[q] = v_angular_body[1];
+    acados_in.x0[r] = v_angular_body[2];
     ocp_nlp_constraints_model_set(mpc_capsule->nlp_config,mpc_capsule->nlp_dims,mpc_capsule->nlp_in, 0, "lbx", acados_in.x0);
     ocp_nlp_constraints_model_set(mpc_capsule->nlp_config,mpc_capsule->nlp_dims,mpc_capsule->nlp_in, 0, "ubx", acados_in.x0);
 
     // set parameters
     for (int i = 0; i < BLUEROV2_N+1; i++)
     {
-        if(READ_WRENCH == 0){
+        if(COMPENSATE_D == false){
             acados_param[i][0] = solver_param.disturbance_x;
             acados_param[i][1] = solver_param.disturbance_y;
             acados_param[i][2] = solver_param.disturbance_z;
@@ -300,7 +331,7 @@ void BLUEROV2_DOB::solve(){
             acados_param[i][4] = solver_param.disturbance_theta;
             acados_param[i][5] = solver_param.disturbance_psi;
         }
-        else if(READ_WRENCH == 2){
+        else if(COMPENSATE_D == true){
             acados_param[i][0] = esti_x(12)/rotor_constant;
             acados_param[i][1] = esti_x(13)/rotor_constant;
             acados_param[i][2] = esti_x(14)/rotor_constant;
@@ -454,7 +485,7 @@ void BLUEROV2_DOB::EKF()
     Matrix<double,6,1> tau;
     tau = K*meas_u;
     meas_y << local_pos.x, local_pos.y, local_pos.z, local_euler.phi, local_euler.theta, local_euler.psi,
-            local_pos.u, local_pos.v, local_pos.w, local_pos.p, local_pos.q, local_pos.r,
+            v_linear_body[0], v_linear_body[1], v_linear_body[2], v_angular_body[0], v_angular_body[1], v_angular_body[2],
             tau(0),tau(1),tau(2),tau(3),tau(4),tau(5);
     
     // Define Jacobian matrices of system dynamics and measurement model
@@ -544,8 +575,8 @@ void BLUEROV2_DOB::EKF()
         std::cout << "---------------------------------------------------------------------------------------------------------------------" << std::endl;
         // std::cout << "esti_x12:   " << esti_x(12) << "\t esti_x2:  " << esti_x(2) << std::endl;
         std::cout << "tau_x:  " << meas_y(12) << "  tau_y:  " << meas_y(13) << "  tau_z:  " << meas_y(14) << "  tau_psi:  " << meas_y(17) << std::endl;
-        std::cout << "acc_x:  " << local_acc.x << "  acc_y:  " << local_acc.y << "  acc_z:  " << local_acc.z << std::endl;
-        std::cout << "acc_phi:  " << local_acc.phi << "  acc_theta:  " << local_acc.theta << "  acc_psi:  " << local_acc.psi << std::endl;
+        std::cout << "acc_x:  " << body_acc.x << "  acc_y:  " << body_acc.y << "  acc_z:  " << body_acc.z << std::endl;
+        std::cout << "acc_phi:  " << body_acc.phi << "  acc_theta:  " << body_acc.theta << "  acc_psi:  " << body_acc.psi << std::endl;
         std::cout << "ref_x:    " << acados_in.yref[0][0] << "\tref_y:   " << acados_in.yref[0][1] << "\tref_z:    " << acados_in.yref[0][2] << "\tref_yaw:    " << yaw_ref << std::endl;
         std::cout << "pos_x: " << meas_y(0) << "  pos_y: " << meas_y(1) << "  pos_z: " << meas_y(2) << " phi: " << meas_y(3) << "  theta: " << meas_y(4) << "  psi: " << meas_y(5) <<std::endl;
         std::cout << "esti_x: " << esti_x(0) << "  esti_y: " << esti_x(1) << "  esti_z: " << esti_x(2) << " esti_phi: " << esti_x(3) << "  esti_theta: " << esti_x(4) << "  esti_psi: " << esti_x(5) <<std::endl;
@@ -593,19 +624,19 @@ MatrixXd BLUEROV2_DOB::f(MatrixXd x, MatrixXd u)
             (-sin(x(4)))*x(6) + (cos(x(4))*sin(x(3)))*x(7) + (cos(x(4))*cos(x(3)))*x(8),
             x(9) + (sin(x(5))*sin(x(4))/cos(x(4)))*x(10) + cos(x(3))*sin(x(4))/cos(x(4))*x(11),
             (cos(x(3)))*x(10) + (sin(x(3)))*x(11),
-            (sin(x(3))/cos(x(4)))*x(10) + (cos(x(3))/cos(x(4)))*x(11),
+            (sin(x(3))/cos(x(4)))*x(10) + (cos(x(3))/cos(x(4)))*x(11), 
             invM(0,0)*(KAu(0)+mass*x(11)*x(7)-mass*x(10)*x(8)-bouyancy*sin(x(4))+x(12)+Dl(0,0)*x(6)),    // xddot: M^-1[tau+w-C-g-D]
             invM(1,1)*(KAu(1)-mass*x(11)*x(6)+mass*x(9)*x(8)+bouyancy*cos(x(4))*sin(x(3))+x(13)+Dl(1,1)*x(7)),
             invM(2,2)*(KAu(2)+mass*x(10)*x(6)-mass*x(9)*x(7)+bouyancy*cos(x(4))*cos(x(3))+x(14)+Dl(2,2)*x(8)),
             invM(3,3)*(KAu(3)+(Iy-Iz)*x(10)*x(11)-mass*ZG*g*cos(x(4))*sin(x(3))+x(15)+Dl(3,3)*x(9)),
             invM(4,4)*(KAu(4)+(Iz-Ix)*x(9)*x(11)-mass*ZG*g*sin(x(4))+x(16)+Dl(4,4)*x(10)),
             invM(5,5)*(KAu(5)-(Iy-Ix)*x(9)*x(10)+x(17)+Dl(5,5)*x(11)),
-            // invM(0,0)*(KAu(0)+mass*x(11)*x(7)-mass*x(10)*x(8)-bouyancy*sin(x(4))+x(12)+Dl(0,0)*x(6)-added_mass[2]*x(2)*x(4)),    // xddot: M^-1[tau+w-C-g-D]
-            // invM(1,1)*(KAu(1)-mass*x(11)*x(6)+mass*x(9)*x(8)+bouyancy*cos(x(4))*sin(x(3))+x(13)+Dl(1,1)*x(7)+added_mass[2]*x(2)*x(3)+added_mass[0]*x(0)*x(5)),
-            // invM(2,2)*(KAu(2)+mass*x(10)*x(6)-mass*x(9)*x(7)+bouyancy*cos(x(4))*cos(x(3))+x(14)+Dl(2,2)*x(8)+added_mass[1]*x(1)*x(3)-added_mass[0]*x(0)*x(4)),
-            // invM(3,3)*(KAu(3)+(Iy-Iz)*x(10)*x(11)-mass*ZG*g*cos(x(4))*sin(x(3))+x(15)+Dl(3,3)*x(9)+added_mass[2]*x(2)*x(1)-added_mass[1]*x(1)*x(2)+added_mass[5]*x(5)*x(4)-added_mass[4]*x(4)*x(5)),
-            // invM(4,4)*(KAu(4)+(Iz-Ix)*x(9)*x(11)-mass*ZG*g*sin(x(4))+x(16)+Dl(4,4)*x(10)-added_mass[2]*x(2)*x(0)+added_mass[0]*x(0)*x(2)-added_mass[5]*x(5)*x(3)+added_mass[3]*x(3)*x(5)),
-            // invM(5,5)*(KAu(5)-(Iy-Ix)*x(9)*x(10)+x(17)+Dl(5,5)*x(11)+added_mass[1]*x[1]*x(0)-added_mass[0]*x(0)*x(1)+added_mass[4]*x(4)*x(3)-added_mass[3]*x(3)*x(4)),
+            // invM(0,0)*(KAu(0)+mass*x(11)*x(7)-mass*x(10)*x(8)-bouyancy*sin(x(4))+x(12)+Dl(0,0)*x(6)+added_mass[2]*x(2)*x(4)),    // xddot: M^-1[tau+w-C-g-D]
+            // invM(1,1)*(KAu(1)-mass*x(11)*x(6)+mass*x(9)*x(8)+bouyancy*cos(x(4))*sin(x(3))+x(13)+Dl(1,1)*x(7)-added_mass[2]*x(2)*x(3)-added_mass[0]*x(0)*x(5)),
+            // invM(2,2)*(KAu(2)+mass*x(10)*x(6)-mass*x(9)*x(7)+bouyancy*cos(x(4))*cos(x(3))+x(14)+Dl(2,2)*x(8)-added_mass[1]*x(1)*x(3)+added_mass[0]*x(0)*x(4)),
+            // invM(3,3)*(KAu(3)+(Iy-Iz)*x(10)*x(11)-mass*ZG*g*cos(x(4))*sin(x(3))+x(15)+Dl(3,3)*x(9)-added_mass[2]*x(2)*x(1)+added_mass[1]*x(1)*x(2)-added_mass[5]*x(5)*x(4)+added_mass[4]*x(4)*x(5)),
+            // invM(4,4)*(KAu(4)+(Iz-Ix)*x(9)*x(11)-mass*ZG*g*sin(x(4))+x(16)+Dl(4,4)*x(10)+added_mass[2]*x(2)*x(0)-added_mass[0]*x(0)*x(2)+added_mass[5]*x(5)*x(3)-added_mass[3]*x(3)*x(5)),
+            // invM(5,5)*(KAu(5)-(Iy-Ix)*x(9)*x(10)+x(17)+Dl(5,5)*x(11)-added_mass[1]*x(1)*x(0)+added_mass[0]*x(0)*x(1)-added_mass[4]*x(4)*x(3)+added_mass[3]*x(3)*x(4)),
             0,0,0,0,0,0;
             
     return xdot; // dt is the time step
@@ -618,18 +649,18 @@ MatrixXd BLUEROV2_DOB::h(MatrixXd x)
     Matrix<double,18,1> y;
     y << x(0),x(1),x(2),x(3),x(4),x(5),
         x(6),x(7),x(8),x(9),x(10),x(11),
-        M(0,0)*local_acc.x-mass*x(11)*x(7)+mass*x(10)*x(8)+bouyancy*sin(x(4))-x(12)-Dl(0,0)*x(6),        
-        M(1,1)*local_acc.y+mass*x(11)*x(6)-mass*x(9)*x(8)-bouyancy*cos(x(4))*sin(x(3))-x(13)-Dl(1,1)*x(7),
-        M(2,2)*local_acc.z-mass*x(10)*x(6)+mass*x(9)*x(7)-bouyancy*cos(x(4))*cos(x(3))-x(14)-Dl(2,2)*x(8),
-        M(3,3)*local_acc.phi-(Iy-Iz)*x(10)*x(11)+mass*ZG*g*cos(x(4))*sin(x(3))-x(15)-Dl(3,3)*x(9),
-        M(4,4)*local_acc.theta-(Iz-Ix)*x(9)*x(11)+mass*ZG*g*sin(x(4))-x(16)-Dl(4,4)*x(10),
-        M(5,5)*local_acc.psi+(Iy-Ix)*x(9)*x(10)-x(17)-Dl(5,5)*x(11);
-        // M(0,0)*local_acc.x-mass*x(11)*x(7)+mass*x(10)*x(8)+bouyancy*sin(x(4))-x(12)-Dl(0,0)*x(6)+added_mass[2]*x(2)*x(4),        
-        // M(1,1)*local_acc.y+mass*x(11)*x(6)-mass*x(9)*x(8)-bouyancy*cos(x(4))*sin(x(3))-x(13)-Dl(1,1)*x(7)-added_mass[2]*x(2)*x(3)-added_mass[0]*x(0)*x(5),
-        // M(2,2)*local_acc.z-mass*x(10)*x(6)+mass*x(9)*x(7)-bouyancy*cos(x(4))*cos(x(3))-x(14)-Dl(2,2)*x(8)-added_mass[1]*x(1)*x(3)+added_mass[0]*x(0)*x(4),
-        // M(3,3)*local_acc.phi-(Iy-Iz)*x(10)*x(11)+mass*ZG*g*cos(x(4))*sin(x(3))-x(15)-Dl(3,3)*x(9)-added_mass[2]*x(2)*x(1)+added_mass[1]*x(1)*x(2)-added_mass[5]*x(5)*x(4)+added_mass[4]*x(4)*x(5),
-        // M(4,4)*local_acc.theta-(Iz-Ix)*x(9)*x(11)+mass*ZG*g*sin(x(4))-x(16)-Dl(4,4)*x(10)+added_mass[2]*x(2)*x(0)-added_mass[0]*x(0)*x(2)+added_mass[5]*x(5)*x(3)-added_mass[3]*x(3)*x(5),
-        // M(5,5)*local_acc.psi+(Iy-Ix)*x(9)*x(10)-x(17)-Dl(5,5)*x(11)-added_mass[1]*x[1]*x(0)+added_mass[0]*x(0)*x(1)-added_mass[4]*x(4)*x(3)+added_mass[3]*x(3)*x(4);
+        M(0,0)*body_acc.x-mass*x(11)*x(7)+mass*x(10)*x(8)+bouyancy*sin(x(4))-x(12)-Dl(0,0)*x(6),        
+        M(1,1)*body_acc.y+mass*x(11)*x(6)-mass*x(9)*x(8)-bouyancy*cos(x(4))*sin(x(3))-x(13)-Dl(1,1)*x(7),
+        M(2,2)*body_acc.z-mass*x(10)*x(6)+mass*x(9)*x(7)-bouyancy*cos(x(4))*cos(x(3))-x(14)-Dl(2,2)*x(8),
+        M(3,3)*body_acc.phi-(Iy-Iz)*x(10)*x(11)+mass*ZG*g*cos(x(4))*sin(x(3))-x(15)-Dl(3,3)*x(9),
+        M(4,4)*body_acc.theta-(Iz-Ix)*x(9)*x(11)+mass*ZG*g*sin(x(4))-x(16)-Dl(4,4)*x(10),
+        M(5,5)*body_acc.psi+(Iy-Ix)*x(9)*x(10)-x(17)-Dl(5,5)*x(11);
+        // M(0,0)*body_acc.x-mass*x(11)*x(7)+mass*x(10)*x(8)+bouyancy*sin(x(4))-x(12)-Dl(0,0)*x(6)-added_mass[2]*x(2)*x(4),        
+        // M(1,1)*body_acc.y+mass*x(11)*x(6)-mass*x(9)*x(8)-bouyancy*cos(x(4))*sin(x(3))-x(13)-Dl(1,1)*x(7)+added_mass[2]*x(2)*x(3)+added_mass[0]*x(0)*x(5),
+        // M(2,2)*body_acc.z-mass*x(10)*x(6)+mass*x(9)*x(7)-bouyancy*cos(x(4))*cos(x(3))-x(14)-Dl(2,2)*x(8)+added_mass[1]*x(1)*x(3)-added_mass[0]*x(0)*x(4),
+        // M(3,3)*body_acc.phi-(Iy-Iz)*x(10)*x(11)+mass*ZG*g*cos(x(4))*sin(x(3))-x(15)-Dl(3,3)*x(9)+added_mass[2]*x(2)*x(1)-added_mass[1]*x(1)*x(2)+added_mass[5]*x(5)*x(4)-added_mass[4]*x(4)*x(5),
+        // M(4,4)*body_acc.theta-(Iz-Ix)*x(9)*x(11)+mass*ZG*g*sin(x(4))-x(16)-Dl(4,4)*x(10)-added_mass[2]*x(2)*x(0)+added_mass[0]*x(0)*x(2)-added_mass[5]*x(5)*x(3)+added_mass[3]*x(3)*x(5),
+        // M(5,5)*body_acc.psi+(Iy-Ix)*x(9)*x(10)-x(17)-Dl(5,5)*x(11)+added_mass[1]*x(1)*x(0)-added_mass[0]*x(0)*x(1)+added_mass[4]*x(4)*x(3)-added_mass[3]*x(3)*x(4);
 
     return y;
 }
@@ -696,9 +727,9 @@ void BLUEROV2_DOB::applyBodyWrench()
             amplitudeScalingFactor_N = distribution(gen)*6;
             periodic_counter++;
         }
-        applied_wrench.fx = sin(dis_time)*amplitudeScalingFactor_X+6;
-        applied_wrench.fy = sin(dis_time)*amplitudeScalingFactor_Y+6;
-        applied_wrench.fz = sin(dis_time)*amplitudeScalingFactor_Z+6;
+        applied_wrench.fx = sin(dis_time)*amplitudeScalingFactor_X;
+        applied_wrench.fy = sin(dis_time)*amplitudeScalingFactor_Y;
+        applied_wrench.fz = sin(dis_time)*amplitudeScalingFactor_Z;
         applied_wrench.tz = (sin(dis_time)*amplitudeScalingFactor_Y)/3;
         dis_time = dis_time+dt*2.5;
         // std::cout << "amplitudeScalingFactor_Z:  " << amplitudeScalingFactor_Z << "  amplitudeScalingFactor_N:  " << amplitudeScalingFactor_N << std::endl;

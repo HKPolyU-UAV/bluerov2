@@ -39,19 +39,7 @@ traj[:,12] = 0                      # u1
 traj[:,13] = 0                      # u2
 traj[:,14] = 57.5                   # u3
 traj[:,15] = 0                      # u4
-'''
-for i in range(0,int(duration/sample_time+1)):
-    if np.sin(traj[i,5])>=0:
-        traj[i,5] = traj[i,5]%np.pi
-    else:
-        traj[i,5] = -np.pi + traj[i,5]%np.pi
-    #traj[i,5] = np.sin(traj[i,5])
-'''
-sta = np.zeros((int(50/sample_time+1),16))
-sta[:,0] = -2
-sta[:,2] = z0
-sta[:,5] = -1.570796
-traj2 = np.concatenate((sta,traj))
+
 
 # write to txt
 np.savetxt('circle.txt',traj,fmt='%f')

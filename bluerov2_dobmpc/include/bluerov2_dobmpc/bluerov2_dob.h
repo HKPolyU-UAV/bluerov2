@@ -136,7 +136,10 @@ class BLUEROV2_DOB{
     Euler local_euler;
     pos local_pos;
     pos pre_pos;
+    pos body_pos;
+    pos pre_body_pos;
     acc local_acc;
+    acc body_acc;
     thrust current_t;
     wrench applied_wrench;
     nav_msgs::Odometry ref_pose;
@@ -178,8 +181,11 @@ class BLUEROV2_DOB{
     Matrix<double,6,6> Dl;          // linear hydrodynamic damping force
     Matrix<double,6,6> K;           // propulsion matrix
     Matrix<double,6,1> KAu;         // vehicle's generated forces and moments
-    Matrix<double,18,1> dx;
-
+    // Matrix<double,18,1> dx;
+    Matrix<double,3,1> v_linear_body;   // linear velocity in body frame
+    Matrix<double,3,1> v_angular_body;  // angular velocity in body frame
+    Matrix<double,3,3> R_ib;            // rotation matrix for linear from inertial to body frame
+    Matrix<double,3,3> T_ib;            // rotation matrix for angular from inertial to body frame
 
     // EKF parameters
     Matrix<double,6,1> wf_disturbance; // world frame disturbance 
@@ -202,6 +208,7 @@ class BLUEROV2_DOB{
     std::string WRENCH_TZ;
     bool AUTO_YAW;
     int READ_WRENCH;        // 0: periodic disturbance; 1: random disturbance; 2: read wrench from text
+    bool COMPENSATE_D;       // 0: no compensate; 1: compensate
     SolverParam solver_param;
 
     // Other variables
