@@ -120,23 +120,11 @@ void BLUEROV2_DOB::pose_cb(const nav_msgs::Odometry::ConstPtr& pose)
     local_pos.u = pose->twist.twist.linear.x;
     local_pos.v = pose->twist.twist.linear.y;
     local_pos.w = pose->twist.twist.linear.z;
-    // local_acc.x = (local_pos.u-pre_pos.u)/dt;
-    // local_acc.y = (local_pos.v-pre_pos.v)/dt;
-    // local_acc.z = (local_pos.w-pre_pos.w)/dt;
-    // pre_pos.u = local_pos.u;
-    // pre_pos.v = local_pos.v;
-    // pre_pos.w = local_pos.w;
 
     // get angular velocity p, q, r
     local_pos.p = pose->twist.twist.angular.x;
     local_pos.q = pose->twist.twist.angular.y;
     local_pos.r = pose->twist.twist.angular.z;
-    // local_acc.phi = (local_pos.p-pre_pos.p)/dt;
-    // local_acc.theta = (local_pos.q-pre_pos.q)/dt;
-    // local_acc.psi = (local_pos.r-pre_pos.r)/dt;
-    // pre_pos.p = local_pos.p;
-    // pre_pos.q = local_pos.q;
-    // pre_pos.r = local_pos.r;
 
     // inertial frame velocity to body frame
     Matrix<double,3,1> v_linear_inertial;
@@ -167,6 +155,13 @@ void BLUEROV2_DOB::pose_cb(const nav_msgs::Odometry::ConstPtr& pose)
     pre_body_pos.p = v_angular_body[0];
     pre_body_pos.q = v_angular_body[1];
     pre_body_pos.r = v_angular_body[2];
+
+    Matrix<double,3,1> compensate_f_inertial;
+    Matrix<double,3,1> compensate_f_body;
+    compensate_f_inertial << 20,0,0;
+    compensate_f_body = R_ib.inverse()*compensate_f_inertial;
+
+
     }
 
 // quaternion to euler angle
@@ -338,6 +333,13 @@ void BLUEROV2_DOB::solve(){
             acados_param[i][3] = solver_param.disturbance_phi;
             acados_param[i][4] = solver_param.disturbance_theta;
             acados_param[i][5] = esti_x(17)/rotor_constant;
+            
+            // acados_param[i][0] = compensate_f_body[0]/rotor_constant;
+            // acados_param[i][1] = esti_x(13)/rotor_constant;
+            // acados_param[i][2] = esti_x(14)/rotor_constant;
+            // acados_param[i][3] = solver_param.disturbance_phi;
+            // acados_param[i][4] = solver_param.disturbance_theta;
+            // acados_param[i][5] = esti_x(17)/rotor_constant;
         }
         bluerov2_acados_update_params(mpc_capsule,i,acados_param[i],BLUEROV2_NP);
     }

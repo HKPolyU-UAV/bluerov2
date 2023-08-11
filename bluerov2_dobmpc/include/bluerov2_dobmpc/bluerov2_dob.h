@@ -135,10 +135,10 @@ class BLUEROV2_DOB{
     uuv_gazebo_ros_plugins_msgs::FloatStamped thrust5;
     Euler local_euler;
     pos local_pos;
-    pos pre_pos;
+    // pos pre_pos;
     pos body_pos;
     pos pre_body_pos;
-    acc local_acc;
+    // acc local_acc;
     acc body_acc;
     thrust current_t;
     wrench applied_wrench;
