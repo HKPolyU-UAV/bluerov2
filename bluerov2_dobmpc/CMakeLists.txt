@@ -40,6 +40,7 @@ generate_messages(
   std_msgs
   nav_msgs
   geometry_msgs
+  message_generation
   )
 
 catkin_package(
