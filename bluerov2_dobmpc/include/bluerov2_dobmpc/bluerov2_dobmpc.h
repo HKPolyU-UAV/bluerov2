@@ -9,7 +9,7 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <uuv_gazebo_ros_plugins_msgs/FloatStamped.h>
 #include <nav_msgs/Odometry.h>
-#include <bluerov2_dobmpc/Reference.h>
+#include "bluerov2_dobmpc/Reference.h"
 
 #include <iostream>
 #include <fstream>
