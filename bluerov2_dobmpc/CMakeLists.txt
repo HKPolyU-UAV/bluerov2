@@ -50,6 +50,7 @@ catkin_package(
 #  DEPENDS system_lib
   CATKIN_DEPENDS gazebo_msgs
   message_generation
+  message_runtime
 
 )
 
@@ -84,6 +85,7 @@ target_link_libraries(bluerov2_dobmpc_node
   ${acados_lib}/libacados.so
   ${catkin_LIBRARIES}
 )
+add_dependencies(bluerov2_dobmpc_node bluerov2_dobmpc_generate_messages_cpp)
 
 target_link_libraries(bluerov2_dob_node
   ${bluerov2_model}/libacados_ocp_solver_bluerov2.so
