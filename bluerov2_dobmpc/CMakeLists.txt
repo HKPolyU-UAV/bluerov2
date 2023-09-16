@@ -41,7 +41,6 @@ generate_messages(
   std_msgs
   nav_msgs
   geometry_msgs
-  message_generation
   )
 
 catkin_package(
@@ -50,6 +49,8 @@ catkin_package(
 #  CATKIN_DEPENDS uuv_gazebo_plugins_msgs
 #  DEPENDS system_lib
   CATKIN_DEPENDS gazebo_msgs
+  message_generation
+
 )
 
 include_directories(
