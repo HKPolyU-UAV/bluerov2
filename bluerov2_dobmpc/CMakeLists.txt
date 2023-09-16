@@ -25,8 +25,8 @@ find_package(Eigen3 REQUIRED)
 find_package(yaml-cpp REQUIRED)
 find_package(gazebo_msgs REQUIRED)
 
-set(acados_include "/home/fyp/acados/include")
-set(acados_lib "/home/fyp/acados/lib")
+set(acados_include "~/acados/include")
+set(acados_lib "~/acados/lib")
 set(bluerov2_model ${PROJECT_SOURCE_DIR}/scripts/c_generated_code)
 
 add_message_files(
