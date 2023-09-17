@@ -46,3 +46,4 @@ target_link_libraries(bluerov2_mpc_node
   ${acados_lib}/libacados.so
   ${catkin_LIBRARIES}
 )
+add_dependencies(bluerov2_mpc_node uuv_gazebo_ros_plugins_msgs_generate_messages_cpp)

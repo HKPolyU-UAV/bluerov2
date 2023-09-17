@@ -46,7 +46,8 @@ generate_messages(
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES bluerov2_dobmpc
-#  CATKIN_DEPENDS uuv_gazebo_plugins_msgs
+  CATKIN_DEPENDS uuv_gazebo_plugins_msgs uuv_gazebo_ros_plugins_msgs
+
 #  DEPENDS system_lib
   CATKIN_DEPENDS gazebo_msgs
   message_generation
@@ -85,7 +86,9 @@ target_link_libraries(bluerov2_dobmpc_node
   ${acados_lib}/libacados.so
   ${catkin_LIBRARIES}
 )
-add_dependencies(bluerov2_dobmpc_node bluerov2_dobmpc_generate_messages_cpp)
+add_dependencies(bluerov2_dobmpc_node 
+	bluerov2_dobmpc_generate_messages_cpp
+	uuv_gazebo_ros_plugins_msgs_generate_messages_cpp)
 
 target_link_libraries(bluerov2_dob_node
   ${bluerov2_model}/libacados_ocp_solver_bluerov2.so
@@ -93,8 +96,12 @@ target_link_libraries(bluerov2_dob_node
   ${catkin_LIBRARIES}
 )
 
+add_dependencies(bluerov2_dob_node uuv_gazebo_ros_plugins_msgs_generate_messages_cpp)
+
 target_link_libraries(bluerov2_do_node
   ${bluerov2_model}/libacados_ocp_solver_bluerov2.so
   ${acados_lib}/libacados.so
   ${catkin_LIBRARIES}
 )
+
+add_dependencies(bluerov2_do_node uuv_gazebo_ros_plugins_msgs_generate_messages_cpp)
