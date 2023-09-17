@@ -8,69 +8,68 @@ This work implements a NMPC controller for BlueROV2 with ROS.
 * [MAVROS](http://wiki.ros.org/mavros)
 * [Acados](https://docs.acados.org/installation/index.html)
 
+We also provide its [docker image](https://github.com/HKPolyU-UAV/airo_docker_lib) to save you some time.
+
 ## Getting started
-Install python 3.7
-```
-sudo add-apt-repository ppa:deadsnakes/ppa
-sudo apt update
-sudo apt install python3.7
-```
-Install python dependencies
-```
-python3 -m pip install pip
-pip3 install numpy matplotlib scipy future-fstrings casadi>=3.5.1 setuptools
-sudo apt-get install python3.7-tk
-```
-Install Acados
-```
-git clone https://github.com/acados/acados.git
-cd acados
-git submodule update --recursive --init
-mkdir -p build
-cd build
-cmake -DACADOS_WITH_QPOASES=ON -DACADOS_WITH_OSQP=OFF/ON -DACADOS_INSTALL_DIR=<path_to_acados_installation_folder> ..
-make install -j4
-```
-Create a catkin workspace and clone uuv simulator package to catkin src folder (ex. ~/catkin_ws/src)
-```
-mkdir -p ~/catkin_ws/src
-cd ~/catkin_ws/
-catkin_make
-cd src
-sudo apt install ros-kinetic-uuv-simulator	(for ros kinetic)
-sudo apt install ros-lunar-uuv-simulator	(for ros lunar)
-sudo apt install ros-melodic-uuv-simulator	(for ros melodic)
-git clone --branch noetic https://github.com/arturmiller/uuv_simulator.git	(for ros noetic)
-```
-Clone this package to catkin src folder
-```
-cd ~/catkin_ws/src
-git clone https://github.com/HKPolyU-UAV/bluerov2.git
-```
-Install acados_template python packages
-```
-pip install -e <acados_root>/interfaces/acados_template
-```
-Add the path to the compiled shared libraries (Hint: you can add these lines to your ```.bashrc``` by ```sudo gedit ~/.bashrc```)
-```
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:"<acados_root>/lib"
-export ACADOS_SOURCE_DIR="<acados_root>"
-```
-Modify <acados_root> path (18th and 19th lines) in CMakeLists
-```
-cd ~/catkin_ws/src/bluerov2/bluerov2_mpc
-gedit CMakeLists.txt
-```
-Generate C code for NMPC controller
-```
-cd scripts
-python generate_c_code.py
-```
-Compile
-```
-cd ~/catkin_ws
-catkin_make
-```
+1. Install python 3.7 and its dependencies
+    ```
+    sudo add-apt-repository ppa:deadsnakes/ppa
+    sudo apt update
+    sudo apt install -y python3.7
+
+    apt-get install -y python3-pip
+
+    pip3 install numpy matplotlib scipy future-fstrings casadi>=3.5.1 setuptools
+    sudo apt-get install -y python3.7-tk
+    ```
+2. Install Acados
+    ```
+    git clone https://github.com/acados/acados.git
+    cd acados
+    git submodule update --recursive --init
+    mkdir -p build
+    cd build
+    cmake -DACADOS_WITH_QPOASES=ON -DACADOS_WITH_OSQP=OFF/ON -DACADOS_INSTALL_DIR=<path_to_acados_installation_folder> ..
+    make install -j4
+
+    pip install -e ~/acados/interfaces/acados_template
+
+    echo 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:"/root/acados/lib"' >> ~/.bashrc 
+    echo 'export ACADOS_SOURCE_DIR="/root/acados"' >> ~/.bashrc
+    source ~/.bashrc
+    ```
+
+3. Install ros uuv-simulator packages
+    ```
+    sudo apt-get install -y ros-noetic-geodesy
+    mkdir -p ~/catkin_ws/src && \
+    cd ~/catkin_ws/src && \
+    git clone --branch noetic https://github.com/arturmiller/uuv_simulator.git
+    ```
+
+4. Install then compile this package
+    ```
+    cd ~/catkin_ws/src && \
+    git clone --branch noetic https://github.com/arturmiller/uuv_simulator.git
+    ```
+    Please edit CMakelists.txt [here](/bluerov2_dobmpc/CMakeLists.txt) and [here](/bluerov2_mpc/CMakeLists.txt) if you put your acados in otherwise directory. Modify the line ```set(acados_include "~/acados/include")``` and ```set(acados_lib "~/acados/lib")```
+    
+    Then do
+    ```
+    cd ~/catkin_ws/src/bluerov2/bluerov2_dobmpc/scripts && \
+    yes | python3 generate_c_code.py
+    ```
+    and
+    ```
+    cd ~/catkin_ws/src/bluerov2/bluerov2_mpc/scripts && \
+    yes | python3 generate_c_code.py
+    ```
+    The last commands basically run generate_c_code.py at [here](/bluerov2_dobmpc/scripts/) and [here](/bluerov2_mpc/scripts/).
+
+    Finally, do
+    ```
+    cd ~/catkin_ws && catkin_make
+    ```
 
 ## Start simulation without controller
 Ocean_waves in uuv simulator is set as default world.
