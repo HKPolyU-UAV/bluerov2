@@ -327,8 +327,8 @@ void BLUEROV2_DOB::solve(){
             acados_param[i][5] = solver_param.disturbance_psi;
         }
         else if(COMPENSATE_D == true){
-            acados_param[i][0] = esti_x(12)/rotor_constant;
-            acados_param[i][1] = esti_x(13)/rotor_constant;
+            acados_param[i][0] = esti_x(12)/compensate_coef;
+            acados_param[i][1] = esti_x(13)/compensate_coef;
             acados_param[i][2] = esti_x(14)/rotor_constant;
             acados_param[i][3] = solver_param.disturbance_phi;
             acados_param[i][4] = solver_param.disturbance_theta;
