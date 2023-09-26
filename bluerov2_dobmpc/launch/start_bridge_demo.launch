@@ -23,6 +23,8 @@
 
     <!-- Start the MPC controller with its default parameters for the bluerov2 vehicle -->
     <include file="$(find bluerov2_dobmpc)/launch/dob.launch"/> 
+
+    <include file="$(find bluerov2_dobmpc)/launch/pcl.launch"/> 
     
     <!-- Real-time 3d plot 
     <node

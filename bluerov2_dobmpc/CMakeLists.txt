@@ -24,6 +24,8 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(Eigen3 REQUIRED)
 find_package(yaml-cpp REQUIRED)
 find_package(gazebo_msgs REQUIRED)
+find_package(PCL 1.8.1 REQUIRED)
+# find_package(PCL REQUIRED)
 
 set(acados_include "/home/fyp/acados/include")
 set(acados_lib "/home/fyp/acados/lib")
@@ -49,7 +51,7 @@ catkin_package(
 #  DEPENDS system_lib
   CATKIN_DEPENDS gazebo_msgs
 )
-
+# include_directories(/usr/include/pcl-1.12/)
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
@@ -59,37 +61,30 @@ include_directories(
   ${acados_include}/hpipm/include/
   ${acados_include}/acados/
   ${acados_include}/qpOASES_e/
+  ${PCL_CONVERSIONS_INCLUDE_DIRS}
+  ${PCL_INCLUDE_DIRS}
 )
 
 link_directories(${bluerov2_model})
+link_directories(${PCL_LIBRARY_DIRS})
+add_definitions(${PCL_DEFINITIONS})
 
-add_executable(bluerov2_dobmpc_node 
-  src/bluerov2_dobmpc_node.cpp
-  src/bluerov2_dobmpc.cpp
-  src/bluerov2_interface.cpp)
 
 add_executable(bluerov2_dob_node 
   src/bluerov2_dob_node.cpp
   src/bluerov2_dob.cpp)
 
-add_executable(bluerov2_do_node 
-  src/bluerov2_do_node.cpp
-  src/bluerov2_do.cpp)
-  
-target_link_libraries(bluerov2_dobmpc_node
-  ${bluerov2_model}/libacados_ocp_solver_bluerov2.so
-  ${acados_lib}/libacados.so
-  ${catkin_LIBRARIES}
-)
+
+
+add_executable(realsensed435_pcl_node src/realsensed435_pcl_node.cpp)  
+
 
 target_link_libraries(bluerov2_dob_node
   ${bluerov2_model}/libacados_ocp_solver_bluerov2.so
   ${acados_lib}/libacados.so
   ${catkin_LIBRARIES}
 )
-
-target_link_libraries(bluerov2_do_node
-  ${bluerov2_model}/libacados_ocp_solver_bluerov2.so
-  ${acados_lib}/libacados.so
+target_link_libraries(realsensed435_pcl_node 
+  ${PCL_LIBRARIES}
   ${catkin_LIBRARIES}
-)
+  )
