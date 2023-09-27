@@ -19,13 +19,15 @@ find_package(catkin REQUIRED COMPONENTS
   tf
   std_msgs
   gazebo_msgs
+  sensor_msgs
+  pcl_ros
 )
 
 find_package(Eigen3 REQUIRED)
 find_package(yaml-cpp REQUIRED)
 find_package(gazebo_msgs REQUIRED)
 find_package(PCL 1.8.1 REQUIRED)
-# find_package(PCL REQUIRED)
+find_package(OpenCV REQUIRED)
 
 set(acados_include "/home/fyp/acados/include")
 set(acados_lib "/home/fyp/acados/lib")
@@ -63,6 +65,7 @@ include_directories(
   ${acados_include}/qpOASES_e/
   ${PCL_CONVERSIONS_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
 )
 
 link_directories(${bluerov2_model})
@@ -87,4 +90,5 @@ target_link_libraries(bluerov2_dob_node
 target_link_libraries(realsensed435_pcl_node 
   ${PCL_LIBRARIES}
   ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
   )

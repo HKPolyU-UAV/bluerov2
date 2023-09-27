@@ -8,73 +8,106 @@
 #include <tf/tf.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <opencv2/opencv.hpp>
 
-class pointcloud_pub_sub
+class PointCloudProcessor
 {
-    private:
-        ros::Subscriber pcl_sub;
-        std::string pointcloud_topic = "/camera/depth/color/points";
-        ros::Subscriber pose_gt_sub;
-        nav_msgs::Odometry pose_gt;
+private:
+    ros::NodeHandle nh;
+    ros::Subscriber pcl_sub;
+    ros::Subscriber pose_gt_sub;
+    nav_msgs::Odometry pose_gt;
 
-    public:
-
-    pointcloud_pub_sub(ros::NodeHandle& nh)
+public:
+    PointCloudProcessor(ros::NodeHandle &nh)
     {
-        pcl_sub = nh.subscribe(pointcloud_topic, 10, &pointcloud_pub_sub::callback, this);
-        pose_gt_sub = nh.subscribe<nav_msgs::Odometry>("/bluerov2/pose_gt", 20, &pointcloud_pub_sub::pose_gt_cb, this);
+        pcl_sub = nh.subscribe("/camera/depth/color/points", 100, &PointCloudProcessor::pclCallback, this);
+        pose_gt_sub = nh.subscribe<nav_msgs::Odometry>("/bluerov2/pose_gt", 20, &PointCloudProcessor::poseGtCallback, this);
     }
 
-    void callback(const sensor_msgs::PointCloud2ConstPtr &cloud)
+    void pclCallback(const sensor_msgs::PointCloud2ConstPtr &cloud)
     {
-        pcl::PointCloud<pcl::PointXYZ>::Ptr temp_cloud(new pcl::PointCloud<pcl::PointXYZ>);
-        
+        pcl::PointCloud<pcl::PointXYZ>::Ptr cloudPtr(new pcl::PointCloud<pcl::PointXYZ>);
         pcl::PCLPointCloud2 pcl_pc2;
         pcl_conversions::toPCL(*cloud, pcl_pc2);
-        pcl::fromPCLPointCloud2(pcl_pc2, *temp_cloud);
+        pcl::fromPCLPointCloud2(pcl_pc2, *cloudPtr);
 
-        //do stuff
-        ROS_INFO("received %ld points", temp_cloud->points.size());
+        // double average_distance = calculateAverageDistance(cloudPtr);
 
+        // ROS_INFO("Average distance to ROI: %f", average_distance);
+
+        // Calculate the center point coordinates
+        float centerX = cloudPtr->width / 2;
+        float centerY = cloudPtr->height / 2;
+
+        // Define the ROI size
+        int roiSize = 40;
+
+        // Calculate the ROI boundaries
+        int roiMinX = centerX - roiSize / 2;
+        int roiMaxX = centerX + roiSize / 2;
+        int roiMinY = centerY - roiSize / 2;
+        int roiMaxY = centerY + roiSize / 2;
+
+        // Create a new point cloud for the ROI
+        pcl::PointCloud<pcl::PointXYZ>::Ptr roiCloud(new pcl::PointCloud<pcl::PointXYZ>);
+
+        // Iterate over the points within the ROI boundaries
+        for (int y = roiMinY; y < roiMaxY; y++)
+        {
+            for (int x = roiMinX; x < roiMaxX; x++)
+            {
+                // Add the point to the ROI point cloud
+                roiCloud->push_back(cloudPtr->at(x, y));
+            }
+        }
+        ROS_INFO("Received %ld points in ROI.", roiCloud->points.size());
+
+        // calculate average distance
+        double average_distance = calculateAverageDistance(roiCloud);
+        ROS_INFO("Average distance to ROI: %f", average_distance);
     }
 
-    void pose_gt_cb(const nav_msgs::Odometry::ConstPtr& pose)
+    void poseGtCallback(const nav_msgs::Odometry::ConstPtr &pose)
     {
-        // get linear position x, y, z
         pose_gt.pose.pose.position.x = pose->pose.pose.position.x;
         pose_gt.pose.pose.position.y = pose->pose.pose.position.y;
         pose_gt.pose.pose.position.z = pose->pose.pose.position.z;
 
-        // get linear velocity u, v, w
         pose_gt.twist.twist.linear.x = pose->twist.twist.linear.x;
         pose_gt.twist.twist.linear.y = pose->twist.twist.linear.y;
         pose_gt.twist.twist.linear.z = pose->twist.twist.linear.z;
 
-        // get angular velocity p, q, r
         pose_gt.twist.twist.angular.x = pose->twist.twist.angular.x;
         pose_gt.twist.twist.angular.y = pose->twist.twist.angular.y;
         pose_gt.twist.twist.angular.z = pose->twist.twist.angular.z;
-        // std::cout << "position x: " << pose_gt.pose.pose.position.x << std::endl;
     }
 
-    // void test()
-    // {
-    //     std::cout << "position x: " << pose_gt.pose.pose.position.x << std::endl;
-    // }
+    
+    double calculateAverageDistance(const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud)
+    {
+        double totalDistance = 0.0;
+        size_t numPoints = cloud->points.size();
+
+        for (const auto& point : cloud->points)
+        {
+            double distance = std::sqrt(point.x * point.x + point.y * point.y + point.z * point.z);
+            totalDistance += distance;
+        }
+
+        double averageDistance = (numPoints > 0) ? (totalDistance / numPoints) : 0.0;
+        return averageDistance;
+    }
 };
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
     ros::init(argc, argv, "realsensed435_pcl_node");
     ros::NodeHandle nh;
 
-    pointcloud_pub_sub pcl_pub_sub(nh);
-    ros::Rate loop_rate(10);
-    while(ros::ok()){
-        // pcl_pub_sub.test();
-        ros::spinOnce();
-        loop_rate.sleep();
-    }
+    PointCloudProcessor pcl_processor(nh);
+
+    ros::spin();
 
     return 0;
 }

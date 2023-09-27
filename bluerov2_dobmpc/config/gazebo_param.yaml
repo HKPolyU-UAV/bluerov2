@@ -1,7 +1,7 @@
 auto_yaw: false
 read_wrench: 0
 compensate_d: false
-ref_traj: /home/fyp/bluerov_ws/src/bluerov2/bluerov2_mpc/traj/stationary.txt
+ref_traj: /home/fyp/bluerov_ws/src/bluerov2/bluerov2_mpc/traj/bridge_vision.txt
 applied_forcex: /home/fyp/bluerov_ws/src/bluerov2/bluerov2_dobmpc/config/forcex.txt
 applied_forcey: /home/fyp/bluerov_ws/src/bluerov2/bluerov2_dobmpc/config/forcey.txt
 applied_forcez: /home/fyp/bluerov_ws/src/bluerov2/bluerov2_dobmpc/config/forcez.txt
