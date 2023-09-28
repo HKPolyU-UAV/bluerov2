@@ -7,6 +7,7 @@ import math
 
 sample_time = 0.025             # seconds
 duration = 120                   # seconds
+v = 0.8
 
 # pier coordinate
 pier = np.array([[17.74002,5.259887],[21.34002,5.259887],[21.34002,8.97006],[17.74002,8.97006]])
@@ -32,6 +33,9 @@ traj[:,12] = 0                      # u1
 traj[:,13] = 0                      # u2
 traj[:,14] = 0                      # u3: set to overcome bouyant
 traj[:,15] = 0                      # u4
+
+# for i in range(0,int(duration/sample_time+1)):
+#     traj[i,0] = i*v*sample_time+traj[0,0]
 
 # write to txt
 np.savetxt('bridge_vision.txt',traj,fmt='%f')
