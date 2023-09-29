@@ -79,7 +79,7 @@ add_executable(bluerov2_dob_node
 
 
 
-add_executable(realsensed435_pcl_node src/realsensed435_pcl_node.cpp)  
+add_executable(bluerov2_inspection_node src/bluerov2_inspection_node.cpp)  
 
 
 target_link_libraries(bluerov2_dob_node
@@ -87,7 +87,7 @@ target_link_libraries(bluerov2_dob_node
   ${acados_lib}/libacados.so
   ${catkin_LIBRARIES}
 )
-target_link_libraries(realsensed435_pcl_node 
+target_link_libraries(bluerov2_inspection_node 
   ${PCL_LIBRARIES}
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}

@@ -18,10 +18,10 @@
 
 using namespace Eigen;
 
-class PointCloudProcessor
+class VisualController
 {
 private:
-    ros::NodeHandle nh;
+    // ros::NodeHandle nh;
 
     // Subscribers & Publishers
     ros::Subscriber pcl_sub;
@@ -88,7 +88,7 @@ private:
     pose local_pos;
     double dt = 0.05;
     double rotor_constant = 0.026546960744430276;
-    double safety_dis = 2;
+    double safety_dis = 1.79;
     double buffer = 0.3;
     double sway = -4;
 
@@ -104,13 +104,13 @@ private:
 
 public:
     // Initialization 
-    PointCloudProcessor(ros::NodeHandle &nh)
+    VisualController(ros::NodeHandle &nh)
     {
         // ROS subscriber
-        pcl_sub = nh.subscribe("/camera/depth/color/points", 20, &PointCloudProcessor::pclCallback, this);
-        pose_gt_sub = nh.subscribe<nav_msgs::Odometry>("/bluerov2/pose_gt", 20, &PointCloudProcessor::poseGtCallback, this);
-        imu_sub = nh.subscribe<sensor_msgs::Imu>("/bluerov2/imu", 20, &PointCloudProcessor::imuCallback, this);
-        pressure_sub = nh.subscribe<sensor_msgs::FluidPressure>("/bluerov2/pressure", 20, &PointCloudProcessor::pressureCallback, this);
+        pcl_sub = nh.subscribe("/camera/depth/color/points", 20, &VisualController::pclCallback, this);
+        pose_gt_sub = nh.subscribe<nav_msgs::Odometry>("/bluerov2/pose_gt", 20, &VisualController::poseGtCallback, this);
+        imu_sub = nh.subscribe<sensor_msgs::Imu>("/bluerov2/imu", 20, &VisualController::imuCallback, this);
+        pressure_sub = nh.subscribe<sensor_msgs::FluidPressure>("/bluerov2/pressure", 20, &VisualController::pressureCallback, this);
         
         // ROS publisher
         // thrust0_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/0/input",20);
@@ -154,7 +154,6 @@ public:
                 roiCloud->push_back(cloudPtr->at(x, y));
             }
         }
-        // ROS_INFO("Received %ld points in ROI.", roiCloud->points.size());
 
         // calculate average distance
         double average_distance = calculateAverageDistance(roiCloud);
@@ -192,7 +191,6 @@ public:
         tf::Matrix3x3(tf_quaternion).getRPY(local_euler.phi, local_euler.theta, local_euler.psi);
         pos.yaw = local_euler.psi;
 
-        // ROS_INFO("pos.yaw: %f.", pos.yaw);
         // if(cout_counter > 2){ //reduce cout rate
         //     std::cout << "pos.yaw:    " << pos.yaw << std::endl;
         //     cout_counter = 0;
@@ -205,9 +203,8 @@ public:
     void pressureCallback(const sensor_msgs::FluidPressure::ConstPtr &pressure)
     {
         fluid_p = (pressure->fluid_pressure)*1000;
-        pos.z = (fluid_p-atomosphere_p)/(rho_salt*g);
+        pos.z = -(fluid_p-atomosphere_p)/(rho_salt*g);
         
-        // ROS_INFO("pos.z: %f.", pos.z);
         // if(cout_counter > 2){ //reduce cout rate
         //     std::cout << "pos.z:    " << pos.z << std::endl;
         //     cout_counter = 0;
@@ -282,7 +279,7 @@ public:
 
         // Calculate control error
         error.x = pos.x - ref.x;
-        error.z = pos.z - ref.x;
+        error.z = pos.z - ref.z;
         error.yaw = pos.yaw - ref.yaw;
 
         // Mission information cout
@@ -306,13 +303,18 @@ public:
 
 int main(int argc, char **argv)
 {
-    ros::init(argc, argv, "realsensed435_pcl_node");
+    ros::init(argc, argv, "bluerov2_inspection_node");
     ros::NodeHandle nh;
 
-    PointCloudProcessor pcl_processor(nh);
-    pcl_processor.controller();
-
-    ros::spin();
+    VisualController vc(nh);
+    ros::Rate loop_rate(20);
+    // pcl_processor.controller();
+    while(ros::ok()){
+        vc.controller();
+        ros::spinOnce();
+        loop_rate.sleep();
+    }
+    // ros:spin();
 
     return 0;
 }
