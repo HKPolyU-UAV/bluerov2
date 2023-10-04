@@ -45,9 +45,9 @@ private:
     uuv_gazebo_ros_plugins_msgs::FloatStamped thrust5;
 
     // PID parameters
-    double kp = 10;  
-    double ki = 0;  
-    double kd = 0; 
+    // double kp = 1;  
+    // double ki = 0;  
+    // double kd = 0; 
     double prevError;
     double integral;
 
@@ -91,6 +91,8 @@ private:
     double safety_dis = 1.79;
     double buffer = 0.3;
     double sway = -4;
+    double initial_z  = -34.5;
+    double initial_yaw = 0.5*M_PI;
 
     // barometer parameters
     double fluid_p;
@@ -101,9 +103,12 @@ private:
     // Other variables
     tf::Quaternion tf_quaternion;
     int cout_counter = 0;
+    int cycle_counter = 0;
+    int status = 0;
 
 public:
-    // Initialization 
+    bool is_start = false;
+    // Initialization m 
     VisualController(ros::NodeHandle &nh)
     {
         // ROS subscriber
@@ -113,17 +118,18 @@ public:
         pressure_sub = nh.subscribe<sensor_msgs::FluidPressure>("/bluerov2/pressure", 20, &VisualController::pressureCallback, this);
         
         // ROS publisher
-        // thrust0_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/0/input",20);
-        // thrust1_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/1/input",20);
-        // thrust2_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/2/input",20);
-        // thrust3_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/3/input",20);
-        // thrust4_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/4/input",20);
-        // thrust5_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/5/input",20);
+        thrust0_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/0/input",20);
+        thrust1_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/1/input",20);
+        thrust2_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/2/input",20);
+        thrust3_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/3/input",20);
+        thrust4_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/4/input",20);
+        thrust5_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/5/input",20);
     }
 
     // Pointcloud callback from Realsense d435
     void pclCallback(const sensor_msgs::PointCloud2ConstPtr &cloud)
     {
+        is_start = true;
         pcl::PointCloud<pcl::PointXYZ>::Ptr cloudPtr(new pcl::PointCloud<pcl::PointXYZ>);
         pcl::PCLPointCloud2 pcl_pc2;
         pcl_conversions::toPCL(*cloud, pcl_pc2);
@@ -159,13 +165,6 @@ public:
         double average_distance = calculateAverageDistance(roiCloud);
         pos.x = average_distance;
 
-        // if(cout_counter > 2){ //reduce cout rate
-        //     std::cout << "pos.x:    " << pos.x << std::endl;
-        //     cout_counter = 0;
-        //     }
-        // else{
-        //     cout_counter++;
-        //     }
     }
 
     // position callback
@@ -191,13 +190,6 @@ public:
         tf::Matrix3x3(tf_quaternion).getRPY(local_euler.phi, local_euler.theta, local_euler.psi);
         pos.yaw = local_euler.psi;
 
-        // if(cout_counter > 2){ //reduce cout rate
-        //     std::cout << "pos.yaw:    " << pos.yaw << std::endl;
-        //     cout_counter = 0;
-        //     }
-        // else{
-        //     cout_counter++;
-        //     }
     }
 
     void pressureCallback(const sensor_msgs::FluidPressure::ConstPtr &pressure)
@@ -205,13 +197,6 @@ public:
         fluid_p = (pressure->fluid_pressure)*1000;
         pos.z = -(fluid_p-atomosphere_p)/(rho_salt*g);
         
-        // if(cout_counter > 2){ //reduce cout rate
-        //     std::cout << "pos.z:    " << pos.z << std::endl;
-        //     cout_counter = 0;
-        //     }
-        // else{
-        //     cout_counter++;
-        //     }
     }
 
     // calculate average distance between camera and bridge pier based on ROI
@@ -235,9 +220,9 @@ public:
     }
 
     // PID controller
-    double PID(double ref, double pos, double dt) 
+    double PID(double ref, double pos, double kp, double ki, double kd) 
     {
-        double error = pos - ref;
+        double error = ref-pos;
         integral += error * dt;
         double derivative = (error - prevError) / dt;
         double control_input = kp * error + ki * integral + kd * derivative;
@@ -254,12 +239,56 @@ public:
         ref.x = safety_dis;
         ref.z = -34.5;
         ref.yaw = 0.5*M_PI;
-        openLoop_u.u2 = 0;
+        openLoop_u.u2 = -4;
+
+        // when UUV faces to one side of bridge pier
+        if (pos.x >= safety_dis-buffer)
+        {
+            status = 0;
+            ref.x = safety_dis;
+            ref.z = initial_z;
+            ref.yaw = initial_yaw;
+            openLoop_u.u2 = -4;   
+        }
+        // when UUV reaches to the edge of bridge pier
+        else if (pos.x < 0+buffer)
+        {
+            status = 1;
+            // x unchanged
+            ref.x = pos.x;
+
+            // turn 90 degrees
+            if(ref.yaw + 0.5*M_PI > M_PI)
+            {
+                ref.yaw = -0.5*M_PI;
+            }
+            else
+            {
+                ref.yaw = ref.yaw + 0.5*M_1_PI;
+            }
+
+            // if UUV goes to initial orientation again, one cylce completed, move upward
+            if(ref.yaw == initial_yaw)
+            {
+                ref.z = initial_z + 0.5*cycle_counter;
+                cycle_counter++;
+            }
+            pos.x = pos.x +buffer;
+            openLoop_u.u2 = -4;
+        }
+        else
+        {
+            status = 2;
+            ref.x = pos.x;
+            ref.z = pos.z;
+            ref.yaw = pos.yaw;
+            openLoop_u.u2 = 0;
+        }
 
         // Call PID to get control inputs
-        pid_u.u1 = PID(ref.x, pos.x, dt);
-        pid_u.u3 = PID(ref.z, pos.z, dt);
-        pid_u.u4 = PID(ref.yaw, pos.yaw, dt);
+        pid_u.u1 = PID(ref.x, pos.x, 1.5, 0, 0);
+        pid_u.u3 = PID(ref.z, pos.z, 1.2, 0, 0);
+        pid_u.u4 = PID(ref.yaw, pos.yaw, 1.2, 0, 0);
 
         // Control allocation
         thrust0.data = (-pid_u.u1 + openLoop_u.u2 + pid_u.u4)/rotor_constant;
@@ -270,17 +299,17 @@ public:
         thrust5.data = (-pid_u.u3)/rotor_constant;
 
         // Publish thrusts
-        // thrust0_pub.publish(thrust0);
-        // thrust1_pub.publish(thrust1);
-        // thrust2_pub.publish(thrust2);
-        // thrust3_pub.publish(thrust3);
-        // thrust4_pub.publish(thrust4);
-        // thrust5_pub.publish(thrust5);
+        thrust0_pub.publish(thrust0);
+        thrust1_pub.publish(thrust1);
+        thrust2_pub.publish(thrust2);
+        thrust3_pub.publish(thrust3);
+        thrust4_pub.publish(thrust4);
+        thrust5_pub.publish(thrust5);
 
         // Calculate control error
-        error.x = pos.x - ref.x;
-        error.z = pos.z - ref.z;
-        error.yaw = pos.yaw - ref.yaw;
+        error.x = ref.x - pos.x;
+        error.z = ref.z - pos.z;
+        error.yaw = ref.yaw - pos.yaw;
 
         // Mission information cout
         if(cout_counter > 2){ //reduce cout rate
@@ -291,6 +320,7 @@ public:
                 std::cout << "x_gt:     " << local_pos.x << "\ty_gt:     " << local_pos.y << "\tz_gt:     " << local_pos.z << std::endl;
                 std::cout << "u1    : " << pid_u.u1 << "\tu2:    " << openLoop_u.u2 << "\tu3:    " << pid_u.u3 << "\tu4:    " << pid_u.u4 << std::endl;
                 std::cout << "t0:  " << thrust0.data << "\tt1:  " << thrust1.data << "\tt2:  " << thrust2.data << "\tt3:  " << thrust3.data << "\tt4:  " << thrust4.data << "\tt5:  " << thrust5.data << std::endl;
+                std::cout << "no. of cycle completed:    " << cycle_counter << "\tstatus:    " << status << std::endl;
                 std::cout << "ros_time:   " << std::fixed << ros::Time::now().toSec() << std::endl;
                 std::cout << "------------------------------------------------------------------------------------------------" << std::endl;
                 cout_counter = 0;
@@ -310,7 +340,11 @@ int main(int argc, char **argv)
     ros::Rate loop_rate(20);
     // pcl_processor.controller();
     while(ros::ok()){
-        vc.controller();
+        if(vc.is_start==true)
+        {
+            vc.controller();
+        }
+        // vc.controller();
         ros::spinOnce();
         loop_rate.sleep();
     }
