@@ -314,13 +314,10 @@ public:
         yaw_sum = yaw_sum + yaw_diff;
         pre_yaw = pos.yaw;
 
-        // PID weighting
-        // control_u.u1 = PID(safety_dis, pos.x, 1.5, 0.2, 0.2);
-        // control_u.u1 = 0;
-        // control_u.u2 = 0;
-        double current_time = 0.0;
-        ros::Time current_ros_time = ros::Time::now();
-        current_time = current_ros_time.toSec();
+        // // PID weighting
+        // double current_time = 0.0;
+        // ros::Time current_ros_time = ros::Time::now();
+        // current_time = current_ros_time.toSec();
         // ref.yaw = 0.5*M_PI;
         // if (current_time < 5.0) {
         //     ref.yaw = 0.5 * M_PI;
@@ -328,104 +325,104 @@ public:
         //     ref.yaw = M_PI;
         // }
 
-        if (current_time < 5.0) {
-            control_u.u1 = PID(ref.x, pos.x, 5, 0, 0);
-            control_u.u2 = 0;
-            control_u.u3 = PID(initial_z, pos.z, 5, 0, 0);
-            control_u.u4 = PID(0.5*M_PI, yaw_sum, 7, 0.08, 0);
-        } else if (current_time >= 5.0 && current_time < 10.0) {
-            ref.x = safety_dis+0.5;
-            control_u.u1 = PID(ref.x, pos.x, 5, 0, 0);
-            control_u.u2 = 0;
-            control_u.u3 = PID(initial_z, pos.z, 5, 0, 0);
-            control_u.u4 = PID(0.5*M_PI, yaw_sum, 7, 0.08, 0);
-        }
-        else if (current_time >= 10.0 && current_time <= 15.0) {
-            ref.x = safety_dis+0.5;
-            ref.z = initial_z + 5;
-            // ref.yaw = M_PI;
-            control_u.u1 = PID(ref.x, pos.x, 5, 0, 0);
-            control_u.u2 = 0;
-            control_u.u3 = PID(ref.z, pos.z, 5, 0, 0);
-            control_u.u4 = PID(0.5*M_PI, yaw_sum, 7, 0.08, 0);
-        }
-        else {
-            ref.x = 0;
-            ref.yaw = M_PI;
-            control_u.u1 = 0;
-            control_u.u2 = 0;
-            control_u.u3 = PID(ref.z, pos.z, 5, 0, 0);
-            control_u.u4 = PID(ref.yaw, yaw_sum, 7, 0.08, 0);
-        }
+        // if (current_time < 5.0) {
+        //     control_u.u1 = PID(ref.x, pos.x, 5, 0, 0);
+        //     control_u.u2 = 0;
+        //     control_u.u3 = PID(initial_z, pos.z, 5, 0, 0);
+        //     control_u.u4 = PID(0.5*M_PI, yaw_sum, 7, 0.08, 0);
+        // } else if (current_time >= 5.0 && current_time < 10.0) {
+        //     ref.x = safety_dis+0.5;
+        //     control_u.u1 = PID(ref.x, pos.x, 5, 0, 0);
+        //     control_u.u2 = 0;
+        //     control_u.u3 = PID(initial_z, pos.z, 5, 0, 0);
+        //     control_u.u4 = PID(0.5*M_PI, yaw_sum, 7, 0.08, 0);
+        // }
+        // else if (current_time >= 10.0 && current_time <= 15.0) {
+        //     ref.x = safety_dis+0.5;
+        //     ref.z = initial_z + 5;
+        //     // ref.yaw = M_PI;
+        //     control_u.u1 = PID(ref.x, pos.x, 5, 0, 0);
+        //     control_u.u2 = 0;
+        //     control_u.u3 = PID(ref.z, pos.z, 5, 0, 0);
+        //     control_u.u4 = PID(0.5*M_PI, yaw_sum, 7, 0.08, 0);
+        // }
+        // else {
+        //     ref.x = 0;
+        //     ref.yaw = M_PI;
+        //     control_u.u1 = 0;
+        //     control_u.u2 = 0;
+        //     control_u.u3 = PID(ref.z, pos.z, 5, 0, 0);
+        //     control_u.u4 = PID(ref.yaw, yaw_sum, 7, 0.08, 0);
+        // }
 
         // control_u.u3 = PID(ref.z, pos.z, 5, 0, 0);
         // control_u.u4 = PID(ref.yaw, yaw_sum, 5, 0.15, 0);
 
-        // // when UUV faces to one side of bridge pier
-        // if (pos.x >= safety_dis-buffer && pos.x <= safety_dis+buffer && completed_turn == true)
-        // {
-        //     status = 0;
-        //     ref.x = safety_dis;
-        //     // ref.z = initial_z;
-        //     // ref.yaw = initial_yaw;
-        //     control_u.u1 = PID(ref.x, pos.x, 1.5, 0.2, 0.2);
-        //     control_u.u3 = PID(ref.z, pos.z, 2, 0.2, 0.2);
-        //     control_u.u4 = PID(ref.yaw, yaw_sum, 0.8, 0, 0.2);
-        //     control_u.u2 = -4; 
-        //     completed_turn = true;  
-        //     turn = false;
-        // }
-        // else if (pos.x > safety_dis+buffer && completed_turn == true)
-        // {
-        //     status = 1;
-        //     control_u.u1 = 0;
-        //     control_u.u3 = PID(ref.z, pos.z, 2, 0.2, 0.2);
-        //     control_u.u4 = PID(ref.yaw, yaw_sum, 0.8, 0, 0.2);
-        //     control_u.u2 = -2;  
-        // }
-        // // when UUV reaches to the edge of bridge pier
-        // else if (pos.x < 0.1 && turn == false)
-        // {
-        //     completed_turn = false;
-        //     // std::cout << "turn 90 degrees !!" << std::endl;
-        //     status = 2;
-        //     // x unchanged
-        //     ref.x = pos.x;
-        //     // turn 90 degrees
-        //     ref.yaw = ref.yaw + 0.5*M_PI;
-        //     control_u.u1 = 0;
-        //     control_u.u3 = PID(ref.z, pos.z, 2, 0.2, 0.2);
-        //     control_u.u4 = PID(ref.yaw, yaw_sum, 0.8, 0, 0.2);
-        //     control_u.u2 = 0;
-        //     // if (fabs(ref.yaw - yaw_sum) < 0.1)
-        //     // {
-        //     //     completed_turn = true;
-        //     // }
-        //     turn = true;
-        // }
-        // else if (pos.x < 0.1 && completed_turn == true)
-        // {
-        //     status = 3;
-        //     control_u.u1 = 4;
-        //     control_u.u2 = -4;
-        //     control_u.u3 = PID(ref.z, pos.z, 2, 0.2, 0.2);
-        //     control_u.u4 = PID(ref.yaw, yaw_sum, 0.8, 0, 0.2);
-        // }
-        // else
-        // {
-        //     status = 4;
-        //     // ref.x = pos.x;
-        //     // ref.z = pos.z;
-        //     // ref.yaw = pos.yaw;
-        //     control_u.u1 = 0;
-        //     control_u.u3 = PID(ref.z, pos.z, 2, 0.2, 0.2);
-        //     control_u.u4 = PID(ref.yaw, yaw_sum, 0.8, 0, 0.2);
-        //     control_u.u2 = 0;
-        //     if (fabs(ref.yaw - yaw_sum) < 0.1)
-        //     {
-        //         completed_turn = true;
-        //     }
-        // }
+        // when UUV faces to one side of bridge pier
+        if (pos.x >= safety_dis-buffer && pos.x <= safety_dis+buffer && completed_turn == true)
+        {
+            status = 0;
+            ref.x = safety_dis;
+            // ref.z = initial_z;
+            // ref.yaw = initial_yaw;
+            control_u.u1 = PID(ref.x, pos.x, 5, 0, 0);
+            control_u.u3 = PID(ref.z, pos.z, 5, 0, 0);
+            control_u.u4 = PID(ref.yaw, yaw_sum, 7, 0.08, 0);
+            control_u.u2 = -4; 
+            completed_turn = true;  
+            turn = false;
+        }
+        else if (pos.x > safety_dis+buffer && completed_turn == true)
+        {
+            status = 1;
+            control_u.u1 = 0;
+            control_u.u3 = PID(ref.z, pos.z, 5, 0, 0);
+            control_u.u4 = PID(ref.yaw, yaw_sum, 7, 0.08, 0);
+            control_u.u2 = -2;  
+        }
+        // when UUV reaches to the edge of bridge pier
+        else if (pos.x < 0.1 && turn == false)
+        {
+            completed_turn = false;
+            // std::cout << "turn 90 degrees !!" << std::endl;
+            status = 2;
+            // x unchanged
+            ref.x = pos.x;
+            // turn 90 degrees
+            ref.yaw = ref.yaw + 0.5*M_PI;
+            control_u.u1 = 0;
+            control_u.u3 = PID(ref.z, pos.z, 5, 0, 0);
+            control_u.u4 = PID(ref.yaw, yaw_sum, 7, 0.08, 0);
+            control_u.u2 = 0;
+            // if (fabs(ref.yaw - yaw_sum) < 0.1)
+            // {
+            //     completed_turn = true;
+            // }
+            turn = true;
+        }
+        else if (pos.x < 0.1 && completed_turn == true)
+        {
+            status = 3;
+            control_u.u1 = 1;
+            control_u.u2 = -4;
+            control_u.u3 = PID(ref.z, pos.z, 5, 0, 0);
+            control_u.u4 = PID(ref.yaw, yaw_sum, 7, 0.08, 0);
+        }
+        else
+        {
+            status = 4;
+            // ref.x = pos.x;
+            // ref.z = pos.z;
+            // ref.yaw = pos.yaw;
+            control_u.u1 = 0;
+            control_u.u3 = PID(ref.z, pos.z, 5, 0, 0);
+            control_u.u4 = PID(ref.yaw, yaw_sum, 7, 0.08, 0);
+            control_u.u2 = 0;
+            if (fabs(ref.yaw - yaw_sum) < 0.1)
+            {
+                completed_turn = true;
+            }
+        }
 
 
         // Control allocation
