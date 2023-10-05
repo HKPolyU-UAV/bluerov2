@@ -36,6 +36,10 @@ private:
     ros::Publisher thrust5_pub;
     ros::Publisher ref_pose_pub;
     ros::Publisher visual_pose_pub;
+    ros::Publisher control_input0_pub;
+    ros::Publisher control_input1_pub;
+    ros::Publisher control_input2_pub;
+    ros::Publisher control_input3_pub;
 
     // ROS message variables
     nav_msgs::Odometry pose_gt;
@@ -47,6 +51,10 @@ private:
     uuv_gazebo_ros_plugins_msgs::FloatStamped thrust5;
     nav_msgs::Odometry ref_pose;
     nav_msgs::Odometry visual_pose;
+    uuv_gazebo_ros_plugins_msgs::FloatStamped control_input0;
+    uuv_gazebo_ros_plugins_msgs::FloatStamped control_input1;
+    uuv_gazebo_ros_plugins_msgs::FloatStamped control_input2;
+    uuv_gazebo_ros_plugins_msgs::FloatStamped control_input3;
 
     // PID parameters
     // double kp = 1;  
@@ -72,6 +80,12 @@ private:
         double u3;
         double u4;
     };
+    struct orient{
+        double w;
+        double x;
+        double y;
+        double z;
+    };
     struct pose{
             double x;
             double y;
@@ -89,6 +103,7 @@ private:
     state error;
     controlInputs control_u;
     pose local_pos;
+    orient imu_q;
     double dt = 0.05;
     double rotor_constant = 0.026546960744430276;
     double safety_dis = 1.79;
@@ -109,6 +124,7 @@ private:
     int cycle_counter = 0;
     int status = 0;
     bool turn;
+    bool completed_turn;
     float yaw_sum;
     float pre_yaw;
     float yaw_diff;
@@ -132,8 +148,11 @@ public:
         thrust4_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/4/input",20);
         thrust5_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/5/input",20);
         ref_pose_pub = nh.advertise<nav_msgs::Odometry>("/bluerov2/mpc/reference",20);
-        visual_pose_pub = nh.advertise<nav_msgs::Odometry>("/bluerov2/mpc/reference",20);
-
+        visual_pose_pub = nh.advertise<nav_msgs::Odometry>("/bluerov2/visual/pose",20);
+        control_input0_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/control_input/0",20);
+        control_input1_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/control_input/1",20);
+        control_input2_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/control_input/2",20);
+        control_input3_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/control_input/3",20);
         // Initialization 
         ref.x = safety_dis;
         ref.z = initial_z;
@@ -141,6 +160,7 @@ public:
         yaw_sum = initial_yaw;
         pre_yaw = initial_yaw;
         yaw_diff = 0;
+        completed_turn = true;
     }
 
     // Pointcloud callback from Realsense d435
@@ -207,6 +227,10 @@ public:
     {
         // get angle phi, theta, psi
         tf::quaternionMsgToTF(imu->orientation,tf_quaternion);
+        imu_q.w = imu->orientation.w;
+        imu_q.x = imu->orientation.x;
+        imu_q.y = imu->orientation.y;
+        imu_q.z = imu->orientation.z;
         tf::Matrix3x3(tf_quaternion).getRPY(local_euler.phi, local_euler.theta, local_euler.psi);
         pos.yaw = local_euler.psi;
 
@@ -256,9 +280,6 @@ public:
     void controller()
     {
         // Set reference
-        // ref.x = safety_dis;
-        // ref.z = initial_z;
-        // ref.yaw = initial_yaw;
         if (pre_yaw >= 0 && pos.yaw >=0)
         {
             yaw_diff = pos.yaw - pre_yaw;
@@ -293,66 +314,127 @@ public:
         yaw_sum = yaw_sum + yaw_diff;
         pre_yaw = pos.yaw;
 
-        // when UUV faces to one side of bridge pier
-        if (pos.x >= safety_dis-buffer && pos.x <= safety_dis+buffer)
-        {
-            status = 0;
-            ref.x = safety_dis;
-            // ref.z = initial_z;
-            // ref.yaw = initial_yaw;
-            control_u.u1 = PID(ref.x, pos.x, 1, 0.2, 0.2);
-            control_u.u3 = PID(ref.z, pos.z, 1, 0.2, 0.2);
-            control_u.u4 = PID(ref.yaw, yaw_sum, 1, 0.5, 0.2);
-            control_u.u2 = -4;   
-            turn = false;
-        }
-        else if (pos.x > safety_dis+buffer)
-        {
-            status = 1;
-            control_u.u1 = 0;
-            control_u.u3 = PID(ref.z, pos.z, 1, 0.2, 0.2);
-            control_u.u4 = PID(ref.yaw, yaw_sum, 1, 0.2, 0.2);
-            control_u.u2 = -2;  
-        }
-        // when UUV reaches to the edge of bridge pier
-        else if (pos.x < 0.1 && turn == false)
-        {
-            // std::cout << "turn 90 degrees !!" << std::endl;
-            status = 2;
-            // x unchanged
-            ref.x = pos.x;
-            // turn 90 degrees
-            ref.yaw = ref.yaw + 0.5*M_PI;
-            control_u.u1 = 0;
-            control_u.u3 = PID(ref.z, pos.z, 1, 0.2, 0.2);
-            control_u.u4 = PID(ref.yaw, yaw_sum, 1, 0.5, 0.2);
+        // PID weighting
+        // control_u.u1 = PID(safety_dis, pos.x, 1.5, 0.2, 0.2);
+        // control_u.u1 = 0;
+        // control_u.u2 = 0;
+        double current_time = 0.0;
+        ros::Time current_ros_time = ros::Time::now();
+        current_time = current_ros_time.toSec();
+        // ref.yaw = 0.5*M_PI;
+        // if (current_time < 5.0) {
+        //     ref.yaw = 0.5 * M_PI;
+        // } else if (current_time >= 5.0 && current_time <= 30.0) {
+        //     ref.yaw = M_PI;
+        // }
+
+        if (current_time < 5.0) {
+            control_u.u1 = PID(ref.x, pos.x, 5, 0, 0);
             control_u.u2 = 0;
-            turn = true;
+            control_u.u3 = PID(initial_z, pos.z, 5, 0, 0);
+            control_u.u4 = PID(0.5*M_PI, yaw_sum, 7, 0.08, 0);
+        } else if (current_time >= 5.0 && current_time < 10.0) {
+            ref.x = safety_dis+0.5;
+            control_u.u1 = PID(ref.x, pos.x, 5, 0, 0);
+            control_u.u2 = 0;
+            control_u.u3 = PID(initial_z, pos.z, 5, 0, 0);
+            control_u.u4 = PID(0.5*M_PI, yaw_sum, 7, 0.08, 0);
         }
-        else
-        {
-            status = 3;
-            // ref.x = pos.x;
-            // ref.z = pos.z;
-            // ref.yaw = pos.yaw;
+        else if (current_time >= 10.0 && current_time <= 15.0) {
+            ref.x = safety_dis+0.5;
+            ref.z = initial_z + 5;
+            // ref.yaw = M_PI;
+            control_u.u1 = PID(ref.x, pos.x, 5, 0, 0);
+            control_u.u2 = 0;
+            control_u.u3 = PID(ref.z, pos.z, 5, 0, 0);
+            control_u.u4 = PID(0.5*M_PI, yaw_sum, 7, 0.08, 0);
+        }
+        else {
+            ref.x = 0;
+            ref.yaw = M_PI;
             control_u.u1 = 0;
-            control_u.u3 = PID(ref.z, pos.z, 1, 0.2, 0.2);
-            control_u.u4 = PID(ref.yaw, yaw_sum, 1, 0.5, 0.2);
-            control_u.u2 = -2;
+            control_u.u2 = 0;
+            control_u.u3 = PID(ref.z, pos.z, 5, 0, 0);
+            control_u.u4 = PID(ref.yaw, yaw_sum, 7, 0.08, 0);
         }
 
-        // Call PID to get control inputs
-        // control_u.u1 = PID(ref.x, pos.x, 2, 0, 0.5);
-        // control_u.u3 = PID(ref.z, pos.z, 2, 0, 0.5);
-        // control_u.u4 = PID(ref.yaw, pos.yaw, 2, 0, 0.5);
+        // control_u.u3 = PID(ref.z, pos.z, 5, 0, 0);
+        // control_u.u4 = PID(ref.yaw, yaw_sum, 5, 0.15, 0);
+
+        // // when UUV faces to one side of bridge pier
+        // if (pos.x >= safety_dis-buffer && pos.x <= safety_dis+buffer && completed_turn == true)
+        // {
+        //     status = 0;
+        //     ref.x = safety_dis;
+        //     // ref.z = initial_z;
+        //     // ref.yaw = initial_yaw;
+        //     control_u.u1 = PID(ref.x, pos.x, 1.5, 0.2, 0.2);
+        //     control_u.u3 = PID(ref.z, pos.z, 2, 0.2, 0.2);
+        //     control_u.u4 = PID(ref.yaw, yaw_sum, 0.8, 0, 0.2);
+        //     control_u.u2 = -4; 
+        //     completed_turn = true;  
+        //     turn = false;
+        // }
+        // else if (pos.x > safety_dis+buffer && completed_turn == true)
+        // {
+        //     status = 1;
+        //     control_u.u1 = 0;
+        //     control_u.u3 = PID(ref.z, pos.z, 2, 0.2, 0.2);
+        //     control_u.u4 = PID(ref.yaw, yaw_sum, 0.8, 0, 0.2);
+        //     control_u.u2 = -2;  
+        // }
+        // // when UUV reaches to the edge of bridge pier
+        // else if (pos.x < 0.1 && turn == false)
+        // {
+        //     completed_turn = false;
+        //     // std::cout << "turn 90 degrees !!" << std::endl;
+        //     status = 2;
+        //     // x unchanged
+        //     ref.x = pos.x;
+        //     // turn 90 degrees
+        //     ref.yaw = ref.yaw + 0.5*M_PI;
+        //     control_u.u1 = 0;
+        //     control_u.u3 = PID(ref.z, pos.z, 2, 0.2, 0.2);
+        //     control_u.u4 = PID(ref.yaw, yaw_sum, 0.8, 0, 0.2);
+        //     control_u.u2 = 0;
+        //     // if (fabs(ref.yaw - yaw_sum) < 0.1)
+        //     // {
+        //     //     completed_turn = true;
+        //     // }
+        //     turn = true;
+        // }
+        // else if (pos.x < 0.1 && completed_turn == true)
+        // {
+        //     status = 3;
+        //     control_u.u1 = 4;
+        //     control_u.u2 = -4;
+        //     control_u.u3 = PID(ref.z, pos.z, 2, 0.2, 0.2);
+        //     control_u.u4 = PID(ref.yaw, yaw_sum, 0.8, 0, 0.2);
+        // }
+        // else
+        // {
+        //     status = 4;
+        //     // ref.x = pos.x;
+        //     // ref.z = pos.z;
+        //     // ref.yaw = pos.yaw;
+        //     control_u.u1 = 0;
+        //     control_u.u3 = PID(ref.z, pos.z, 2, 0.2, 0.2);
+        //     control_u.u4 = PID(ref.yaw, yaw_sum, 0.8, 0, 0.2);
+        //     control_u.u2 = 0;
+        //     if (fabs(ref.yaw - yaw_sum) < 0.1)
+        //     {
+        //         completed_turn = true;
+        //     }
+        // }
+
 
         // Control allocation
         thrust0.data = (-control_u.u1 + control_u.u2 + control_u.u4)/rotor_constant;
         thrust1.data = (-control_u.u1 - control_u.u2 - control_u.u4)/rotor_constant;
         thrust2.data = (control_u.u1 + control_u.u2 - control_u.u4)/rotor_constant;
         thrust3.data = (control_u.u1 - control_u.u2 + control_u.u4)/rotor_constant;
-        thrust4.data = (-control_u.u3)/rotor_constant;
-        thrust5.data = (-control_u.u3)/rotor_constant;
+        thrust4.data = (control_u.u3)/rotor_constant;
+        thrust5.data = (control_u.u3)/rotor_constant;
 
         // Publish thrusts
         thrust0_pub.publish(thrust0);
@@ -362,9 +444,17 @@ public:
         thrust4_pub.publish(thrust4);
         thrust5_pub.publish(thrust5);
 
+        float yaw_ref;
+        if(sin(ref.yaw) >= 0)
+            {
+                yaw_ref = fmod(ref.yaw,M_PI);
+            }
+            else{
+                yaw_ref = -M_PI + fmod(ref.yaw,M_PI);
+            }
         // publish reference pose
         tf2::Quaternion ref_quat;
-        ref_quat.setRPY(0, 0, ref.yaw);
+        ref_quat.setRPY(0, 0, yaw_ref);
         geometry_msgs::Quaternion ref_quat_msg;
         tf2::convert(ref_quat, ref_quat_msg);
         ref_pose.pose.pose.position.x = ref.x;
@@ -388,15 +478,26 @@ public:
         visual_pose.pose.pose.position.x = pos.x;
         visual_pose.pose.pose.position.y = 0;
         visual_pose.pose.pose.position.z = pos.z;
-        visual_pose.pose.pose.orientation.x = imu_quat_msg.x;
-        visual_pose.pose.pose.orientation.y = imu_quat_msg.y;
-        visual_pose.pose.pose.orientation.z = imu_quat_msg.z;
-        visual_pose.pose.pose.orientation.w = imu_quat_msg.w;
+        visual_pose.pose.pose.orientation.x = imu_q.x;
+        visual_pose.pose.pose.orientation.y = imu_q.y;
+        visual_pose.pose.pose.orientation.z = imu_q.z;
+        visual_pose.pose.pose.orientation.w = imu_q.w;
         visual_pose.header.stamp = ros::Time::now();
         visual_pose.header.frame_id = "odom_frame";
         visual_pose.child_frame_id = "base_link";
 
         visual_pose_pub.publish(visual_pose);
+
+        // publish conrtrol input
+        control_input0.data = control_u.u1;
+        control_input1.data = control_u.u2;
+        control_input2.data = control_u.u3;
+        control_input3.data = control_u.u4;
+
+        control_input0_pub.publish(control_input0);
+        control_input1_pub.publish(control_input1);
+        control_input2_pub.publish(control_input2);
+        control_input3_pub.publish(control_input3);
 
         // Calculate control error
         error.x = ref.x - pos.x;
@@ -417,9 +518,13 @@ public:
         {
             message = "pos.x nearly 0, turn 90 degrees";
         } 
+        else if (status == 3) 
+        {
+            message = "Completed turning, finding bridge pier";
+        } 
         else 
         {
-        message = "Move slowly in sway";
+        message = "Stay with previous command";
         }
         // Mission information cout
         if(cout_counter > 2){ //reduce cout rate
@@ -430,7 +535,7 @@ public:
                 std::cout << "x_gt:     " << local_pos.x << "\ty_gt:     " << local_pos.y << "\tz_gt:     " << local_pos.z << std::endl;
                 std::cout << "u1    : " << control_u.u1 << "\tu2:    " << control_u.u2 << "\tu3:    " << control_u.u3 << "\tu4:    " << control_u.u4 << std::endl;
                 std::cout << "t0:  " << thrust0.data << "\tt1:  " << thrust1.data << "\tt2:  " << thrust2.data << "\tt3:  " << thrust3.data << "\tt4:  " << thrust4.data << "\tt5:  " << thrust5.data << std::endl;
-                std::cout << "no. of cycle completed:    " << cycle_counter << "\tstatus:  " << status << ": " << message << "\tif turning:    " << turn << std::endl;
+                std::cout << "no. of cycle completed:  " << cycle_counter << "  status:  " << status << ": " << message << "  if turning:  " << turn << "  completed turning:  " << completed_turn << std::endl;
                 std::cout << "ros_time:   " << std::fixed << ros::Time::now().toSec() << std::endl;
                 std::cout << "------------------------------------------------------------------------------------------------" << std::endl;
                 cout_counter = 0;

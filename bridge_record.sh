@@ -1,0 +1,1 @@
+rosbag record -O bridge_visual /bluerov2/pose_gt /bluerov2/thrusters/0/thrust /bluerov2/thrusters/1/thrust /bluerov2/thrusters/2/thrust /bluerov2/thrusters/3/thrust /bluerov2/thrusters/4/thrust /bluerov2/thrusters/5/thrust /bluerov2/mpc/reference /bluerov2/control_input/0 /bluerov2/control_input/1 /bluerov2/control_input/2 /bluerov2/control_input/3 /bluerov2/visual/pose
