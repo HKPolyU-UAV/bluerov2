@@ -37,7 +37,7 @@ while not rospy.is_shutdown():
         ax.set_ylabel('Y')
         ax.set_xlim([-2.2, 2.2])
         ax.set_ylim([-2.2, 2.2])
-        ax.plot(real_x[-20:], real_y[-20:], label='MPC', color='blue')
+        ax.plot(real_x[-20:], real_y[-20:], label='DOBMPC', color='blue')
         ax.plot(ref_x[-20:], ref_y[-20:], label='Reference', color='orange')
         ax.scatter(real_x[-1], real_y[-1], color='blue', marker='o')
         ax.scatter(ref_x[-1], ref_y[-1], color='orange', marker='o')

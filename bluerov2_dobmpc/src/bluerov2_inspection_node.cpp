@@ -358,6 +358,16 @@ public:
         // control_u.u3 = PID(ref.z, pos.z, 5, 0, 0);
         // control_u.u4 = PID(ref.yaw, yaw_sum, 5, 0.15, 0);
 
+        double current_time = 0.0;
+        ros::Time current_ros_time = ros::Time::now();
+        current_time = current_ros_time.toSec();
+        if (current_time < 10){
+            control_u.u1 = PID(safety_dis, pos.x, 5, 0, 0);
+            control_u.u2 = 0;
+            control_u.u3 = PID(initial_z, pos.z, 5, 0, 0);
+            control_u.u4 = PID(0.5*M_PI, yaw_sum, 7, 0.08, 0);
+        }
+        else{
         // when UUV faces to one side of bridge pier
         if (pos.x >= safety_dis-buffer && pos.x <= safety_dis+buffer && completed_turn == true)
         {
@@ -410,7 +420,7 @@ public:
         }
         else
         {
-            status = 4;
+            status = 2;
             // ref.x = pos.x;
             // ref.z = pos.z;
             // ref.yaw = pos.yaw;
@@ -422,6 +432,7 @@ public:
             {
                 completed_turn = true;
             }
+        }
         }
 
 
@@ -505,19 +516,19 @@ public:
 
         if (status == 0) 
         {
-            message = "Faces to one side of bridge pier";
+            message = "Keep safety distance to bridge pier, move laterally";
         } 
         else if (status == 1) 
         {
-            message = "pos.x larger than safety distance";
+            message = "Stop control in x direction, move slowly laterally";
         } 
         else if (status == 2) 
         {
-            message = "pos.x nearly 0, turn 90 degrees";
+            message = "Turn 90 degrees in yaw direction";
         } 
         else if (status == 3) 
         {
-            message = "Completed turning, finding bridge pier";
+            message = "Completed turning, finding the next bridge pier";
         } 
         else 
         {

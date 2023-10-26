@@ -23,8 +23,8 @@ int main(int argc, char **argv)
         
         if(br.is_start==true)
         {
-            // br.applyBodyWrench();
-            // br.EKF();
+            br.applyBodyWrench();
+            br.EKF();
             br.solve();
         }
         ros::spinOnce();

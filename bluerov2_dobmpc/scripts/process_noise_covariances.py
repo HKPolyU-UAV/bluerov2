@@ -6,10 +6,10 @@ from sympy import (init_printing, Matrix, MatMul,
 from scipy.linalg import block_diag
 
 Q = Q_continuous_white_noise(dim=3, dt=0.05, spectral_density=1)
-print(Q)
+# print(Q)
 
 Q = Q_discrete_white_noise(3, var=1.)
-print(Q)
+# print(Q)
 
 var = symbols('sigma^2_v')
 dt = symbols('dt')
@@ -25,5 +25,5 @@ print(MatMul(Q, var))
 
 q = Q_discrete_white_noise(dim=2, dt=dt, var=0.001)
 Q = block_diag(q, q)
-print(q)
-print(Q)
+# print(q)
+# print(Q)
