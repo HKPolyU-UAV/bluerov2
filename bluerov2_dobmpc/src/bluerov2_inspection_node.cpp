@@ -125,6 +125,8 @@ private:
     int status = 0;
     bool turn;
     bool completed_turn;
+    bool completed_round;
+    bool get_height;
     float yaw_sum;
     float pre_yaw;
     float yaw_diff;
@@ -161,6 +163,8 @@ public:
         pre_yaw = initial_yaw;
         yaw_diff = 0;
         completed_turn = true;
+        completed_round = false;
+        get_height = true;
     }
 
     // Pointcloud callback from Realsense d435
@@ -358,18 +362,19 @@ public:
         // control_u.u3 = PID(ref.z, pos.z, 5, 0, 0);
         // control_u.u4 = PID(ref.yaw, yaw_sum, 5, 0.15, 0);
 
+        // state machine
         double current_time = 0.0;
         ros::Time current_ros_time = ros::Time::now();
         current_time = current_ros_time.toSec();
-        if (current_time < 10){
+        if (current_time < 1){
             control_u.u1 = PID(safety_dis, pos.x, 5, 0, 0);
             control_u.u2 = 0;
             control_u.u3 = PID(initial_z, pos.z, 5, 0, 0);
             control_u.u4 = PID(0.5*M_PI, yaw_sum, 7, 0.08, 0);
         }
         else{
-        // when UUV faces to one side of bridge pier
-        if (pos.x >= safety_dis-buffer && pos.x <= safety_dis+buffer && completed_turn == true)
+        // when UUV faces to one side of bridge pier: Keep safety distance to bridge pier, move laterally
+        if (pos.x >= safety_dis-buffer && pos.x <= safety_dis+buffer && completed_turn == true && completed_round == false)
         {
             status = 0;
             ref.x = safety_dis;
@@ -381,7 +386,9 @@ public:
             control_u.u2 = -4; 
             completed_turn = true;  
             turn = false;
+            get_height = true;
         }
+        // when UUV approaches to the edge: stop control in x direction, move slowly laterally
         else if (pos.x > safety_dis+buffer && completed_turn == true)
         {
             status = 1;
@@ -390,14 +397,12 @@ public:
             control_u.u4 = PID(ref.yaw, yaw_sum, 7, 0.08, 0);
             control_u.u2 = -2;  
         }
-        // when UUV reaches to the edge of bridge pier
+        // when UUV reaches to the edge of bridge pier: turn 90 degrees in yaw direction
         else if (pos.x < 0.1 && turn == false)
         {
             completed_turn = false;
             // std::cout << "turn 90 degrees !!" << std::endl;
             status = 2;
-            // x unchanged
-            ref.x = pos.x;
             // turn 90 degrees
             ref.yaw = ref.yaw + 0.5*M_PI;
             control_u.u1 = 0;
@@ -410,16 +415,76 @@ public:
             // }
             turn = true;
         }
+
+        // turning until get to desired orientation
+        else if (turn == true && completed_turn == false)
+        {
+            status = 2;
+            control_u.u1 = 0;
+            control_u.u3 = PID(ref.z, pos.z, 5, 0, 0);
+            control_u.u4 = PID(ref.yaw, yaw_sum, 7, 0.08, 0);
+            control_u.u2 = 0;
+            if (fabs(ref.yaw - yaw_sum) < 0.1)
+            {
+                completed_turn = true;
+                if (fabs(pos.yaw - initial_yaw) < 0.2)
+                {
+                    completed_round = true;
+                    cycle_counter ++;
+                }
+                else
+                {
+                    completed_round = false;
+                }
+            }
+        }
+        // when UUV completes turning: finding the next bridge pier
         else if (pos.x < 0.1 && completed_turn == true)
         {
+            // turn = false;
             status = 3;
             control_u.u1 = 1;
             control_u.u2 = -4;
             control_u.u3 = PID(ref.z, pos.z, 5, 0, 0);
             control_u.u4 = PID(ref.yaw, yaw_sum, 7, 0.08, 0);
         }
+        // when UUV finds the next bridge pier and go back to initial position: completed one round, move vertically
+        else if (pos.x >= safety_dis-buffer && pos.x <= safety_dis+buffer && completed_turn == true && completed_round == true)
+        {
+            // status = 4;
+            // if (get_height == true)
+            // {
+            //     ref.z = ref.z + safety_dis*tan(32*M_PI/180)*2;
+            //     ref.x = safety_dis;
+            //     control_u.u1 = 0;
+            //     control_u.u2 = 0;
+            //     control_u.u3 = PID(ref.z, pos.z, 5, 0, 0);
+            //     control_u.u4 = PID(ref.yaw, yaw_sum, 7, 0.08, 0);
+            //     get_height = false;
+            // }
+            // else
+            // {
+            //     ref.x = safety_dis;
+            //     control_u.u1 = 0;
+            //     control_u.u2 = 0;
+            //     control_u.u3 = PID(ref.z, pos.z, 5, 0, 0);
+            //     control_u.u4 = PID(ref.yaw, yaw_sum, 7, 0.08, 0);
+            //     if (fabs(ref.z - pos.z) < 0.25)
+            //     {
+            //         completed_round = false;
+            //     }
+            // }
+            status = 4;
+            ref.z = ref.z + safety_dis*tan(32*M_PI/180)*2;
+            control_u.u1 = PID(ref.x, pos.x, 5, 0, 0);
+            control_u.u2 = 0;
+            control_u.u3 = PID(ref.z, pos.z, 5, 0, 0);
+            control_u.u4 = PID(ref.yaw, yaw_sum, 7, 0.08, 0);
+            completed_round = false;
+        }
         else
         {
+            std::cout << "state machine failed!" << std::endl;
             status = 2;
             // ref.x = pos.x;
             // ref.z = pos.z;
@@ -530,6 +595,10 @@ public:
         {
             message = "Completed turning, finding the next bridge pier";
         } 
+        else if (status == 4)
+        {
+            message = "Completed one cycle, move vertically";
+        }
         else 
         {
         message = "Stay with previous command";
@@ -543,7 +612,8 @@ public:
                 std::cout << "x_gt:     " << local_pos.x << "\ty_gt:     " << local_pos.y << "\tz_gt:     " << local_pos.z << std::endl;
                 std::cout << "u1    : " << control_u.u1 << "\tu2:    " << control_u.u2 << "\tu3:    " << control_u.u3 << "\tu4:    " << control_u.u4 << std::endl;
                 std::cout << "t0:  " << thrust0.data << "\tt1:  " << thrust1.data << "\tt2:  " << thrust2.data << "\tt3:  " << thrust3.data << "\tt4:  " << thrust4.data << "\tt5:  " << thrust5.data << std::endl;
-                std::cout << "no. of cycle completed:  " << cycle_counter << "  status:  " << status << ": " << message << "  if turning:  " << turn << "  completed turning:  " << completed_turn << std::endl;
+                std::cout << "no. of cycle completed:  " << cycle_counter << "  if turning?  " << turn << "  completed turning?  " << completed_turn << "  completed round?  " << completed_round << std::endl;
+                std::cout << "states:  " << status << ": " << message << std::endl;
                 std::cout << "ros_time:   " << std::fixed << ros::Time::now().toSec() << std::endl;
                 std::cout << "------------------------------------------------------------------------------------------------" << std::endl;
                 cout_counter = 0;
