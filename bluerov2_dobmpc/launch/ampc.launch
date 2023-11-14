@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<launch>
+	<node pkg="bluerov2_dobmpc" type="bluerov2_ampc_node" name="bluerov2_ampc_node" output="screen">
+        <rosparam command="load" file="$(find bluerov2_dobmpc)/config/gazebo_param.yaml" />
+	</node>
+
+</launch>

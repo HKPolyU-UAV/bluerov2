@@ -49,6 +49,7 @@ generate_messages(
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES bluerov2_dobmpc
+  LIBRARIES bluerov2_ampc
 #  CATKIN_DEPENDS uuv_gazebo_plugins_msgs
 #  DEPENDS system_lib
   CATKIN_DEPENDS gazebo_msgs
@@ -77,10 +78,11 @@ add_executable(bluerov2_dob_node
   src/bluerov2_dob_node.cpp
   src/bluerov2_dob.cpp)
 
-
-
 add_executable(bluerov2_inspection_node src/bluerov2_inspection_node.cpp)  
 
+add_executable(bluerov2_ampc_node 
+  src/bluerov2_ampc_node.cpp
+  src/bluerov2_ampc.cpp)
 
 target_link_libraries(bluerov2_dob_node
   ${bluerov2_model}/libacados_ocp_solver_bluerov2.so
@@ -91,4 +93,9 @@ target_link_libraries(bluerov2_inspection_node
   ${PCL_LIBRARIES}
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
-  )
+)
+target_link_libraries(bluerov2_ampc_node
+  ${bluerov2_model}/libacados_ocp_solver_bluerov2.so
+  ${acados_lib}/libacados.so
+  ${catkin_LIBRARIES}
+)

@@ -1,23 +1,23 @@
-#include <bluerov2_dobmpc/bluerov2_dob.h>
+#include <bluerov2_dobmpc/bluerov2_ampc.h>
 
 // Initialize MPC
-BLUEROV2_DOB::BLUEROV2_DOB(ros::NodeHandle& nh)
+BLUEROV2_AMPC::BLUEROV2_AMPC(ros::NodeHandle& nh)
 {
     // read parameter
-    nh.getParam("/bluerov2_dob_node/auto_yaw",AUTO_YAW);
-    nh.getParam("/bluerov2_dob_node/read_wrench",READ_WRENCH);
-    nh.getParam("/bluerov2_dob_node/compensate_d",COMPENSATE_D);
-    nh.getParam("/bluerov2_dob_node/ref_traj", REF_TRAJ);
-    nh.getParam("/bluerov2_dob_node/applied_forcex", WRENCH_FX);
-    nh.getParam("/bluerov2_dob_node/applied_forcey", WRENCH_FY);
-    nh.getParam("/bluerov2_dob_node/applied_forcez", WRENCH_FZ);
-    nh.getParam("/bluerov2_dob_node/applied_torquez", WRENCH_TZ);
-    nh.getParam("/bluerov2_dob_node/disturbance_x", solver_param.disturbance_x);
-    nh.getParam("/bluerov2_dob_node/disturbance_y", solver_param.disturbance_y);
-    nh.getParam("/bluerov2_dob_node/disturbance_z", solver_param.disturbance_z);
-    nh.getParam("/bluerov2_dob_node/disturbance_phi", solver_param.disturbance_phi);
-    nh.getParam("/bluerov2_dob_node/disturbance_theta", solver_param.disturbance_theta);
-    nh.getParam("/bluerov2_dob_node/disturbance_psi", solver_param.disturbance_psi);
+    nh.getParam("/bluerov2_ampc_node/auto_yaw",AUTO_YAW);
+    nh.getParam("/bluerov2_ampc_node/read_wrench",READ_WRENCH);
+    nh.getParam("/bluerov2_ampc_node/compensate_d",COMPENSATE_D);
+    nh.getParam("/bluerov2_ampc_node/ref_traj", REF_TRAJ);
+    nh.getParam("/bluerov2_ampc_node/applied_forcex", WRENCH_FX);
+    nh.getParam("/bluerov2_ampc_node/applied_forcey", WRENCH_FY);
+    nh.getParam("/bluerov2_ampc_node/applied_forcez", WRENCH_FZ);
+    nh.getParam("/bluerov2_ampc_node/applied_torquez", WRENCH_TZ);
+    nh.getParam("/bluerov2_ampc_node/disturbance_x", solver_param.disturbance_x);
+    nh.getParam("/bluerov2_ampc_node/disturbance_y", solver_param.disturbance_y);
+    nh.getParam("/bluerov2_ampc_node/disturbance_z", solver_param.disturbance_z);
+    nh.getParam("/bluerov2_ampc_node/disturbance_phi", solver_param.disturbance_phi);
+    nh.getParam("/bluerov2_ampc_node/disturbance_theta", solver_param.disturbance_theta);
+    nh.getParam("/bluerov2_ampc_node/disturbance_psi", solver_param.disturbance_psi);
     
     // Pre-load the trajectory
     const char * c = REF_TRAJ.c_str();
@@ -73,7 +73,7 @@ BLUEROV2_DOB::BLUEROV2_DOB(ros::NodeHandle& nh)
     applied_wrench.tz = 0.0;
 
     // ros subsriber & publisher
-    pose_sub = nh.subscribe<nav_msgs::Odometry>("/bluerov2/pose_gt", 20, &BLUEROV2_DOB::pose_cb, this);
+    pose_sub = nh.subscribe<nav_msgs::Odometry>("/bluerov2/pose_gt", 20, &BLUEROV2_AMPC::pose_cb, this);
     thrust0_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/0/input",20);
     thrust1_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/1/input",20);
     thrust2_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/2/input",20);
@@ -93,10 +93,10 @@ BLUEROV2_DOB::BLUEROV2_DOB(ros::NodeHandle& nh)
     for (int i = 0; i < 6; i++)
     {
         std::string topic = "/bluerov2/thrusters/" + std::to_string(i) + "/thrust";
-        subscribers[i] = nh.subscribe<uuv_gazebo_ros_plugins_msgs::FloatStamped>(topic, 20, boost::bind(&BLUEROV2_DOB::thrusts_cb, this, _1, i));
+        subscribers[i] = nh.subscribe<uuv_gazebo_ros_plugins_msgs::FloatStamped>(topic, 20, boost::bind(&BLUEROV2_AMPC::thrusts_cb, this, _1, i));
     }
     client = nh.serviceClient<gazebo_msgs::ApplyBodyWrench>("/gazebo/apply_body_wrench");
-    // imu_sub = nh.subscribe<sensor_msgs::Imu>("/bluerov2/imu", 20, &BLUEROV2_DOB::imu_cb, this);
+    // imu_sub = nh.subscribe<sensor_msgs::Imu>("/bluerov2/imu", 20, &BLUEROV2_AMPC::imu_cb, this);
     
     // initialize
     for(unsigned int i=0; i < BLUEROV2_NU; i++) acados_out.u0[i] = 0.0;
@@ -104,7 +104,7 @@ BLUEROV2_DOB::BLUEROV2_DOB(ros::NodeHandle& nh)
     is_start = false;
 }
 
-void BLUEROV2_DOB::pose_cb(const nav_msgs::Odometry::ConstPtr& pose)
+void BLUEROV2_AMPC::pose_cb(const nav_msgs::Odometry::ConstPtr& pose)
 {
     is_start = true;
     // get linear position x, y, z
@@ -165,7 +165,7 @@ void BLUEROV2_DOB::pose_cb(const nav_msgs::Odometry::ConstPtr& pose)
     }
 
 // quaternion to euler angle
-BLUEROV2_DOB::Euler BLUEROV2_DOB::q2rpy(const geometry_msgs::Quaternion& quaternion){
+BLUEROV2_AMPC::Euler BLUEROV2_AMPC::q2rpy(const geometry_msgs::Quaternion& quaternion){
     tf::Quaternion tf_quaternion;
     Euler euler;
     tf::quaternionMsgToTF(quaternion,tf_quaternion);
@@ -174,13 +174,13 @@ BLUEROV2_DOB::Euler BLUEROV2_DOB::q2rpy(const geometry_msgs::Quaternion& quatern
 }
 
 // euler angle to quaternion
-geometry_msgs::Quaternion BLUEROV2_DOB::rpy2q(const Euler& euler){
+geometry_msgs::Quaternion BLUEROV2_AMPC::rpy2q(const Euler& euler){
     geometry_msgs::Quaternion quaternion = tf::createQuaternionMsgFromRollPitchYaw(euler.phi, euler.theta, euler.psi);
     return quaternion;
 }
 
 // read trajectory data
-int BLUEROV2_DOB::readDataFromFile(const char* fileName, std::vector<std::vector<double>> &data)
+int BLUEROV2_AMPC::readDataFromFile(const char* fileName, std::vector<std::vector<double>> &data)
 {
 	std::ifstream file(fileName);
 	std::string line;
@@ -211,7 +211,7 @@ int BLUEROV2_DOB::readDataFromFile(const char* fileName, std::vector<std::vector
 
 	return number_of_lines;
 }
-void BLUEROV2_DOB::ref_cb(int line_to_read)
+void BLUEROV2_AMPC::ref_cb(int line_to_read)
 {
     if (BLUEROV2_N+line_to_read+1 <= number_of_steps)  // All ref points within the file
     {
@@ -263,7 +263,7 @@ void BLUEROV2_DOB::ref_cb(int line_to_read)
 // solve MPC
 // input: current pose, reference, parameter
 // output: thrust<0-5>
-void BLUEROV2_DOB::solve(){
+void BLUEROV2_AMPC::solve(){
     // identify turning direction
     if (pre_yaw >= 0 && local_euler.psi >=0)
     {
@@ -437,7 +437,7 @@ void BLUEROV2_DOB::solve(){
     
 }
 
-// void BLUEROV2_DOB::imu_cb(const sensor_msgs::Imu::ConstPtr& msg)
+// void BLUEROV2_AMPC::imu_cb(const sensor_msgs::Imu::ConstPtr& msg)
 // {
 //     // get linear position x, y, z
 //     local_acc.x = round(msg->linear_acceleration.x*10000)/10000;
@@ -446,7 +446,7 @@ void BLUEROV2_DOB::solve(){
     
 // }
 
-void BLUEROV2_DOB::thrusts_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg, int index)
+void BLUEROV2_AMPC::thrusts_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg, int index)
 {
     double input = msg->data;
     //ROS_INFO("Received input for thruster %d: %f", index, input);
@@ -479,7 +479,7 @@ void BLUEROV2_DOB::thrusts_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::C
 // Define EKF function
 // inputs: current state estimate x, current covariance estimate P, input u, measurement y, 
 //        process noise covariance Q, measuremnt noise covariance R
-void BLUEROV2_DOB::EKF()
+void BLUEROV2_AMPC::EKF()
 {
     // std::cout<<"esti_x12:    " << esti_x(12) << std::endl;
     // get input u and measuremnet y
@@ -599,7 +599,7 @@ void BLUEROV2_DOB::EKF()
 }
 
 // 4th order RK for integration
-MatrixXd BLUEROV2_DOB::RK4(MatrixXd x, MatrixXd u)
+MatrixXd BLUEROV2_AMPC::RK4(MatrixXd x, MatrixXd u)
 {
     Matrix<double,18,1> k1;
     Matrix<double,18,1> k2;
@@ -615,7 +615,7 @@ MatrixXd BLUEROV2_DOB::RK4(MatrixXd x, MatrixXd u)
 }
 
 // Define system dynamics function
-MatrixXd BLUEROV2_DOB::f(MatrixXd x, MatrixXd u)
+MatrixXd BLUEROV2_AMPC::f(MatrixXd x, MatrixXd u)
 {
     // Define system dynamics
     Matrix<double,18,1> xdot;
@@ -633,19 +633,13 @@ MatrixXd BLUEROV2_DOB::f(MatrixXd x, MatrixXd u)
             invM(3,3)*(KAu(3)+(Iy-Iz)*x(10)*x(11)-mass*ZG*g*cos(x(4))*sin(x(3))+x(15)+Dl(3,3)*x(9)),
             invM(4,4)*(KAu(4)+(Iz-Ix)*x(9)*x(11)-mass*ZG*g*sin(x(4))+x(16)+Dl(4,4)*x(10)),
             invM(5,5)*(KAu(5)-(Iy-Ix)*x(9)*x(10)+x(17)+Dl(5,5)*x(11)),
-            // invM(0,0)*(KAu(0)+mass*x(11)*x(7)-mass*x(10)*x(8)-bouyancy*sin(x(4))+x(12)+Dl(0,0)*x(6)+added_mass[2]*x(2)*x(4)),    // xddot: M^-1[tau+w-C-g-D]
-            // invM(1,1)*(KAu(1)-mass*x(11)*x(6)+mass*x(9)*x(8)+bouyancy*cos(x(4))*sin(x(3))+x(13)+Dl(1,1)*x(7)-added_mass[2]*x(2)*x(3)-added_mass[0]*x(0)*x(5)),
-            // invM(2,2)*(KAu(2)+mass*x(10)*x(6)-mass*x(9)*x(7)+bouyancy*cos(x(4))*cos(x(3))+x(14)+Dl(2,2)*x(8)-added_mass[1]*x(1)*x(3)+added_mass[0]*x(0)*x(4)),
-            // invM(3,3)*(KAu(3)+(Iy-Iz)*x(10)*x(11)-mass*ZG*g*cos(x(4))*sin(x(3))+x(15)+Dl(3,3)*x(9)-added_mass[2]*x(2)*x(1)+added_mass[1]*x(1)*x(2)-added_mass[5]*x(5)*x(4)+added_mass[4]*x(4)*x(5)),
-            // invM(4,4)*(KAu(4)+(Iz-Ix)*x(9)*x(11)-mass*ZG*g*sin(x(4))+x(16)+Dl(4,4)*x(10)+added_mass[2]*x(2)*x(0)-added_mass[0]*x(0)*x(2)+added_mass[5]*x(5)*x(3)-added_mass[3]*x(3)*x(5)),
-            // invM(5,5)*(KAu(5)-(Iy-Ix)*x(9)*x(10)+x(17)+Dl(5,5)*x(11)-added_mass[1]*x(1)*x(0)+added_mass[0]*x(0)*x(1)-added_mass[4]*x(4)*x(3)+added_mass[3]*x(3)*x(4)),
             0,0,0,0,0,0;
             
     return xdot; // dt is the time step
 }
 
 // Define measurement model function (Z = Hx, Z: measurement vector [x,xdot,tau]; X: state vector [x,xdot,disturbance])
-MatrixXd BLUEROV2_DOB::h(MatrixXd x)
+MatrixXd BLUEROV2_AMPC::h(MatrixXd x)
 {
     // Define measurement model
     Matrix<double,18,1> y;
@@ -657,18 +651,12 @@ MatrixXd BLUEROV2_DOB::h(MatrixXd x)
         M(3,3)*body_acc.phi-(Iy-Iz)*x(10)*x(11)+mass*ZG*g*cos(x(4))*sin(x(3))-x(15)-Dl(3,3)*x(9),
         M(4,4)*body_acc.theta-(Iz-Ix)*x(9)*x(11)+mass*ZG*g*sin(x(4))-x(16)-Dl(4,4)*x(10),
         M(5,5)*body_acc.psi+(Iy-Ix)*x(9)*x(10)-x(17)-Dl(5,5)*x(11);
-        // M(0,0)*body_acc.x-mass*x(11)*x(7)+mass*x(10)*x(8)+bouyancy*sin(x(4))-x(12)-Dl(0,0)*x(6)-added_mass[2]*x(2)*x(4),        
-        // M(1,1)*body_acc.y+mass*x(11)*x(6)-mass*x(9)*x(8)-bouyancy*cos(x(4))*sin(x(3))-x(13)-Dl(1,1)*x(7)+added_mass[2]*x(2)*x(3)+added_mass[0]*x(0)*x(5),
-        // M(2,2)*body_acc.z-mass*x(10)*x(6)+mass*x(9)*x(7)-bouyancy*cos(x(4))*cos(x(3))-x(14)-Dl(2,2)*x(8)+added_mass[1]*x(1)*x(3)-added_mass[0]*x(0)*x(4),
-        // M(3,3)*body_acc.phi-(Iy-Iz)*x(10)*x(11)+mass*ZG*g*cos(x(4))*sin(x(3))-x(15)-Dl(3,3)*x(9)+added_mass[2]*x(2)*x(1)-added_mass[1]*x(1)*x(2)+added_mass[5]*x(5)*x(4)-added_mass[4]*x(4)*x(5),
-        // M(4,4)*body_acc.theta-(Iz-Ix)*x(9)*x(11)+mass*ZG*g*sin(x(4))-x(16)-Dl(4,4)*x(10)-added_mass[2]*x(2)*x(0)+added_mass[0]*x(0)*x(2)-added_mass[5]*x(5)*x(3)+added_mass[3]*x(3)*x(5),
-        // M(5,5)*body_acc.psi+(Iy-Ix)*x(9)*x(10)-x(17)-Dl(5,5)*x(11)+added_mass[1]*x(1)*x(0)-added_mass[0]*x(0)*x(1)+added_mass[4]*x(4)*x(3)-added_mass[3]*x(3)*x(4);
 
     return y;
 }
 
 // Define function to compute Jacobian of system dynamics at current state and input
-MatrixXd BLUEROV2_DOB::compute_jacobian_F(MatrixXd x, MatrixXd u)
+MatrixXd BLUEROV2_AMPC::compute_jacobian_F(MatrixXd x, MatrixXd u)
 {
     // Define Jacobian of system dynamics
     Matrix<double,18,18> F;
@@ -684,7 +672,7 @@ MatrixXd BLUEROV2_DOB::compute_jacobian_F(MatrixXd x, MatrixXd u)
 }
 
 // Define function to compute Jacobian of measurement model at predicted state
-MatrixXd BLUEROV2_DOB::compute_jacobian_H(MatrixXd x)
+MatrixXd BLUEROV2_AMPC::compute_jacobian_H(MatrixXd x)
 {
     // Define Jacobian of measurement model
     Matrix<double,18,18> H;
@@ -699,12 +687,9 @@ MatrixXd BLUEROV2_DOB::compute_jacobian_H(MatrixXd x)
     return H;
 }
 
-void BLUEROV2_DOB::applyBodyWrench()
+void BLUEROV2_AMPC::applyBodyWrench()
 {
-    // initialize periodic disturbance
-    // double amplitudeScalingFactor;
-
-    // initialize random disturbance
+    // initialize random value
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_real_distribution<double> distribution(0.5, 1.0);
@@ -734,22 +719,8 @@ void BLUEROV2_DOB::applyBodyWrench()
         applied_wrench.fz = sin(dis_time)*amplitudeScalingFactor_Z;
         applied_wrench.tz = (sin(dis_time)*amplitudeScalingFactor_Y)/3;
         dis_time = dis_time+dt*2.5;
-        // std::cout << "amplitudeScalingFactor_Z:  " << amplitudeScalingFactor_Z << "  amplitudeScalingFactor_N:  " << amplitudeScalingFactor_N << std::endl;
     }
     else if(READ_WRENCH == 1){
-        // generate random disturbance
-        // if(rand_counter > 10){
-        //     applied_wrench.fx = distribution(gen)*5;
-        //     applied_wrench.fy = distribution(gen)*5;
-        //     applied_wrench.fz = distribution(gen)*5;
-        //     applied_wrench.tx = distribution(gen);
-        //     applied_wrench.ty = distribution(gen);
-        //     applied_wrench.tz = distribution(gen);
-        //     rand_counter = 0;
-        // }
-        // else{
-        //     rand_counter++;
-        // }
         // generate constant disturbance
         applied_wrench.fx = 10;
         applied_wrench.fy = 10;
@@ -757,7 +728,6 @@ void BLUEROV2_DOB::applyBodyWrench()
         applied_wrench.tz = 0;
     }
     else if(READ_WRENCH == 2){
-        // std::cout << "read from file starts" << std::endl;
         // read disturbance from file
         // read force x
         std::ifstream fx_file(fx_c);
