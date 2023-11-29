@@ -212,6 +212,24 @@ class BLUEROV2_AMPC{
     bool COMPENSATE_D;       // 0: no compensate; 1: compensate
     SolverParam solver_param;
 
+    // RLS-FF parameters
+    MatrixXd RLS_P;         // covariance matrix in RLS
+    MatrixXd RLSX_P;
+    MatrixXd RLSY_P;
+    MatrixXd RLSZ_P;
+    MatrixXd RLSK_P;
+    MatrixXd RLSM_P;
+    MatrixXd RLSN_P;
+    VectorXd RLS_theta;     // parameter vector
+    double lambda;          // forgetting factor
+    int numParams = 2;          // number of parameters
+    VectorXd theta_X;
+    VectorXd theta_Y;
+    VectorXd theta_Z;
+    VectorXd theta_K;
+    VectorXd theta_M;
+    VectorXd theta_N;
+
     // Other variables
     tf::Quaternion tf_quaternion;
     int cout_counter = 0;
@@ -279,7 +297,10 @@ class BLUEROV2_AMPC{
     void thrusts_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg, int index); // read current thrusts
     // void imu_cb(const sensor_msgs::Imu::ConstPtr& msg);
     void applyBodyWrench();
-    void EKF();  
+    void EKF();
+    void RLSFF();
+    MatrixXd RLSFF2(VectorXd RLS_x, double RLS_y);
+    // void idValidation();  
     MatrixXd RK4(MatrixXd x, MatrixXd u);                                           // EKF predict and update
     MatrixXd f(MatrixXd x, MatrixXd u);                     // system process model
     MatrixXd h(MatrixXd x);                                 // measurement model

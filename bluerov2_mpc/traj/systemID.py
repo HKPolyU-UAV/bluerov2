@@ -1,13 +1,13 @@
-#--------------------------------------
-#Generate reference trajectory for NMPC
-#--------------------------------------
+#-------------------------------------------------------
+#Generate reference trajectory for system identification
+#-------------------------------------------------------
 
 import numpy as np
 import math
 
 # Parameters
 sample_time = 0.05             # seconds
-duration = 240                   # seconds
+duration = 80                   # seconds
 
 v = 1.5
 
@@ -34,7 +34,14 @@ traj[:,14] = 57.5                   # u3
 traj[:,15] = 0                      # u4
 
 for i in range(0,int(duration/sample_time+1)):
-    traj[i,0] = 0.075*i
+    if i <= 400:
+        traj[i,0] = 0.075*i
+    if i > 400 <= 800:
+        traj[i,0] = 30 - 0.075*(i-400)
+    if i > 800 <=1200:
+        traj[i,0] = 0.05*(i-800)
+    if i > 1200 <=1600:
+        traj[i,0] = 20 - 0.05*(i-1200)
 
 # write to txt
-np.savetxt('forward.txt',traj,fmt='%f')
+np.savetxt('systemID.txt',traj,fmt='%f')
