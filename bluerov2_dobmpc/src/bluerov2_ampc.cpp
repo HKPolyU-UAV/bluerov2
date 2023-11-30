@@ -66,14 +66,12 @@ BLUEROV2_AMPC::BLUEROV2_AMPC(ros::NodeHandle& nh)
     esti_P = P0;
 
     // Initialize RLS-FF
-    RLS_P = MatrixXd::Identity(numParams, numParams);
     RLSX_P = MatrixXd::Identity(numParams, numParams);
     RLSY_P = MatrixXd::Identity(numParams, numParams);
     RLSZ_P = MatrixXd::Identity(numParams, numParams);
     RLSK_P = MatrixXd::Identity(numParams, numParams);
     RLSM_P = MatrixXd::Identity(numParams, numParams);
     RLSN_P = MatrixXd::Identity(numParams, numParams);
-    RLS_theta = VectorXd::Zero(numParams);
     lambda = 0.99;
     theta_X = VectorXd::Zero(numParams);
     theta_Y = VectorXd::Zero(numParams);
@@ -107,6 +105,8 @@ BLUEROV2_AMPC::BLUEROV2_AMPC(ros::NodeHandle& nh)
     esti_pose_pub = nh.advertise<nav_msgs::Odometry>("/bluerov2/ekf/pose",20);
     esti_disturbance_pub = nh.advertise<nav_msgs::Odometry>("/bluerov2/ekf/disturbance",20);
     applied_disturbance_pub = nh.advertise<nav_msgs::Odometry>("/bluerov2/applied_disturbance",20);
+    esti_added_mass_pub = nh.advertise<nav_msgs::Odometry>("/bluerov2/systemID/added_mass",20);
+    esti_damping_pub = nh.advertise<nav_msgs::Odometry>("/bluerov2/systemID/linear_damping",20);
     subscribers.resize(6);
     for (int i = 0; i < 6; i++)
     {
@@ -499,7 +499,6 @@ void BLUEROV2_AMPC::thrusts_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::
 //        process noise covariance Q, measuremnt noise covariance R
 void BLUEROV2_AMPC::EKF()
 {
-    // std::cout<<"esti_x12:    " << esti_x(12) << std::endl;
     // get input u and measuremnet y
     meas_u << current_t.t0, current_t.t1, current_t.t2, current_t.t3, current_t.t4, current_t.t5;
     Matrix<double,6,1> tau;
@@ -578,7 +577,7 @@ void BLUEROV2_AMPC::EKF()
     esti_disturbance.child_frame_id = "base_link";
     esti_disturbance_pub.publish(esti_disturbance);
 
-    // publish estimate disturbance
+    // publish applied disturbance
     applied_disturbance.pose.pose.position.x = applied_wrench.fx;
     applied_disturbance.pose.pose.position.y = applied_wrench.fy;
     applied_disturbance.pose.pose.position.z = applied_wrench.fz;
@@ -593,8 +592,7 @@ void BLUEROV2_AMPC::EKF()
     // print estimate disturbance
     if(cout_counter > 2){
         std::cout << "---------------------------------------------------------------------------------------------------------------------" << std::endl;
-        // std::cout << "esti_x12:   " << esti_x(12) << "\t esti_x2:  " << esti_x(2) << std::endl;
-        std::cout << "tau_x:  " << meas_y(12) << "  tau_y:  " << meas_y(13) << "  tau_z:  " << meas_y(14) << "  tau_psi:  " << meas_y(17) << std::endl;
+        std::cout << "tau_X:  " << meas_y(12) << "  tau_Y:  " << meas_y(13) << "  tau_Z:  " << meas_y(14) << "  tau_K:  " << meas_y(15) << "  tau_M:  " << meas_y(16) << "  tau_N:  " << meas_y(17) << std::endl;
         std::cout << "acc_x:  " << body_acc.x << "  acc_y:  " << body_acc.y << "  acc_z:  " << body_acc.z << std::endl;
         std::cout << "acc_phi:  " << body_acc.phi << "  acc_theta:  " << body_acc.theta << "  acc_psi:  " << body_acc.psi << std::endl;
         std::cout << "ref_x:    " << acados_in.yref[0][0] << "\tref_y:   " << acados_in.yref[0][1] << "\tref_z:    " << acados_in.yref[0][2] << "\tref_yaw:    " << yaw_ref << std::endl;
@@ -606,9 +604,8 @@ void BLUEROV2_AMPC::EKF()
         std::cout << "(body frame) disturbance X: " << esti_x(12) << "    disturbance Y: " << esti_x(13) << "    disturbance Z: " << esti_x(14) << "    disturbance N: " << esti_x(17) << std::endl;
         std::cout << "(world frame) disturbance x: " << wf_disturbance(0) << "    disturbance y: " << wf_disturbance(1) << "    disturbance z: " << wf_disturbance(2) << std::endl;
         std::cout << "(world frame) disturbance phi: " << wf_disturbance(3) << "    disturbance theta: " << wf_disturbance(4) << "    disturbance psi: " << wf_disturbance(5) << std::endl;
-        std::cout << "estimated added mass Xu':  " << RLS_theta(0) << "  estimated Damping Xu:  " << RLS_theta(1) << std::endl; 
-        std::cout << "estimated damping Xu':  " << theta_X(1) << "  Yv:  " << theta_Y(1) << "  Zw:  " << theta_Z(1) << "  Kp:  " << theta_K(1) << "  Mq:  " << theta_M(1) << "  Nr:  " << theta_N(1) << std::endl; 
-        std::cout << "estimated added mass Xu':  " << theta_X(0) << "  Yv:  " << theta_Y(0) << "  Zw:  " << theta_Z(0) << "  Kp:  " << theta_K(0) << "  Mq:  " << theta_M(0) << "  Nr:  " << theta_N(0) << std::endl; 
+        std::cout << "estimated added mass Xu':  " << theta_X(0) << "  Yv':  " << theta_Y(0) << "  Zw':  " << theta_Z(0) << "  Kp':  " << theta_K(0) << "  Mq':  " << theta_M(0) << "  Nr':  " << theta_N(0) << std::endl;
+        std::cout << "estimated damping Xu:  " << theta_X(1) << "  Yv:  " << theta_Y(1) << "  Zw:  " << theta_Z(1) << "  Kp:  " << theta_K(1) << "  Mq:  " << theta_M(1) << "  Nr:  " << theta_N(1) << std::endl;  
         std::cout << "solve_time: "<< acados_out.cpu_time << "\tkkt_res: " << acados_out.kkt_res << "\tacados_status: " << acados_out.status << std::endl;
         std::cout << "ros_time:   " << std::fixed << ros::Time::now().toSec() << std::endl;
         std::cout << "---------------------------------------------------------------------------------------------------------------------" << std::endl;
@@ -711,14 +708,8 @@ MatrixXd BLUEROV2_AMPC::compute_jacobian_H(MatrixXd x)
 // Update procedure of the RLS-FF
 void BLUEROV2_AMPC::RLSFF()
 {
-    VectorXd RLS_x(numParams);
-    double RLS_y = esti_x(12);
-    RLS_x << body_acc.x, v_linear_body[0];
-
-    double e = RLS_y - RLS_x.dot(RLS_theta); // Compute the prediction error
-    MatrixXd K = RLS_P * RLS_x / (lambda + RLS_x.dot(RLS_P * RLS_x)); // Compute the Kalman gain
-    RLS_theta += K * e; // Update the parameter vector
-    RLS_P = (RLS_P - K * RLS_x.transpose() * RLS_P) / lambda; // Update the covariance matrix
+    double e;
+    MatrixXd K;
 
     // direction X
     VectorXd RLSX_x(numParams);
@@ -779,6 +770,30 @@ void BLUEROV2_AMPC::RLSFF()
     K = RLSN_P * RLSN_x / (lambda + RLSN_x.dot(RLSN_P * RLSN_x)); // Compute the Kalman gain
     theta_N += K * e; // Update the parameter vector
     RLSN_P = (RLSN_P - K * RLSN_x.transpose() * RLSN_P) / lambda; // Update the covariance matrix
+
+    // publish estimated added mass
+    esti_added_mass.pose.pose.position.x = theta_X(0);
+    esti_added_mass.pose.pose.position.y = theta_Y(0);
+    esti_added_mass.pose.pose.position.z = theta_Z(0);
+    esti_added_mass.twist.twist.angular.x = theta_K(0);
+    esti_added_mass.twist.twist.angular.y = theta_M(0);
+    esti_added_mass.twist.twist.angular.z = theta_N(0);
+    esti_added_mass.header.stamp = ros::Time::now();
+    esti_added_mass.header.frame_id = "odom_frame";
+    esti_added_mass.child_frame_id = "base_link";
+    esti_added_mass_pub.publish(esti_added_mass);
+
+    // publish estimated damping
+    esti_damping.pose.pose.position.x = theta_X(1);
+    esti_damping.pose.pose.position.y = theta_Y(1);
+    esti_damping.pose.pose.position.z = theta_Z(1);
+    esti_damping.twist.twist.angular.x = theta_K(1);
+    esti_damping.twist.twist.angular.y = theta_M(1);
+    esti_damping.twist.twist.angular.z = theta_N(1);
+    esti_damping.header.stamp = ros::Time::now();
+    esti_damping.header.frame_id = "odom_frame";
+    esti_damping.child_frame_id = "base_link";
+    esti_damping_pub.publish(esti_damping);
 }
 
 // // Validate identified parameters

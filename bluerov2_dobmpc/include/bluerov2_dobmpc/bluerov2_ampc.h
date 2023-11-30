@@ -147,6 +147,8 @@ class BLUEROV2_AMPC{
     nav_msgs::Odometry esti_pose;
     nav_msgs::Odometry esti_disturbance;
     nav_msgs::Odometry applied_disturbance;
+    nav_msgs::Odometry esti_added_mass;
+    nav_msgs::Odometry esti_damping;
     std::vector<ros::Subscriber> subscribers;
     uuv_gazebo_ros_plugins_msgs::FloatStamped control_input0;
     uuv_gazebo_ros_plugins_msgs::FloatStamped control_input1;
@@ -213,17 +215,15 @@ class BLUEROV2_AMPC{
     SolverParam solver_param;
 
     // RLS-FF parameters
-    MatrixXd RLS_P;         // covariance matrix in RLS
-    MatrixXd RLSX_P;
+    MatrixXd RLSX_P;        // covariance matrix in RLS
     MatrixXd RLSY_P;
     MatrixXd RLSZ_P;
     MatrixXd RLSK_P;
     MatrixXd RLSM_P;
     MatrixXd RLSN_P;
-    VectorXd RLS_theta;     // parameter vector
     double lambda;          // forgetting factor
     int numParams = 2;          // number of parameters
-    VectorXd theta_X;
+    VectorXd theta_X;       // unknown parameter vector
     VectorXd theta_Y;
     VectorXd theta_Z;
     VectorXd theta_K;
@@ -273,6 +273,8 @@ class BLUEROV2_AMPC{
     ros::Publisher esti_pose_pub;
     ros::Publisher esti_disturbance_pub;
     ros::Publisher applied_disturbance_pub;
+    ros::Publisher esti_added_mass_pub;
+    ros::Publisher esti_damping_pub;
     // ros::Subscriber imu_sub;
     ros::ServiceClient client;
 
