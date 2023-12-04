@@ -796,11 +796,6 @@ void BLUEROV2_AMPC::RLSFF()
     esti_damping_pub.publish(esti_damping);
 }
 
-// // Validate identified parameters
-// void BLUEROV2_AMPC::idValidation()
-// {
-    
-// }
 
 // Apply body wrench at the center of the vehicle
 void BLUEROV2_AMPC::applyBodyWrench()

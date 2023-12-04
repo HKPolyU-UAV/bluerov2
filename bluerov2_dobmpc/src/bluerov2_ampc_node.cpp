@@ -11,6 +11,7 @@ int main(int argc, char **argv)
     ros::Duration duration(50.0); // Set the desired duration to 25 seconds
 
     BLUEROV2_AMPC br(nh);
+    // ros::Duration(20.0).sleep();
     while(ros::ok()){
         ros::Time current_time = ros::Time::now();
         ros::Duration elapsed_time = current_time - start_time;
@@ -20,7 +21,7 @@ int main(int argc, char **argv)
         //     ROS_INFO("Reached 25 seconds. Stopping the program.");
         //     break;
         // }
-        
+
         if(br.is_start==true)
         {
             // br.applyBodyWrench();
