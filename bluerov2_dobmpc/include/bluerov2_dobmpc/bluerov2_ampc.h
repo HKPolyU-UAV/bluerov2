@@ -222,7 +222,7 @@ class BLUEROV2_AMPC{
     MatrixXd RLSM_P;
     MatrixXd RLSN_P;
     double lambda;          // forgetting factor
-    int numParams = 2;          // number of parameters
+    int numParams = 3;          // number of parameters
     VectorXd theta_X;       // unknown parameter vector
     VectorXd theta_Y;
     VectorXd theta_Z;

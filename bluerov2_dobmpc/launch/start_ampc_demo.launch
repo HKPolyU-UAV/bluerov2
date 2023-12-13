@@ -43,15 +43,15 @@
     </include>
     -->
 
-    <!-- <include file="$(find uuv_control_utils)/launch/apply_body_wrench.launch">
+    <include file="$(find uuv_control_utils)/launch/apply_body_wrench.launch">
         <arg name="uuv_name" value="bluerov2"/>
         <arg name="starting_time" default="1"/>
         <arg name="duration" default="10000"/>
-        <arg name="force_x" default="20"/>
-        <arg name="force_y" default="0"/>
+        <arg name="force_x" default="10"/>
+        <arg name="force_y" default="2"/>
         <arg name="force_z" default="0"/>
         <arg name="torque_z" default="0"/>
-    </include> -->
+    </include>
     
     <!-- Initialize the recording fo the simulation according to the record flag  -->
     <include file="$(find uuv_gazebo)/launch/controller_demos/record_demo.launch">
