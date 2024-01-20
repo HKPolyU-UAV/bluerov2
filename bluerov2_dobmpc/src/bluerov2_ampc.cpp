@@ -604,9 +604,10 @@ void BLUEROV2_AMPC::EKF()
         std::cout << "(body frame) disturbance X: " << esti_x(12) << "    disturbance Y: " << esti_x(13) << "    disturbance Z: " << esti_x(14) << "    disturbance N: " << esti_x(17) << std::endl;
         std::cout << "(world frame) disturbance x: " << wf_disturbance(0) << "    disturbance y: " << wf_disturbance(1) << "    disturbance z: " << wf_disturbance(2) << std::endl;
         std::cout << "(world frame) disturbance phi: " << wf_disturbance(3) << "    disturbance theta: " << wf_disturbance(4) << "    disturbance psi: " << wf_disturbance(5) << std::endl;
-        std::cout << "estimated added mass Xu':  " << theta_X(0) << "  Yv':  " << theta_Y(0) << "  Zw':  " << theta_Z(0) << "  Kp':  " << theta_K(0) << "  Mq':  " << theta_M(0) << "  Nr':  " << theta_N(0) << std::endl;
-        std::cout << "estimated damping Xu:  " << theta_X(1) << "  Yv:  " << theta_Y(1) << "  Zw:  " << theta_Z(1) << "  Kp:  " << theta_K(1) << "  Mq:  " << theta_M(1) << "  Nr:  " << theta_N(1) << std::endl;  
-        std::cout << "estimated ext disturbance Xext:  " << theta_X(2) << "  Yext:  " << theta_Y(2) << "  Zext:  " << theta_Z(2) << "  Kext:  " << theta_K(2) << "  Mext:  " << theta_M(2) << "  Next:  " << theta_N(2) << std::endl;
+        std::cout << "estimated added mass Xu':  " << theta_X(0) << "  Yv':  " << theta_Y(0) << "  Zw':  " << theta_Z(0) << "  Nr':  " << theta_N(0) << std::endl;
+        std::cout << "estimated D_L Xu:  " << theta_X(1) << "  Yv:  " << theta_Y(1) << "  Zw:  " << theta_Z(1) << "  Nr:  " << theta_N(1) << std::endl;  
+        std::cout << "estimated D_NL Xu|u|:  " << theta_X(3) << "  Yv|v|:  " << theta_Y(3) << "  Zw|w|:  " << theta_Z(3) << "  Nr|r|:  " << theta_N(3) << std::endl;  
+        std::cout << "estimated ext disturbance Xext:  " << theta_X(2) << "  Yext:  " << theta_Y(2) << "  Zext:  " << theta_Z(2) << "  Next:  " << theta_N(2) << std::endl;
         std::cout << "solve_time: "<< acados_out.cpu_time << "\tkkt_res: " << acados_out.kkt_res << "\tacados_status: " << acados_out.status << std::endl;
         std::cout << "ros_time:   " << std::fixed << ros::Time::now().toSec() << std::endl;
         std::cout << "---------------------------------------------------------------------------------------------------------------------" << std::endl;
@@ -715,7 +716,7 @@ void BLUEROV2_AMPC::RLSFF()
     // direction X
     VectorXd RLSX_x(numParams);
     double RLSX_y = esti_x(12);
-    RLSX_x << body_acc.x, v_linear_body[0], 1;
+    RLSX_x << body_acc.x, v_linear_body[0], 1, v_linear_body[0]*abs(v_linear_body[0]);
 
     e = RLSX_y - RLSX_x.dot(theta_X); // Compute the prediction error
     K = RLSX_P * RLSX_x / (lambda + RLSX_x.dot(RLSX_P * RLSX_x)); // Compute the Kalman gain
@@ -725,7 +726,7 @@ void BLUEROV2_AMPC::RLSFF()
     // direction Y
     VectorXd RLSY_x(numParams);
     double RLSY_y = esti_x(13);
-    RLSY_x << body_acc.y, v_linear_body[1], 1;
+    RLSY_x << body_acc.y, v_linear_body[1], 1, v_linear_body[1]*abs(v_linear_body[1]);
 
     e = RLSY_y - RLSY_x.dot(theta_Y); // Compute the prediction error
     K = RLSY_P * RLSY_x / (lambda + RLSY_x.dot(RLSY_P * RLSY_x)); // Compute the Kalman gain
@@ -735,37 +736,37 @@ void BLUEROV2_AMPC::RLSFF()
     // direction Z
     VectorXd RLSZ_x(numParams);
     double RLSZ_y = esti_x(14);
-    RLSZ_x << body_acc.z, v_linear_body[2], 1;
+    RLSZ_x << body_acc.z, v_linear_body[2], 1, v_linear_body[2]*abs(v_linear_body[2]);
 
     e = RLSZ_y - RLSZ_x.dot(theta_Z); // Compute the prediction error
     K = RLSZ_P * RLSZ_x / (lambda + RLSZ_x.dot(RLSZ_P * RLSZ_x)); // Compute the Kalman gain
     theta_Z += K * e; // Update the parameter vector
     RLSZ_P = (RLSZ_P - K * RLSZ_x.transpose() * RLSZ_P) / lambda; // Update the covariance matrix
 
-    // direction K
-    VectorXd RLSK_x(numParams);
-    double RLSK_y = esti_x(15);
-    RLSK_x << body_acc.phi, v_angular_body[0], 1;
+    // // direction K
+    // VectorXd RLSK_x(numParams);
+    // double RLSK_y = esti_x(15);
+    // RLSK_x << body_acc.phi, v_angular_body[0], 1, v_angular_body[0]*abs(v_angular_body[0]);
 
-    e = RLSK_y - RLSK_x.dot(theta_K); // Compute the prediction error
-    K = RLSK_P * RLSK_x / (lambda + RLSK_x.dot(RLSK_P * RLSK_x)); // Compute the Kalman gain
-    theta_K += K * e; // Update the parameter vector
-    RLSK_P = (RLSK_P - K * RLSK_x.transpose() * RLSK_P) / lambda; // Update the covariance matrix
+    // e = RLSK_y - RLSK_x.dot(theta_K); // Compute the prediction error
+    // K = RLSK_P * RLSK_x / (lambda + RLSK_x.dot(RLSK_P * RLSK_x)); // Compute the Kalman gain
+    // theta_K += K * e; // Update the parameter vector
+    // RLSK_P = (RLSK_P - K * RLSK_x.transpose() * RLSK_P) / lambda; // Update the covariance matrix
 
-    // direction M
-    VectorXd RLSM_x(numParams);
-    double RLSM_y = esti_x(16);
-    RLSM_x << body_acc.theta, v_angular_body[1], 1;
+    // // direction M
+    // VectorXd RLSM_x(numParams);
+    // double RLSM_y = esti_x(16);
+    // RLSM_x << body_acc.theta, v_angular_body[1], 1, v_angular_body[1]*abs(v_angular_body[1]);
 
-    e = RLSM_y - RLSM_x.dot(theta_M); // Compute the prediction error
-    K = RLSM_P * RLSM_x / (lambda + RLSM_x.dot(RLSM_P * RLSM_x)); // Compute the Kalman gain
-    theta_M += K * e; // Update the parameter vector
-    RLSM_P = (RLSM_P - K * RLSM_x.transpose() * RLSM_P) / lambda; // Update the covariance matrix
+    // e = RLSM_y - RLSM_x.dot(theta_M); // Compute the prediction error
+    // K = RLSM_P * RLSM_x / (lambda + RLSM_x.dot(RLSM_P * RLSM_x)); // Compute the Kalman gain
+    // theta_M += K * e; // Update the parameter vector
+    // RLSM_P = (RLSM_P - K * RLSM_x.transpose() * RLSM_P) / lambda; // Update the covariance matrix
 
     // direction N
     VectorXd RLSN_x(numParams);
     double RLSN_y = esti_x(17);
-    RLSN_x << body_acc.psi, v_angular_body[2], 1;
+    RLSN_x << body_acc.psi, v_angular_body[2], 1, v_angular_body[2]*abs(v_angular_body[2]);
 
     e = RLSN_y - RLSN_x.dot(theta_N); // Compute the prediction error
     K = RLSN_P * RLSN_x / (lambda + RLSN_x.dot(RLSN_P * RLSN_x)); // Compute the Kalman gain

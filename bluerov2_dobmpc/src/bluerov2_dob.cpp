@@ -96,7 +96,7 @@ BLUEROV2_DOB::BLUEROV2_DOB(ros::NodeHandle& nh)
         subscribers[i] = nh.subscribe<uuv_gazebo_ros_plugins_msgs::FloatStamped>(topic, 20, boost::bind(&BLUEROV2_DOB::thrusts_cb, this, _1, i));
     }
     client = nh.serviceClient<gazebo_msgs::ApplyBodyWrench>("/gazebo/apply_body_wrench");
-    // imu_sub = nh.subscribe<sensor_msgs::Imu>("/bluerov2/imu", 20, &BLUEROV2_DOB::imu_cb, this);
+    imu_sub = nh.subscribe<sensor_msgs::Imu>("/bluerov2/imu", 20, &BLUEROV2_DOB::imu_cb, this);
     
     // initialize
     for(unsigned int i=0; i < BLUEROV2_NU; i++) acados_out.u0[i] = 0.0;
@@ -437,14 +437,14 @@ void BLUEROV2_DOB::solve(){
     
 }
 
-// void BLUEROV2_DOB::imu_cb(const sensor_msgs::Imu::ConstPtr& msg)
-// {
-//     // get linear position x, y, z
-//     local_acc.x = round(msg->linear_acceleration.x*10000)/10000;
-//     local_acc.y = round(msg->linear_acceleration.y*10000)/10000;
-//     local_acc.z = round(msg->linear_acceleration.z*10000)/10000-g;
+void BLUEROV2_DOB::imu_cb(const sensor_msgs::Imu::ConstPtr& msg)
+{
+    // get linear position x, y, z
+    local_acc.x = round(msg->linear_acceleration.x*10000)/10000;
+    local_acc.y = round(msg->linear_acceleration.y*10000)/10000;
+    local_acc.z = round(msg->linear_acceleration.z*10000)/10000-g;
     
-// }
+}
 
 void BLUEROV2_DOB::thrusts_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg, int index)
 {
@@ -733,6 +733,13 @@ void BLUEROV2_DOB::applyBodyWrench()
         applied_wrench.fy = sin(dis_time)*amplitudeScalingFactor_Y;
         applied_wrench.fz = sin(dis_time)*amplitudeScalingFactor_Z;
         applied_wrench.tz = (sin(dis_time)*amplitudeScalingFactor_Y)/3;
+        if(dis_time>10){
+            applied_wrench.fx = applied_wrench.fx+10;
+            applied_wrench.fy = applied_wrench.fy+10;
+            applied_wrench.fz = applied_wrench.fz+10;
+            applied_wrench.tz = applied_wrench.tz+3;
+        }
+
         dis_time = dis_time+dt*2.5;
         // std::cout << "amplitudeScalingFactor_Z:  " << amplitudeScalingFactor_Z << "  amplitudeScalingFactor_N:  " << amplitudeScalingFactor_N << std::endl;
     }

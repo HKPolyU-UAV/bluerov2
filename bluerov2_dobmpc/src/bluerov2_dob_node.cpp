@@ -23,7 +23,7 @@ int main(int argc, char **argv)
         
         if(br.is_start==true)
         {
-            br.applyBodyWrench();
+            // br.applyBodyWrench();
             br.EKF();
             br.solve();
         }

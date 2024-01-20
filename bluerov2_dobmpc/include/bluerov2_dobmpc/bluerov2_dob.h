@@ -138,7 +138,7 @@ class BLUEROV2_DOB{
     // pos pre_pos;
     pos body_pos;
     pos pre_body_pos;
-    // acc local_acc;
+    acc local_acc;
     acc body_acc;
     thrust current_t;
     wrench applied_wrench;
@@ -255,7 +255,7 @@ class BLUEROV2_DOB{
     ros::Publisher esti_pose_pub;
     ros::Publisher esti_disturbance_pub;
     ros::Publisher applied_disturbance_pub;
-    // ros::Subscriber imu_sub;
+    ros::Subscriber imu_sub;
     ros::ServiceClient client;
 
     // Trajectory variables
@@ -277,7 +277,7 @@ class BLUEROV2_DOB{
 
     // disturbance observer functions
     void thrusts_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg, int index); // read current thrusts
-    // void imu_cb(const sensor_msgs::Imu::ConstPtr& msg);
+    void imu_cb(const sensor_msgs::Imu::ConstPtr& msg);
     void applyBodyWrench();
     void EKF();  
     MatrixXd RK4(MatrixXd x, MatrixXd u);                                           // EKF predict and update
