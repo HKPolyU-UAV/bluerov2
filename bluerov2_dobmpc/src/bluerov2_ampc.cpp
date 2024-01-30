@@ -72,12 +72,16 @@ BLUEROV2_AMPC::BLUEROV2_AMPC(ros::NodeHandle& nh)
     RLSK_P = MatrixXd::Identity(numParams, numParams);
     RLSM_P = MatrixXd::Identity(numParams, numParams);
     RLSN_P = MatrixXd::Identity(numParams, numParams);
-    lambda = 0.99;
+    lambda = 0.98;
+    lambda_X = 0.9;
+    lambda_Y = 0.9;
+    lambda_Z = 0.9;
+    lambda_N = 0.9;
     theta_X = VectorXd::Zero(numParams);
     theta_Y = VectorXd::Zero(numParams);
     theta_Z = VectorXd::Zero(numParams);
-    theta_K = VectorXd::Zero(numParams);
-    theta_M = VectorXd::Zero(numParams);
+    // theta_K = VectorXd::Zero(numParams);
+    // theta_M = VectorXd::Zero(numParams);
     theta_N = VectorXd::Zero(numParams);
 
     // Initialize body wrench force
@@ -107,6 +111,8 @@ BLUEROV2_AMPC::BLUEROV2_AMPC(ros::NodeHandle& nh)
     applied_disturbance_pub = nh.advertise<nav_msgs::Odometry>("/bluerov2/applied_disturbance",20);
     esti_added_mass_pub = nh.advertise<nav_msgs::Odometry>("/bluerov2/systemID/added_mass",20);
     esti_damping_pub = nh.advertise<nav_msgs::Odometry>("/bluerov2/systemID/linear_damping",20);
+    esti_Ndamping_pub = nh.advertise<nav_msgs::Odometry>("/bluerov2/systemID/nonlinear_damping",20);
+    esti_env_pub = nh.advertise<nav_msgs::Odometry>("/bluerov2/systemID/environmental_disturbance",20);
     subscribers.resize(6);
     for (int i = 0; i < 6; i++)
     {
@@ -593,21 +599,23 @@ void BLUEROV2_AMPC::EKF()
     if(cout_counter > 2){
         std::cout << "---------------------------------------------------------------------------------------------------------------------" << std::endl;
         std::cout << "tau_X:  " << meas_y(12) << "  tau_Y:  " << meas_y(13) << "  tau_Z:  " << meas_y(14) << "  tau_K:  " << meas_y(15) << "  tau_M:  " << meas_y(16) << "  tau_N:  " << meas_y(17) << std::endl;
-        std::cout << "acc_x:  " << body_acc.x << "  acc_y:  " << body_acc.y << "  acc_z:  " << body_acc.z << std::endl;
-        std::cout << "acc_phi:  " << body_acc.phi << "  acc_theta:  " << body_acc.theta << "  acc_psi:  " << body_acc.psi << std::endl;
+        // std::cout << "acc_x:  " << body_acc.x << "  acc_y:  " << body_acc.y << "  acc_z:  " << body_acc.z << std::endl;
+        // std::cout << "acc_phi:  " << body_acc.phi << "  acc_theta:  " << body_acc.theta << "  acc_psi:  " << body_acc.psi << std::endl;
         std::cout << "ref_x:    " << acados_in.yref[0][0] << "\tref_y:   " << acados_in.yref[0][1] << "\tref_z:    " << acados_in.yref[0][2] << "\tref_yaw:    " << yaw_ref << std::endl;
         std::cout << "pos_x: " << meas_y(0) << "  pos_y: " << meas_y(1) << "  pos_z: " << meas_y(2) << " phi: " << meas_y(3) << "  theta: " << meas_y(4) << "  psi: " << meas_y(5) <<std::endl;
-        std::cout << "esti_x: " << esti_x(0) << "  esti_y: " << esti_x(1) << "  esti_z: " << esti_x(2) << " esti_phi: " << esti_x(3) << "  esti_theta: " << esti_x(4) << "  esti_psi: " << esti_x(5) <<std::endl;
+        // std::cout << "esti_x: " << esti_x(0) << "  esti_y: " << esti_x(1) << "  esti_z: " << esti_x(2) << " esti_phi: " << esti_x(3) << "  esti_theta: " << esti_x(4) << "  esti_psi: " << esti_x(5) <<std::endl;
         std::cout << "error_x:  " << error_pose.pose.pose.position.x << "  error_y:  " << error_pose.pose.pose.position.y << "  error_z:  " << error_pose.pose.pose.position.z << std::endl;
         std::cout << "applied force x:  " << applied_wrench.fx << "\tforce y:  " << applied_wrench.fy << "\tforce_z:  " << applied_wrench.fz << std::endl;
         std::cout << "applied torque x:  " << applied_wrench.tx << "\ttorque y:  " << applied_wrench.ty << "\ttorque_z:  " << applied_wrench.tz << std::endl;
-        std::cout << "(body frame) disturbance X: " << esti_x(12) << "    disturbance Y: " << esti_x(13) << "    disturbance Z: " << esti_x(14) << "    disturbance N: " << esti_x(17) << std::endl;
+        // std::cout << "(body frame) disturbance X: " << esti_x(12) << "    disturbance Y: " << esti_x(13) << "    disturbance Z: " << esti_x(14) << "    disturbance N: " << esti_x(17) << std::endl;
         std::cout << "(world frame) disturbance x: " << wf_disturbance(0) << "    disturbance y: " << wf_disturbance(1) << "    disturbance z: " << wf_disturbance(2) << std::endl;
         std::cout << "(world frame) disturbance phi: " << wf_disturbance(3) << "    disturbance theta: " << wf_disturbance(4) << "    disturbance psi: " << wf_disturbance(5) << std::endl;
         std::cout << "estimated added mass Xu':  " << theta_X(0) << "  Yv':  " << theta_Y(0) << "  Zw':  " << theta_Z(0) << "  Nr':  " << theta_N(0) << std::endl;
         std::cout << "estimated D_L Xu:  " << theta_X(1) << "  Yv:  " << theta_Y(1) << "  Zw:  " << theta_Z(1) << "  Nr:  " << theta_N(1) << std::endl;  
         std::cout << "estimated D_NL Xu|u|:  " << theta_X(3) << "  Yv|v|:  " << theta_Y(3) << "  Zw|w|:  " << theta_Z(3) << "  Nr|r|:  " << theta_N(3) << std::endl;  
         std::cout << "estimated ext disturbance Xext:  " << theta_X(2) << "  Yext:  " << theta_Y(2) << "  Zext:  " << theta_Z(2) << "  Next:  " << theta_N(2) << std::endl;
+        std::cout << "F-test X:  " << RLSX_F << "F-test Y:  " << RLSY_F << "F-test Z:  " << RLSZ_F << "F-test N:  " << RLSN_F << std::endl;
+        std::cout << "forgetting factor lambda_X:  " << lambda_X << "  lambda_Y:  " << lambda_Y << "  lambda_Z:  " << lambda_Z << "  lambda_N:  " << lambda_N <<std::endl; 
         std::cout << "solve_time: "<< acados_out.cpu_time << "\tkkt_res: " << acados_out.kkt_res << "\tacados_status: " << acados_out.status << std::endl;
         std::cout << "ros_time:   " << std::fixed << ros::Time::now().toSec() << std::endl;
         std::cout << "---------------------------------------------------------------------------------------------------------------------" << std::endl;
@@ -712,73 +720,250 @@ void BLUEROV2_AMPC::RLSFF()
 {
     double e;
     MatrixXd K;
+    double threshold = 1;
 
-    // direction X
+    // direction X------------------------------------------------------------------------------------
     VectorXd RLSX_x(numParams);
     double RLSX_y = esti_x(12);
     RLSX_x << body_acc.x, v_linear_body[0], 1, v_linear_body[0]*abs(v_linear_body[0]);
 
     e = RLSX_y - RLSX_x.dot(theta_X); // Compute the prediction error
-    K = RLSX_P * RLSX_x / (lambda + RLSX_x.dot(RLSX_P * RLSX_x)); // Compute the Kalman gain
-    theta_X += K * e; // Update the parameter vector
-    RLSX_P = (RLSX_P - K * RLSX_x.transpose() * RLSX_P) / lambda; // Update the covariance matrix
 
-    // direction Y
+    // store error
+    Xerror_n.push_back(e);               
+    Xerror_d.push_back(e);
+    if (Xerror_n.size() > FF_n) {
+        Xerror_n.erase(Xerror_n.begin());
+    }
+    if (Xerror_d.size() > FF_d) {
+        Xerror_d.erase(Xerror_d.begin());
+    }
+
+    // Calculate the F-statistic
+    double error_n_mean = std::accumulate(Xerror_n.begin(), Xerror_n.end(), 0.0) / Xerror_n.size();
+    double error_n_variance = 0.0;
+    for (const auto& value : Xerror_n) {     // calculate error variance of short window
+        error_n_variance += std::pow(value - error_n_mean, 2);
+    }
+    error_n_variance /= Xerror_n.size();
+
+    double error_d_mean = std::accumulate(Xerror_d.begin(), Xerror_d.end(), 0.0) / Xerror_d.size();
+    double error_d_variance = 0.0;
+    for (const auto& value : Xerror_d) {     // calculate error variance of long window
+        error_d_variance += std::pow(value - error_d_mean, 2);
+    }
+    error_d_variance /= Xerror_d.size();
+
+    RLSX_F = error_n_variance/error_d_variance;     // calculate F-test
+
+    // Update the forgetting factor
+    if (RLSX_F > threshold) {
+        if (lambda_X - 0.01 >= 0.5)
+        {
+            lambda_X -= 0.01;
+        }
+        else{
+            lambda_X = 0.5;
+        }
+        
+    } else {
+        if (lambda_X + 0.01 <= 1)
+        {
+            lambda_X += 0.01;
+        }
+        else
+        {
+            lambda_X = 1;
+        }
+    }
+
+    K = RLSX_P * RLSX_x / (lambda_X + RLSX_x.dot(RLSX_P * RLSX_x)); // Compute the Kalman gain
+    theta_X += K * e; // Update the parameter vector
+    RLSX_P = (RLSX_P - K * RLSX_x.transpose() * RLSX_P) / lambda_X; // Update the covariance matrix
+
+    // direction Y------------------------------------------------------------------------------------
     VectorXd RLSY_x(numParams);
     double RLSY_y = esti_x(13);
     RLSY_x << body_acc.y, v_linear_body[1], 1, v_linear_body[1]*abs(v_linear_body[1]);
 
     e = RLSY_y - RLSY_x.dot(theta_Y); // Compute the prediction error
-    K = RLSY_P * RLSY_x / (lambda + RLSY_x.dot(RLSY_P * RLSY_x)); // Compute the Kalman gain
-    theta_Y += K * e; // Update the parameter vector
-    RLSY_P = (RLSY_P - K * RLSY_x.transpose() * RLSY_P) / lambda; // Update the covariance matrix
 
-    // direction Z
+    // store error
+    Yerror_n.push_back(e);               
+    Yerror_d.push_back(e);
+    if (Yerror_n.size() > FF_n) {
+        Yerror_n.erase(Yerror_n.begin());
+    }
+    if (Yerror_d.size() > FF_d) {
+        Yerror_d.erase(Yerror_d.begin());
+    }
+
+    // Calculate the F-statistic
+    error_n_variance = 0.0;
+    error_n_mean = std::accumulate(Yerror_n.begin(), Yerror_n.end(), 0.0) / Yerror_n.size();
+    for (const auto& value : Yerror_n) {     // calculate error variance of short window
+        error_n_variance += std::pow(value - error_n_mean, 2);
+    }
+    error_n_variance /= Yerror_n.size();
+
+    error_d_variance = 0.0;
+    error_d_mean = std::accumulate(Yerror_d.begin(), Yerror_d.end(), 0.0) / Yerror_d.size();
+    for (const auto& value : Yerror_d) {     // calculate error variance of long window
+        error_d_variance += std::pow(value - error_d_mean, 2);
+    }
+    error_d_variance /= Yerror_d.size();
+
+    RLSY_F = error_n_variance/error_d_variance;     // calculate F-test
+
+    // Update the forgetting factor
+    if (RLSY_F > threshold) {
+        if (lambda_Y - 0.01 >= 0.5)
+        {
+            lambda_Y -= 0.01;
+        }
+        else{
+            lambda_Y = 0.5;
+        }
+        
+    } else {
+        if (lambda_Y + 0.01 <= 1)
+        {
+            lambda_Y += 0.01;
+        }
+        else
+        {
+            lambda_Y = 1;
+        }
+    }
+
+    K = RLSY_P * RLSY_x / (lambda_Y + RLSY_x.dot(RLSY_P * RLSY_x)); // Compute the Kalman gain
+    theta_Y += K * e; // Update the parameter vector
+    RLSY_P = (RLSY_P - K * RLSY_x.transpose() * RLSY_P) / lambda_Y; // Update the covariance matrix
+
+    // direction Z------------------------------------------------------------------------------------
     VectorXd RLSZ_x(numParams);
     double RLSZ_y = esti_x(14);
     RLSZ_x << body_acc.z, v_linear_body[2], 1, v_linear_body[2]*abs(v_linear_body[2]);
 
     e = RLSZ_y - RLSZ_x.dot(theta_Z); // Compute the prediction error
-    K = RLSZ_P * RLSZ_x / (lambda + RLSZ_x.dot(RLSZ_P * RLSZ_x)); // Compute the Kalman gain
+
+    // store error
+    Zerror_n.push_back(e);               
+    Zerror_d.push_back(e);
+    if (Zerror_n.size() > FF_n) {
+        Zerror_n.erase(Zerror_n.begin());
+    }
+    if (Zerror_d.size() > FF_d) {
+        Zerror_d.erase(Zerror_d.begin());
+    }
+
+    // Calculate the F-statistic
+    error_n_variance = 0.0;
+    error_n_mean = std::accumulate(Zerror_n.begin(), Zerror_n.end(), 0.0) / Zerror_n.size();
+    for (const auto& value : Zerror_n) {     // calculate error variance of short window
+        error_n_variance += std::pow(value - error_n_mean, 2);
+    }
+    error_n_variance /= Zerror_n.size();
+
+    error_d_variance = 0.0;
+    error_d_mean = std::accumulate(Zerror_d.begin(), Zerror_d.end(), 0.0) / Zerror_d.size();
+    for (const auto& value : Zerror_d) {     // calculate error variance of long window
+        error_d_variance += std::pow(value - error_d_mean, 2);
+    }
+    error_d_variance /= Zerror_d.size();
+
+    RLSZ_F = error_n_variance/error_d_variance;     // calculate F-test
+
+    // Update the forgetting factor
+    if (RLSZ_F > threshold) {
+        if (lambda_Z - 0.01 >= 0.5)
+        {
+            lambda_Z -= 0.01;
+        }
+        else{
+            lambda_Z = 0.5;
+        }
+        
+    } else {
+        if (lambda_Z + 0.01 <= 1)
+        {
+            lambda_Z += 0.01;
+        }
+        else
+        {
+            lambda_Z = 1;
+        }
+    }
+
+    K = RLSZ_P * RLSZ_x / (lambda_Z + RLSZ_x.dot(RLSZ_P * RLSZ_x)); // Compute the Kalman gain
     theta_Z += K * e; // Update the parameter vector
-    RLSZ_P = (RLSZ_P - K * RLSZ_x.transpose() * RLSZ_P) / lambda; // Update the covariance matrix
+    RLSZ_P = (RLSZ_P - K * RLSZ_x.transpose() * RLSZ_P) / lambda_Z; // Update the covariance matrix
 
-    // // direction K
-    // VectorXd RLSK_x(numParams);
-    // double RLSK_y = esti_x(15);
-    // RLSK_x << body_acc.phi, v_angular_body[0], 1, v_angular_body[0]*abs(v_angular_body[0]);
-
-    // e = RLSK_y - RLSK_x.dot(theta_K); // Compute the prediction error
-    // K = RLSK_P * RLSK_x / (lambda + RLSK_x.dot(RLSK_P * RLSK_x)); // Compute the Kalman gain
-    // theta_K += K * e; // Update the parameter vector
-    // RLSK_P = (RLSK_P - K * RLSK_x.transpose() * RLSK_P) / lambda; // Update the covariance matrix
-
-    // // direction M
-    // VectorXd RLSM_x(numParams);
-    // double RLSM_y = esti_x(16);
-    // RLSM_x << body_acc.theta, v_angular_body[1], 1, v_angular_body[1]*abs(v_angular_body[1]);
-
-    // e = RLSM_y - RLSM_x.dot(theta_M); // Compute the prediction error
-    // K = RLSM_P * RLSM_x / (lambda + RLSM_x.dot(RLSM_P * RLSM_x)); // Compute the Kalman gain
-    // theta_M += K * e; // Update the parameter vector
-    // RLSM_P = (RLSM_P - K * RLSM_x.transpose() * RLSM_P) / lambda; // Update the covariance matrix
-
-    // direction N
+    // direction N------------------------------------------------------------------------------------
     VectorXd RLSN_x(numParams);
     double RLSN_y = esti_x(17);
     RLSN_x << body_acc.psi, v_angular_body[2], 1, v_angular_body[2]*abs(v_angular_body[2]);
 
     e = RLSN_y - RLSN_x.dot(theta_N); // Compute the prediction error
-    K = RLSN_P * RLSN_x / (lambda + RLSN_x.dot(RLSN_P * RLSN_x)); // Compute the Kalman gain
+
+    // store error
+    Nerror_n.push_back(e);               
+    Nerror_d.push_back(e);
+    if (Nerror_n.size() > FF_n) {
+        Nerror_n.erase(Nerror_n.begin());
+    }
+    if (Nerror_d.size() > FF_d) {
+        Nerror_d.erase(Nerror_d.begin());
+    }
+
+    // Calculate the F-statistic
+    error_n_variance = 0.0;
+    error_n_mean = std::accumulate(Nerror_n.begin(), Nerror_n.end(), 0.0) / Nerror_n.size();
+    for (const auto& value : Nerror_n) {     // calculate error variance of short window
+        error_n_variance += std::pow(value - error_n_mean, 2);
+    }
+    error_n_variance /= Nerror_n.size();
+
+    error_d_variance = 0.0;
+    error_d_mean = std::accumulate(Nerror_d.begin(), Nerror_d.end(), 0.0) / Nerror_d.size();
+    for (const auto& value : Nerror_d) {     // calculate error variance of long window
+        error_d_variance += std::pow(value - error_d_mean, 2);
+    }
+    error_d_variance /= Nerror_d.size();
+
+    RLSN_F = error_n_variance/error_d_variance;     // calculate F-test
+
+    // Update the forgetting factor
+    if (RLSN_F > threshold) {
+        if (lambda_N - 0.01 >= 0.5)
+        {
+            lambda_N -= 0.01;
+        }
+        else{
+            lambda_N = 0.5;
+        }
+        
+    } else {
+        if (lambda_N + 0.01 <= 1)
+        {
+            lambda_N += 0.01;
+        }
+        else
+        {
+            lambda_N = 1;
+        }
+    }
+
+    K = RLSN_P * RLSN_x / (lambda_N + RLSN_x.dot(RLSN_P * RLSN_x)); // Compute the Kalman gain
     theta_N += K * e; // Update the parameter vector
-    RLSN_P = (RLSN_P - K * RLSN_x.transpose() * RLSN_P) / lambda; // Update the covariance matrix
+    RLSN_P = (RLSN_P - K * RLSN_x.transpose() * RLSN_P) / lambda_N; // Update the covariance matrix
 
     // publish estimated added mass
     esti_added_mass.pose.pose.position.x = theta_X(0);
     esti_added_mass.pose.pose.position.y = theta_Y(0);
     esti_added_mass.pose.pose.position.z = theta_Z(0);
-    esti_added_mass.twist.twist.angular.x = theta_K(0);
-    esti_added_mass.twist.twist.angular.y = theta_M(0);
+    esti_added_mass.twist.twist.angular.x = 0;
+    esti_added_mass.twist.twist.angular.y = 0;
     esti_added_mass.twist.twist.angular.z = theta_N(0);
     esti_added_mass.header.stamp = ros::Time::now();
     esti_added_mass.header.frame_id = "odom_frame";
@@ -789,13 +974,37 @@ void BLUEROV2_AMPC::RLSFF()
     esti_damping.pose.pose.position.x = theta_X(1);
     esti_damping.pose.pose.position.y = theta_Y(1);
     esti_damping.pose.pose.position.z = theta_Z(1);
-    esti_damping.twist.twist.angular.x = theta_K(1);
-    esti_damping.twist.twist.angular.y = theta_M(1);
+    esti_damping.twist.twist.angular.x = 0;
+    esti_damping.twist.twist.angular.y = 0;
     esti_damping.twist.twist.angular.z = theta_N(1);
     esti_damping.header.stamp = ros::Time::now();
     esti_damping.header.frame_id = "odom_frame";
     esti_damping.child_frame_id = "base_link";
     esti_damping_pub.publish(esti_damping);
+
+    // publish estimated environmental disturbance
+    esti_env.pose.pose.position.x = theta_X(2);
+    esti_env.pose.pose.position.y = theta_Y(2);
+    esti_env.pose.pose.position.z = theta_Z(2);
+    esti_env.twist.twist.angular.x = 0;
+    esti_env.twist.twist.angular.y = 0;
+    esti_env.twist.twist.angular.z = theta_N(2);
+    esti_env.header.stamp = ros::Time::now();
+    esti_env.header.frame_id = "odom_frame";
+    esti_env.child_frame_id = "base_link";
+    esti_env_pub.publish(esti_env);
+
+    // publish estimated nonlinear damping
+    esti_Ndamping.pose.pose.position.x = theta_X(3);
+    esti_Ndamping.pose.pose.position.y = theta_Y(3);
+    esti_Ndamping.pose.pose.position.z = theta_Z(3);
+    esti_Ndamping.twist.twist.angular.x = 0;
+    esti_Ndamping.twist.twist.angular.y = 0;
+    esti_Ndamping.twist.twist.angular.z = theta_N(3);
+    esti_Ndamping.header.stamp = ros::Time::now();
+    esti_Ndamping.header.frame_id = "odom_frame";
+    esti_Ndamping.child_frame_id = "base_link";
+    esti_Ndamping_pub.publish(esti_Ndamping);
 }
 
 

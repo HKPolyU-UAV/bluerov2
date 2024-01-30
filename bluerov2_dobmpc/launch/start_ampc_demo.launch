@@ -2,7 +2,7 @@
     <!-- Flag to start recoding a rosbag  -->
     <arg name="record" default="false"/>
     <!-- Initial position and heading of the vehicle (wrt Gazebo's inertial frame)  -->
-    <arg name="x" default="2"/>
+    <arg name="x" default="0"/>
     <arg name="y" default="0"/>
     <arg name="z" default="-20"/>
     <arg name="yaw" default="0"/>
@@ -47,7 +47,7 @@
         <arg name="uuv_name" value="bluerov2"/>
         <arg name="starting_time" default="1"/>
         <arg name="duration" default="10000"/>
-        <arg name="force_x" default="5"/>
+        <arg name="force_x" default="0"/>
         <arg name="force_y" default="0"/>
         <arg name="force_z" default="0"/>
         <arg name="torque_z" default="0"/>

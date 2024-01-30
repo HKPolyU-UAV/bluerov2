@@ -149,6 +149,8 @@ class BLUEROV2_AMPC{
     nav_msgs::Odometry applied_disturbance;
     nav_msgs::Odometry esti_added_mass;
     nav_msgs::Odometry esti_damping;
+    nav_msgs::Odometry esti_Ndamping;
+    nav_msgs::Odometry esti_env;
     std::vector<ros::Subscriber> subscribers;
     uuv_gazebo_ros_plugins_msgs::FloatStamped control_input0;
     uuv_gazebo_ros_plugins_msgs::FloatStamped control_input1;
@@ -222,6 +224,10 @@ class BLUEROV2_AMPC{
     MatrixXd RLSM_P;
     MatrixXd RLSN_P;
     double lambda;          // forgetting factor
+    double lambda_X;
+    double lambda_Y;
+    double lambda_Z;
+    double lambda_N;
     int numParams = 4;          // number of parameters
     VectorXd theta_X;       // unknown parameter vector
     VectorXd theta_Y;
@@ -229,6 +235,23 @@ class BLUEROV2_AMPC{
     VectorXd theta_K;
     VectorXd theta_M;
     VectorXd theta_N;
+
+    int FF_n = 10;
+    int FF_d = 100;
+    
+    std::vector<double> Xerror_n;   //prediction error buffer
+    std::vector<double> Xerror_d;
+    std::vector<double> Yerror_n;
+    std::vector<double> Yerror_d;
+    std::vector<double> Zerror_n;
+    std::vector<double> Zerror_d;
+    std::vector<double> Nerror_n;
+    std::vector<double> Nerror_d;
+    
+    double RLSX_F;
+    double RLSY_F;
+    double RLSZ_F;
+    double RLSN_F;
 
     // Other variables
     tf::Quaternion tf_quaternion;
@@ -275,6 +298,8 @@ class BLUEROV2_AMPC{
     ros::Publisher applied_disturbance_pub;
     ros::Publisher esti_added_mass_pub;
     ros::Publisher esti_damping_pub;
+    ros::Publisher esti_Ndamping_pub;
+    ros::Publisher esti_env_pub;
     // ros::Subscriber imu_sub;
     ros::ServiceClient client;
 

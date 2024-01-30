@@ -59,7 +59,7 @@
             Non-linear damping: see p.30 in Berg2012
           -->
           <quadratic_damping>
-            -12.18  -21.66 -36.99 -1.55 -1.55 -1.55
+            -18.18  -21.66 -36.99 -1.55 -1.55 -1.55
           </quadratic_damping>
 
           <!--

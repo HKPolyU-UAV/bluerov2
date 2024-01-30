@@ -8,7 +8,7 @@ int main(int argc, char **argv)
     ros::Rate loop_rate(20);
 
     ros::Time start_time = ros::Time::now();
-    ros::Duration duration(50.0); // Set the desired duration to 25 seconds
+    ros::Duration duration(40.0); // Set the desired duration to 25 seconds
 
     BLUEROV2_AMPC br(nh);
     // ros::Duration(20.0).sleep();
@@ -16,11 +16,11 @@ int main(int argc, char **argv)
         ros::Time current_time = ros::Time::now();
         ros::Duration elapsed_time = current_time - start_time;
 
-        // if (elapsed_time >= duration)
-        // {
-        //     ROS_INFO("Reached 25 seconds. Stopping the program.");
-        //     break;
-        // }
+        if (elapsed_time >= duration)
+        {
+            ROS_INFO("Reached 40 seconds. Stopping the program.");
+            break;
+        }
 
         if(br.is_start==true)
         {
