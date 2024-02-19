@@ -140,7 +140,7 @@ class BLUEROV2_AMPC{
     pos pre_body_pos;
     // acc local_acc;
     acc body_acc;
-    thrust current_t;
+    thrust current_t;       // /bluerov2/thrusters/<0-5>/thrust
     wrench applied_wrench;
     nav_msgs::Odometry ref_pose;
     nav_msgs::Odometry error_pose;
@@ -236,9 +236,9 @@ class BLUEROV2_AMPC{
     VectorXd theta_M;
     VectorXd theta_N;
 
-    int FF_n = 10;
-    int FF_d = 100;
-    
+    int FF_n = 5;
+    int FF_d = 50;
+
     std::vector<double> Xerror_n;   //prediction error buffer
     std::vector<double> Xerror_d;
     std::vector<double> Yerror_n;
@@ -252,6 +252,8 @@ class BLUEROV2_AMPC{
     double RLSY_F;
     double RLSZ_F;
     double RLSN_F;
+
+    Matrix<double,6,1> wf_env; // world frame env
 
     // Other variables
     tf::Quaternion tf_quaternion;

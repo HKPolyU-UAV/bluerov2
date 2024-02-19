@@ -322,25 +322,29 @@ void BLUEROV2_DOB::solve(){
             acados_param[i][0] = solver_param.disturbance_x;
             acados_param[i][1] = solver_param.disturbance_y;
             acados_param[i][2] = solver_param.disturbance_z;
-            acados_param[i][3] = solver_param.disturbance_phi;
-            acados_param[i][4] = solver_param.disturbance_theta;
-            acados_param[i][5] = solver_param.disturbance_psi;
+            acados_param[i][3] = solver_param.disturbance_psi;
         }
         else if(COMPENSATE_D == true){
             acados_param[i][0] = esti_x(12)/compensate_coef;
             acados_param[i][1] = esti_x(13)/compensate_coef;
             acados_param[i][2] = esti_x(14)/rotor_constant;
-            acados_param[i][3] = solver_param.disturbance_phi;
-            acados_param[i][4] = solver_param.disturbance_theta;
-            acados_param[i][5] = esti_x(17)/rotor_constant;
-            
-            // acados_param[i][0] = compensate_f_body[0]/rotor_constant;
-            // acados_param[i][1] = esti_x(13)/rotor_constant;
-            // acados_param[i][2] = esti_x(14)/rotor_constant;
-            // acados_param[i][3] = solver_param.disturbance_phi;
-            // acados_param[i][4] = solver_param.disturbance_theta;
-            // acados_param[i][5] = esti_x(17)/rotor_constant;
+            acados_param[i][3] = esti_x(17)/rotor_constant;  
         }
+        // added mass
+        acados_param[i][4] = 1.7182;
+        acados_param[i][5] = 0;
+        acados_param[i][6] = 5.468;
+        acados_param[i][7] = 0.4006;
+        // linear d
+        acados_param[i][8] = -11.7391;
+        acados_param[i][9] = -20;
+        acados_param[i][10] = -31.8678;
+        acados_param[i][11] = -5;
+        // nonlinear d
+        acados_param[i][12] = -18.18;
+        acados_param[i][13] = -21.66;
+        acados_param[i][14] = -36.99;
+        acados_param[i][15] = -1.55;
         bluerov2_acados_update_params(mpc_capsule,i,acados_param[i],BLUEROV2_NP);
     }
 
@@ -627,12 +631,12 @@ MatrixXd BLUEROV2_DOB::f(MatrixXd x, MatrixXd u)
             x(9) + (sin(x(5))*sin(x(4))/cos(x(4)))*x(10) + cos(x(3))*sin(x(4))/cos(x(4))*x(11),
             (cos(x(3)))*x(10) + (sin(x(3)))*x(11),
             (sin(x(3))/cos(x(4)))*x(10) + (cos(x(3))/cos(x(4)))*x(11), 
-            invM(0,0)*(KAu(0)+mass*x(11)*x(7)-mass*x(10)*x(8)-bouyancy*sin(x(4))+x(12)+Dl(0,0)*x(6)),    // xddot: M^-1[tau+w-C-g-D]
-            invM(1,1)*(KAu(1)-mass*x(11)*x(6)+mass*x(9)*x(8)+bouyancy*cos(x(4))*sin(x(3))+x(13)+Dl(1,1)*x(7)),
-            invM(2,2)*(KAu(2)+mass*x(10)*x(6)-mass*x(9)*x(7)+bouyancy*cos(x(4))*cos(x(3))+x(14)+Dl(2,2)*x(8)),
-            invM(3,3)*(KAu(3)+(Iy-Iz)*x(10)*x(11)-mass*ZG*g*cos(x(4))*sin(x(3))+x(15)+Dl(3,3)*x(9)),
-            invM(4,4)*(KAu(4)+(Iz-Ix)*x(9)*x(11)-mass*ZG*g*sin(x(4))+x(16)+Dl(4,4)*x(10)),
-            invM(5,5)*(KAu(5)-(Iy-Ix)*x(9)*x(10)+x(17)+Dl(5,5)*x(11)),
+            invM(0,0)*(KAu(0)+mass*x(11)*x(7)-mass*x(10)*x(8)-bouyancy*sin(x(4))+x(12)+Dl(0,0)*x(6)+Dnl[0]*abs(x(6))*x(6)),    // xddot: M^-1[tau+w-C-g-D]
+            invM(1,1)*(KAu(1)-mass*x(11)*x(6)+mass*x(9)*x(8)+bouyancy*cos(x(4))*sin(x(3))+x(13)+Dl(1,1)*x(7)+Dnl[1]*abs(x(7))*x(7)),
+            invM(2,2)*(KAu(2)+mass*x(10)*x(6)-mass*x(9)*x(7)+bouyancy*cos(x(4))*cos(x(3))+x(14)+Dl(2,2)*x(8)+Dnl[2]*abs(x(8))*x(8)),
+            invM(3,3)*(KAu(3)+(Iy-Iz)*x(10)*x(11)-mass*ZG*g*cos(x(4))*sin(x(3))+x(15)+Dl(3,3)*x(9)+Dnl[3]*abs(x(9))*x(9)),
+            invM(4,4)*(KAu(4)+(Iz-Ix)*x(9)*x(11)-mass*ZG*g*sin(x(4))+x(16)+Dl(4,4)*x(10)+Dnl[4]*abs(x(10))*x(10)),
+            invM(5,5)*(KAu(5)-(Iy-Ix)*x(9)*x(10)+x(17)+Dl(5,5)*x(11)+Dnl[5]*abs(x(11))*x(11)),
             // invM(0,0)*(KAu(0)+mass*x(11)*x(7)-mass*x(10)*x(8)-bouyancy*sin(x(4))+x(12)+Dl(0,0)*x(6)+added_mass[2]*x(2)*x(4)),    // xddot: M^-1[tau+w-C-g-D]
             // invM(1,1)*(KAu(1)-mass*x(11)*x(6)+mass*x(9)*x(8)+bouyancy*cos(x(4))*sin(x(3))+x(13)+Dl(1,1)*x(7)-added_mass[2]*x(2)*x(3)-added_mass[0]*x(0)*x(5)),
             // invM(2,2)*(KAu(2)+mass*x(10)*x(6)-mass*x(9)*x(7)+bouyancy*cos(x(4))*cos(x(3))+x(14)+Dl(2,2)*x(8)-added_mass[1]*x(1)*x(3)+added_mass[0]*x(0)*x(4)),
@@ -651,12 +655,12 @@ MatrixXd BLUEROV2_DOB::h(MatrixXd x)
     Matrix<double,18,1> y;
     y << x(0),x(1),x(2),x(3),x(4),x(5),
         x(6),x(7),x(8),x(9),x(10),x(11),
-        M(0,0)*body_acc.x-mass*x(11)*x(7)+mass*x(10)*x(8)+bouyancy*sin(x(4))-x(12)-Dl(0,0)*x(6),        
-        M(1,1)*body_acc.y+mass*x(11)*x(6)-mass*x(9)*x(8)-bouyancy*cos(x(4))*sin(x(3))-x(13)-Dl(1,1)*x(7),
-        M(2,2)*body_acc.z-mass*x(10)*x(6)+mass*x(9)*x(7)-bouyancy*cos(x(4))*cos(x(3))-x(14)-Dl(2,2)*x(8),
-        M(3,3)*body_acc.phi-(Iy-Iz)*x(10)*x(11)+mass*ZG*g*cos(x(4))*sin(x(3))-x(15)-Dl(3,3)*x(9),
-        M(4,4)*body_acc.theta-(Iz-Ix)*x(9)*x(11)+mass*ZG*g*sin(x(4))-x(16)-Dl(4,4)*x(10),
-        M(5,5)*body_acc.psi+(Iy-Ix)*x(9)*x(10)-x(17)-Dl(5,5)*x(11);
+        M(0,0)*body_acc.x-mass*x(11)*x(7)+mass*x(10)*x(8)+bouyancy*sin(x(4))-x(12)-Dl(0,0)*x(6)-Dnl[0]*abs(x(6))*x(6),        
+        M(1,1)*body_acc.y+mass*x(11)*x(6)-mass*x(9)*x(8)-bouyancy*cos(x(4))*sin(x(3))-x(13)-Dl(1,1)*x(7)-Dnl[1]*abs(x(7))*x(7),
+        M(2,2)*body_acc.z-mass*x(10)*x(6)+mass*x(9)*x(7)-bouyancy*cos(x(4))*cos(x(3))-x(14)-Dl(2,2)*x(8)-Dnl[2]*abs(x(8))*x(8),
+        M(3,3)*body_acc.phi-(Iy-Iz)*x(10)*x(11)+mass*ZG*g*cos(x(4))*sin(x(3))-x(15)-Dl(3,3)*x(9)-Dnl[3]*abs(x(9))*x(9),
+        M(4,4)*body_acc.theta-(Iz-Ix)*x(9)*x(11)+mass*ZG*g*sin(x(4))-x(16)-Dl(4,4)*x(10)-Dnl[4]*abs(x(10))*x(10),
+        M(5,5)*body_acc.psi+(Iy-Ix)*x(9)*x(10)-x(17)-Dl(5,5)*x(11)-Dnl[5]*abs(x(11))*x(11);
         // M(0,0)*body_acc.x-mass*x(11)*x(7)+mass*x(10)*x(8)+bouyancy*sin(x(4))-x(12)-Dl(0,0)*x(6)-added_mass[2]*x(2)*x(4),        
         // M(1,1)*body_acc.y+mass*x(11)*x(6)-mass*x(9)*x(8)-bouyancy*cos(x(4))*sin(x(3))-x(13)-Dl(1,1)*x(7)+added_mass[2]*x(2)*x(3)+added_mass[0]*x(0)*x(5),
         // M(2,2)*body_acc.z-mass*x(10)*x(6)+mass*x(9)*x(7)-bouyancy*cos(x(4))*cos(x(3))-x(14)-Dl(2,2)*x(8)+added_mass[1]*x(1)*x(3)-added_mass[0]*x(0)*x(4),
@@ -734,10 +738,10 @@ void BLUEROV2_DOB::applyBodyWrench()
         applied_wrench.fz = sin(dis_time)*amplitudeScalingFactor_Z;
         applied_wrench.tz = (sin(dis_time)*amplitudeScalingFactor_Y)/3;
         if(dis_time>10){
-            applied_wrench.fx = applied_wrench.fx+10;
-            applied_wrench.fy = applied_wrench.fy+10;
-            applied_wrench.fz = applied_wrench.fz+10;
-            applied_wrench.tz = applied_wrench.tz+3;
+            applied_wrench.fx = applied_wrench.fx;
+            applied_wrench.fy = applied_wrench.fy;
+            applied_wrench.fz = applied_wrench.fz;
+            applied_wrench.tz = applied_wrench.tz;
         }
 
         dis_time = dis_time+dt*2.5;

@@ -175,6 +175,7 @@ class BLUEROV2_DOB{
     double compensate_coef = 0.032546960744430276;
     double rotor_constant = 0.026546960744430276;
     double added_mass[6] = {1.7182,0,5.468,0,1.2481,0.4006};
+    double Dnl[6] = {-18.18,-21.66,-36.99,-1.55,-1.55,-1.55};
     Matrix<double,1,6> M_values;    
     Matrix<double,6,6> M;           // mass matrix
     Matrix<double,6,6> invM;        // inverse mass matrix

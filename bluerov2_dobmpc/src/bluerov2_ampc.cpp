@@ -12,12 +12,6 @@ BLUEROV2_AMPC::BLUEROV2_AMPC(ros::NodeHandle& nh)
     nh.getParam("/bluerov2_ampc_node/applied_forcey", WRENCH_FY);
     nh.getParam("/bluerov2_ampc_node/applied_forcez", WRENCH_FZ);
     nh.getParam("/bluerov2_ampc_node/applied_torquez", WRENCH_TZ);
-    nh.getParam("/bluerov2_ampc_node/disturbance_x", solver_param.disturbance_x);
-    nh.getParam("/bluerov2_ampc_node/disturbance_y", solver_param.disturbance_y);
-    nh.getParam("/bluerov2_ampc_node/disturbance_z", solver_param.disturbance_z);
-    nh.getParam("/bluerov2_ampc_node/disturbance_phi", solver_param.disturbance_phi);
-    nh.getParam("/bluerov2_ampc_node/disturbance_theta", solver_param.disturbance_theta);
-    nh.getParam("/bluerov2_ampc_node/disturbance_psi", solver_param.disturbance_psi);
     
     // Pre-load the trajectory
     const char * c = REF_TRAJ.c_str();
@@ -343,27 +337,45 @@ void BLUEROV2_AMPC::solve(){
     for (int i = 0; i < BLUEROV2_N+1; i++)
     {
         if(COMPENSATE_D == false){
-            acados_param[i][0] = solver_param.disturbance_x;
-            acados_param[i][1] = solver_param.disturbance_y;
-            acados_param[i][2] = solver_param.disturbance_z;
-            acados_param[i][3] = solver_param.disturbance_phi;
-            acados_param[i][4] = solver_param.disturbance_theta;
-            acados_param[i][5] = solver_param.disturbance_psi;
+            acados_param[i][0] = 0;
+            acados_param[i][1] = 0;
+            acados_param[i][2] = 0;
+            acados_param[i][3] = 0;
         }
         else if(COMPENSATE_D == true){
-            acados_param[i][0] = esti_x(12)/compensate_coef;
-            acados_param[i][1] = esti_x(13)/compensate_coef;
-            acados_param[i][2] = esti_x(14)/rotor_constant;
-            acados_param[i][3] = solver_param.disturbance_phi;
-            acados_param[i][4] = solver_param.disturbance_theta;
-            acados_param[i][5] = esti_x(17)/rotor_constant;
-            
-            // acados_param[i][0] = compensate_f_body[0]/rotor_constant;
-            // acados_param[i][1] = esti_x(13)/rotor_constant;
-            // acados_param[i][2] = esti_x(14)/rotor_constant;
-            // acados_param[i][3] = solver_param.disturbance_phi;
-            // acados_param[i][4] = solver_param.disturbance_theta;
-            // acados_param[i][5] = esti_x(17)/rotor_constant;
+            acados_param[i][0] = theta_X(2)/compensate_coef;
+            acados_param[i][1] = theta_Y(2)/compensate_coef;
+            acados_param[i][2] = theta_Z(2)/rotor_constant;
+            acados_param[i][3] = theta_N(2)/rotor_constant;
+        // added mass
+        acados_param[i][4] = 1.7182;
+        acados_param[i][5] = 0;
+        acados_param[i][6] = 5.468;
+        acados_param[i][7] = 0.4006;
+        // acados_param[i][4] = theta_X(0);
+        // acados_param[i][5] = theta_Y(0);
+        // acados_param[i][6] = theta_Z(0);
+        // acados_param[i][7] = theta_N(0);
+
+        // linear d
+        acados_param[i][8] = -11.7391;
+        acados_param[i][9] = -20;
+        acados_param[i][10] = -31.8678;
+        acados_param[i][11] = -5;
+        // acados_param[i][8] = theta_X(1);
+        // acados_param[i][9] = theta_Y(1);
+        // acados_param[i][10] = theta_Z(1);
+        // acados_param[i][11] = theta_N(1);
+
+        // nonlinear d
+        acados_param[i][12] = -18.18;
+        acados_param[i][13] = -21.66;
+        acados_param[i][14] = -36.99;
+        acados_param[i][15] = -1.55;
+        // acados_param[i][12] = theta_X(3);
+        // acados_param[i][13] = theta_Y(3);
+        // acados_param[i][14] = theta_Z(3);
+        // acados_param[i][15] = theta_N(3);
         }
         bluerov2_acados_update_params(mpc_capsule,i,acados_param[i],BLUEROV2_NP);
     }
@@ -605,17 +617,17 @@ void BLUEROV2_AMPC::EKF()
         std::cout << "pos_x: " << meas_y(0) << "  pos_y: " << meas_y(1) << "  pos_z: " << meas_y(2) << " phi: " << meas_y(3) << "  theta: " << meas_y(4) << "  psi: " << meas_y(5) <<std::endl;
         // std::cout << "esti_x: " << esti_x(0) << "  esti_y: " << esti_x(1) << "  esti_z: " << esti_x(2) << " esti_phi: " << esti_x(3) << "  esti_theta: " << esti_x(4) << "  esti_psi: " << esti_x(5) <<std::endl;
         std::cout << "error_x:  " << error_pose.pose.pose.position.x << "  error_y:  " << error_pose.pose.pose.position.y << "  error_z:  " << error_pose.pose.pose.position.z << std::endl;
-        std::cout << "applied force x:  " << applied_wrench.fx << "\tforce y:  " << applied_wrench.fy << "\tforce_z:  " << applied_wrench.fz << std::endl;
-        std::cout << "applied torque x:  " << applied_wrench.tx << "\ttorque y:  " << applied_wrench.ty << "\ttorque_z:  " << applied_wrench.tz << std::endl;
+        std::cout << "applied force x:  " << applied_wrench.fx << "\tforce y:  " << applied_wrench.fy << "\tforce_z:  " << applied_wrench.fz << "\ttorque_z:  " << applied_wrench.tz << std::endl;
         // std::cout << "(body frame) disturbance X: " << esti_x(12) << "    disturbance Y: " << esti_x(13) << "    disturbance Z: " << esti_x(14) << "    disturbance N: " << esti_x(17) << std::endl;
         std::cout << "(world frame) disturbance x: " << wf_disturbance(0) << "    disturbance y: " << wf_disturbance(1) << "    disturbance z: " << wf_disturbance(2) << std::endl;
         std::cout << "(world frame) disturbance phi: " << wf_disturbance(3) << "    disturbance theta: " << wf_disturbance(4) << "    disturbance psi: " << wf_disturbance(5) << std::endl;
         std::cout << "estimated added mass Xu':  " << theta_X(0) << "  Yv':  " << theta_Y(0) << "  Zw':  " << theta_Z(0) << "  Nr':  " << theta_N(0) << std::endl;
         std::cout << "estimated D_L Xu:  " << theta_X(1) << "  Yv:  " << theta_Y(1) << "  Zw:  " << theta_Z(1) << "  Nr:  " << theta_N(1) << std::endl;  
         std::cout << "estimated D_NL Xu|u|:  " << theta_X(3) << "  Yv|v|:  " << theta_Y(3) << "  Zw|w|:  " << theta_Z(3) << "  Nr|r|:  " << theta_N(3) << std::endl;  
-        std::cout << "estimated ext disturbance Xext:  " << theta_X(2) << "  Yext:  " << theta_Y(2) << "  Zext:  " << theta_Z(2) << "  Next:  " << theta_N(2) << std::endl;
-        std::cout << "F-test X:  " << RLSX_F << "F-test Y:  " << RLSY_F << "F-test Z:  " << RLSZ_F << "F-test N:  " << RLSN_F << std::endl;
-        std::cout << "forgetting factor lambda_X:  " << lambda_X << "  lambda_Y:  " << lambda_Y << "  lambda_Z:  " << lambda_Z << "  lambda_N:  " << lambda_N <<std::endl; 
+        std::cout << "estimated ext disturbance Xext:  " << wf_env(0) << "  Yext:  " << wf_env(1) << "  Zext:  " << wf_env(2) << "  Next:  " << wf_env(5) << std::endl;
+        std::cout << "estimated ext disturbance Xext (body):  " << theta_X(2) << "  Yext:  " << theta_Y(2) << "  Zext:  " << theta_Z(2) << "  Next:  " << theta_N(2) << std::endl;
+        std::cout << "F-test X:  " << RLSX_F << "  F-test Y:  " << RLSY_F << "  F-test Z:  " << RLSZ_F << "  F-test N:  " << RLSN_F << std::endl;
+        std::cout << "VFF lambda_X:  " << lambda_X << "  lambda_Y:  " << lambda_Y << "  lambda_Z:  " << lambda_Z << "  lambda_N:  " << lambda_N <<std::endl; 
         std::cout << "solve_time: "<< acados_out.cpu_time << "\tkkt_res: " << acados_out.kkt_res << "\tacados_status: " << acados_out.status << std::endl;
         std::cout << "ros_time:   " << std::fixed << ros::Time::now().toSec() << std::endl;
         std::cout << "---------------------------------------------------------------------------------------------------------------------" << std::endl;
@@ -663,7 +675,7 @@ MatrixXd BLUEROV2_AMPC::f(MatrixXd x, MatrixXd u)
             invM(5,5)*(KAu(5)-(Iy-Ix)*x(9)*x(10)+x(17)+Dl(5,5)*x(11)),
             0,0,0,0,0,0;
             
-    return xdot; // dt is the time step
+    return xdot;
 }
 
 // Define measurement model function (Z = Hx, Z: measurement vector [x,xdot,tau]; X: state vector [x,xdot,disturbance])
@@ -720,7 +732,7 @@ void BLUEROV2_AMPC::RLSFF()
 {
     double e;
     MatrixXd K;
-    double threshold = 1;
+    double threshold = 0.8;
 
     // direction X------------------------------------------------------------------------------------
     VectorXd RLSX_x(numParams);
@@ -982,6 +994,22 @@ void BLUEROV2_AMPC::RLSFF()
     esti_damping.child_frame_id = "base_link";
     esti_damping_pub.publish(esti_damping);
 
+    // body frame disturbance to inertial frame
+    wf_env << (cos(local_euler.psi)*cos(local_euler.theta))*theta_X(2) + (-sin(local_euler.psi)*cos(local_euler.phi)+cos(local_euler.psi)*sin(local_euler.theta)*sin(local_euler.phi))*theta_Y(2) + (sin(local_euler.psi)*sin(local_euler.phi)+cos(local_euler.psi)*cos(local_euler.phi)*sin(local_euler.theta))*theta_Z(2),
+            (sin(local_euler.psi)*cos(local_euler.theta))*theta_X(2) + (cos(local_euler.psi)*cos(local_euler.phi)+sin(local_euler.phi)*sin(local_euler.theta)*sin(local_euler.psi))*theta_Y(2) + (-cos(local_euler.psi)*sin(local_euler.phi)+sin(local_euler.theta)*sin(local_euler.psi)*cos(local_euler.phi))*theta_Z(2),
+            (-sin(local_euler.theta))*theta_X(2) + (cos(local_euler.theta)*sin(local_euler.phi))*theta_Y(2) + (cos(local_euler.theta)*cos(local_euler.phi))*theta_Z(2),
+            cos(local_euler.phi)*sin(local_euler.theta)/cos(local_euler.theta)*theta_N(2),
+            (sin(local_euler.phi))*theta_N(2),
+            (cos(local_euler.phi)/cos(local_euler.theta))*theta_N(2);
+
+    // // body frame disturbance to inertial frame
+    // wf_disturbance << (cos(meas_y(5))*cos(meas_y(4)))*esti_x(12) + (-sin(meas_y(5))*cos(meas_y(3))+cos(meas_y(5))*sin(meas_y(4))*sin(meas_y(3)))*esti_x(13) + (sin(meas_y(5))*sin(meas_y(3))+cos(meas_y(5))*cos(meas_y(3))*sin(meas_y(4)))*esti_x(14),
+    //         (sin(meas_y(5))*cos(meas_y(4)))*esti_x(12) + (cos(meas_y(5))*cos(meas_y(3))+sin(meas_y(3))*sin(meas_y(4))*sin(meas_y(5)))*esti_x(13) + (-cos(meas_y(5))*sin(meas_y(3))+sin(meas_y(4))*sin(meas_y(5))*cos(meas_y(3)))*esti_x(14),
+    //         (-sin(meas_y(4)))*esti_x(12) + (cos(meas_y(4))*sin(meas_y(3)))*esti_x(13) + (cos(meas_y(4))*cos(meas_y(3)))*esti_x(14),
+    //         esti_x(15) + (sin(meas_y(5))*sin(meas_y(4))/cos(meas_y(4)))*esti_x(16) + cos(meas_y(3))*sin(meas_y(4))/cos(meas_y(4))*esti_x(17),
+    //         (cos(meas_y(3)))*esti_x(16) + (sin(meas_y(3)))*esti_x(17),
+    //         (sin(meas_y(3))/cos(meas_y(4)))*esti_x(16) + (cos(meas_y(3))/cos(meas_y(4)))*esti_x(17);
+
     // publish estimated environmental disturbance
     esti_env.pose.pose.position.x = theta_X(2);
     esti_env.pose.pose.position.y = theta_Y(2);
@@ -993,6 +1021,16 @@ void BLUEROV2_AMPC::RLSFF()
     esti_env.header.frame_id = "odom_frame";
     esti_env.child_frame_id = "base_link";
     esti_env_pub.publish(esti_env);
+    // esti_env.pose.pose.position.x = wf_env(0);
+    // esti_env.pose.pose.position.y = wf_env(1);
+    // esti_env.pose.pose.position.z = wf_env(2);
+    // esti_env.twist.twist.angular.x = 0;
+    // esti_env.twist.twist.angular.y = 0;
+    // esti_env.twist.twist.angular.z = wf_env(5);
+    // esti_env.header.stamp = ros::Time::now();
+    // esti_env.header.frame_id = "odom_frame";
+    // esti_env.child_frame_id = "base_link";
+    // esti_env_pub.publish(esti_env);
 
     // publish estimated nonlinear damping
     esti_Ndamping.pose.pose.position.x = theta_X(3);
@@ -1030,17 +1068,17 @@ void BLUEROV2_AMPC::applyBodyWrench()
         // generate periodical disturbance
         if(dis_time > periodic_counter*M_PI)
         {
-            amplitudeScalingFactor_X = distribution(gen)*6;
-            amplitudeScalingFactor_Y = distribution(gen)*6;
-            amplitudeScalingFactor_Z = distribution(gen)*6;
-            amplitudeScalingFactor_N = distribution(gen)*6;
+            amplitudeScalingFactor_X = distribution(gen)*5;
+            amplitudeScalingFactor_Y = distribution(gen)*5;
+            amplitudeScalingFactor_Z = distribution(gen)*5;
+            amplitudeScalingFactor_N = distribution(gen)*5;
             periodic_counter++;
         }
         applied_wrench.fx = sin(dis_time)*amplitudeScalingFactor_X;
         applied_wrench.fy = sin(dis_time)*amplitudeScalingFactor_Y;
         applied_wrench.fz = sin(dis_time)*amplitudeScalingFactor_Z;
-        applied_wrench.tz = (sin(dis_time)*amplitudeScalingFactor_Y)/3;
-        dis_time = dis_time+dt*2.5;
+        applied_wrench.tz = 0;
+        dis_time = dis_time+dt*0.5;     // frequency of the disturbance
     }
     else if(READ_WRENCH == 1){
         // generate constant disturbance

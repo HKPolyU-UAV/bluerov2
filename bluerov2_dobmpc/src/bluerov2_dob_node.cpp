@@ -15,11 +15,11 @@ int main(int argc, char **argv)
         ros::Time current_time = ros::Time::now();
         ros::Duration elapsed_time = current_time - start_time;
 
-        if (elapsed_time >= duration)
-        {
-            ROS_INFO("Reached 25 seconds. Stopping the program.");
-            break;
-        }
+        // if (elapsed_time >= duration)
+        // {
+        //     ROS_INFO("Reached 25 seconds. Stopping the program.");
+        //     break;
+        // }
         
         if(br.is_start==true)
         {
