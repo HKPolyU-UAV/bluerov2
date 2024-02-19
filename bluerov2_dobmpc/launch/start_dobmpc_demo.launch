@@ -73,7 +73,7 @@
         <arg name="force_x" default="10"/>
         <arg name="force_y" default="10"/>
         <arg name="force_z" default="10"/>
-        <arg name="torque_z" default="5"/>
+        <arg name="torque_z" default="0"/>
     </include>
     
     <!-- Real-time 3d plot 
