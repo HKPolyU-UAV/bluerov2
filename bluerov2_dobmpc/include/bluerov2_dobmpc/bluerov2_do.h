@@ -18,6 +18,9 @@
 #include <cmath>
 #include <vector>
 #include <eigen3/Eigen/Dense>
+
+#include <sophus/se3.hpp>
+
 using namespace Eigen;
 
 class BLUEROV2_DO{

@@ -14,6 +14,7 @@ int main(int argc, char **argv)
         if(brdo.is_start==true){
             brdo.EKF(); // run EKF algorithm
         }
+        
         ros::spinOnce();
         loop_rate.sleep();
     }
