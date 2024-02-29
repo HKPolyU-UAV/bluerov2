@@ -175,12 +175,13 @@ class BLUEROV2_DOB{
     double compensate_coef = 0.032546960744430276;
     double rotor_constant = 0.026546960744430276;
     double added_mass[6] = {1.7182,0,5.468,0,1.2481,0.4006};
+    double Dl[6] = {-11.7391, -20, -31.8678, -25, -44.9085, -5};
     double Dnl[6] = {-18.18,-21.66,-36.99,-1.55,-1.55,-1.55};
     Matrix<double,1,6> M_values;    
     Matrix<double,6,6> M;           // mass matrix
     Matrix<double,6,6> invM;        // inverse mass matrix
-    Matrix<double,1,6> Dl_values;   
-    Matrix<double,6,6> Dl;          // linear hydrodynamic damping force
+    // Matrix<double,1,6> Dl_values;   
+    // Matrix<double,6,6> Dl;          // linear hydrodynamic damping force
     Matrix<double,6,6> K;           // propulsion matrix
     Matrix<double,6,1> KAu;         // vehicle's generated forces and moments
     // Matrix<double,18,1> dx;
@@ -287,6 +288,9 @@ class BLUEROV2_DOB{
     MatrixXd compute_jacobian_F(MatrixXd x, MatrixXd u);    // compute Jacobian of system process model
     MatrixXd compute_jacobian_H(MatrixXd x);                // compute Jacobian of measurement model
 
+    MatrixXd dynamics_C(MatrixXd v);                         // coriolis and centripetal forces C(v) = C_RB(v) + C_A(v)
+    MatrixXd dynamics_D(MatrixXd v);                         // damping forces D(v) = D_L + D_NL(v)
+    MatrixXd dynamics_g(MatrixXd euler);                     // gravitational and buoyancy forces g
 };
 
 #endif

@@ -52,19 +52,6 @@
         <arg name="max_forward_speed" value="50"/>
     </include> -->
    
-    <!-- Start disturbance observer -->
-    <!-- <include file ="$(find bluerov2_dobmpc)/launch/do.launch"/> -->
-
-    <!-- Generate Gauss-Markov models for producing random current velocities and angles 
-    <include file="$(find bluerov2_control)/launch/set_gm_current.launch">
-        <arg name="component" default="$(arg component_vel)"/>
-        <arg name="mean" default="$(arg mean_vel)"/>
-        <arg nam e="min" default="$(arg min_vel)"/>
-        <arg name="max" default="$(arg max_vel)"/>
-        <arg name="noise" default="$(arg noise_vel)"/>
-        <arg name="mu" default="$(arg mu_vel)"/>
-    </include>
-    -->
 
     <include file="$(find uuv_control_utils)/launch/apply_body_wrench.launch">
         <arg name="uuv_name" value="bluerov2"/>

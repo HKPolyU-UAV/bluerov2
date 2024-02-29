@@ -46,8 +46,8 @@ BLUEROV2_DOB::BLUEROV2_DOB(ros::NodeHandle& nh)
     M(4,0) = mass*ZG;
     invM = M.inverse();
 
-    Dl_values << -11.7391, -20, -31.8678, -25, -44.9085, -5;
-    Dl = Dl_values.asDiagonal();
+    // Dl_values << -11.7391, -20, -31.8678, -25, -44.9085, -5;
+    // Dl = Dl_values.asDiagonal();
 
     K << 0.7071067811847433, 0.7071067811847433, -0.7071067811919605, -0.7071067811919605, 0.0, 0.0,
        0.7071067811883519, -0.7071067811883519, 0.7071067811811348, -0.7071067811811348, 0.0, 0.0,
@@ -631,12 +631,12 @@ MatrixXd BLUEROV2_DOB::f(MatrixXd x, MatrixXd u)
             x(9) + (sin(x(5))*sin(x(4))/cos(x(4)))*x(10) + cos(x(3))*sin(x(4))/cos(x(4))*x(11),
             (cos(x(3)))*x(10) + (sin(x(3)))*x(11),
             (sin(x(3))/cos(x(4)))*x(10) + (cos(x(3))/cos(x(4)))*x(11), 
-            invM(0,0)*(KAu(0)+mass*x(11)*x(7)-mass*x(10)*x(8)-bouyancy*sin(x(4))+x(12)+Dl(0,0)*x(6)+Dnl[0]*abs(x(6))*x(6)),    // xddot: M^-1[tau+w-C-g-D]
-            invM(1,1)*(KAu(1)-mass*x(11)*x(6)+mass*x(9)*x(8)+bouyancy*cos(x(4))*sin(x(3))+x(13)+Dl(1,1)*x(7)+Dnl[1]*abs(x(7))*x(7)),
-            invM(2,2)*(KAu(2)+mass*x(10)*x(6)-mass*x(9)*x(7)+bouyancy*cos(x(4))*cos(x(3))+x(14)+Dl(2,2)*x(8)+Dnl[2]*abs(x(8))*x(8)),
-            invM(3,3)*(KAu(3)+(Iy-Iz)*x(10)*x(11)-mass*ZG*g*cos(x(4))*sin(x(3))+x(15)+Dl(3,3)*x(9)+Dnl[3]*abs(x(9))*x(9)),
-            invM(4,4)*(KAu(4)+(Iz-Ix)*x(9)*x(11)-mass*ZG*g*sin(x(4))+x(16)+Dl(4,4)*x(10)+Dnl[4]*abs(x(10))*x(10)),
-            invM(5,5)*(KAu(5)-(Iy-Ix)*x(9)*x(10)+x(17)+Dl(5,5)*x(11)+Dnl[5]*abs(x(11))*x(11)),
+            invM(0,0)*(KAu(0)+mass*x(11)*x(7)-mass*x(10)*x(8)-bouyancy*sin(x(4))+x(12)+Dl[0]*x(6)+Dnl[0]*abs(x(6))*x(6)),    // xddot: M^-1[tau+w-C-g-D]
+            invM(1,1)*(KAu(1)-mass*x(11)*x(6)+mass*x(9)*x(8)+bouyancy*cos(x(4))*sin(x(3))+x(13)+Dl[1]*x(7)+Dnl[1]*abs(x(7))*x(7)),
+            invM(2,2)*(KAu(2)+mass*x(10)*x(6)-mass*x(9)*x(7)+bouyancy*cos(x(4))*cos(x(3))+x(14)+Dl[2]*x(8)+Dnl[2]*abs(x(8))*x(8)),
+            invM(3,3)*(KAu(3)+(Iy-Iz)*x(10)*x(11)-mass*ZG*g*cos(x(4))*sin(x(3))+x(15)+Dl[3]*x(9)+Dnl[3]*abs(x(9))*x(9)),
+            invM(4,4)*(KAu(4)+(Iz-Ix)*x(9)*x(11)-mass*ZG*g*sin(x(4))+x(16)+Dl[4]*x(10)+Dnl[4]*abs(x(10))*x(10)),
+            invM(5,5)*(KAu(5)-(Iy-Ix)*x(9)*x(10)+x(17)+Dl[5]*x(11)+Dnl[5]*abs(x(11))*x(11)),
             // invM(0,0)*(KAu(0)+mass*x(11)*x(7)-mass*x(10)*x(8)-bouyancy*sin(x(4))+x(12)+Dl(0,0)*x(6)+added_mass[2]*x(2)*x(4)),    // xddot: M^-1[tau+w-C-g-D]
             // invM(1,1)*(KAu(1)-mass*x(11)*x(6)+mass*x(9)*x(8)+bouyancy*cos(x(4))*sin(x(3))+x(13)+Dl(1,1)*x(7)-added_mass[2]*x(2)*x(3)-added_mass[0]*x(0)*x(5)),
             // invM(2,2)*(KAu(2)+mass*x(10)*x(6)-mass*x(9)*x(7)+bouyancy*cos(x(4))*cos(x(3))+x(14)+Dl(2,2)*x(8)-added_mass[1]*x(1)*x(3)+added_mass[0]*x(0)*x(4)),
@@ -655,12 +655,12 @@ MatrixXd BLUEROV2_DOB::h(MatrixXd x)
     Matrix<double,18,1> y;
     y << x(0),x(1),x(2),x(3),x(4),x(5),
         x(6),x(7),x(8),x(9),x(10),x(11),
-        M(0,0)*body_acc.x-mass*x(11)*x(7)+mass*x(10)*x(8)+bouyancy*sin(x(4))-x(12)-Dl(0,0)*x(6)-Dnl[0]*abs(x(6))*x(6),        
-        M(1,1)*body_acc.y+mass*x(11)*x(6)-mass*x(9)*x(8)-bouyancy*cos(x(4))*sin(x(3))-x(13)-Dl(1,1)*x(7)-Dnl[1]*abs(x(7))*x(7),
-        M(2,2)*body_acc.z-mass*x(10)*x(6)+mass*x(9)*x(7)-bouyancy*cos(x(4))*cos(x(3))-x(14)-Dl(2,2)*x(8)-Dnl[2]*abs(x(8))*x(8),
-        M(3,3)*body_acc.phi-(Iy-Iz)*x(10)*x(11)+mass*ZG*g*cos(x(4))*sin(x(3))-x(15)-Dl(3,3)*x(9)-Dnl[3]*abs(x(9))*x(9),
-        M(4,4)*body_acc.theta-(Iz-Ix)*x(9)*x(11)+mass*ZG*g*sin(x(4))-x(16)-Dl(4,4)*x(10)-Dnl[4]*abs(x(10))*x(10),
-        M(5,5)*body_acc.psi+(Iy-Ix)*x(9)*x(10)-x(17)-Dl(5,5)*x(11)-Dnl[5]*abs(x(11))*x(11);
+        M(0,0)*body_acc.x-mass*x(11)*x(7)+mass*x(10)*x(8)+bouyancy*sin(x(4))-x(12)-Dl[0]*x(6)-Dnl[0]*abs(x(6))*x(6),        
+        M(1,1)*body_acc.y+mass*x(11)*x(6)-mass*x(9)*x(8)-bouyancy*cos(x(4))*sin(x(3))-x(13)-Dl[1]*x(7)-Dnl[1]*abs(x(7))*x(7),
+        M(2,2)*body_acc.z-mass*x(10)*x(6)+mass*x(9)*x(7)-bouyancy*cos(x(4))*cos(x(3))-x(14)-Dl[2]*x(8)-Dnl[2]*abs(x(8))*x(8),
+        M(3,3)*body_acc.phi-(Iy-Iz)*x(10)*x(11)+mass*ZG*g*cos(x(4))*sin(x(3))-x(15)-Dl[3]*x(9)-Dnl[3]*abs(x(9))*x(9),
+        M(4,4)*body_acc.theta-(Iz-Ix)*x(9)*x(11)+mass*ZG*g*sin(x(4))-x(16)-Dl[4]*x(10)-Dnl[4]*abs(x(10))*x(10),
+        M(5,5)*body_acc.psi+(Iy-Ix)*x(9)*x(10)-x(17)-Dl[5]*x(11)-Dnl[5]*abs(x(11))*x(11);
         // M(0,0)*body_acc.x-mass*x(11)*x(7)+mass*x(10)*x(8)+bouyancy*sin(x(4))-x(12)-Dl(0,0)*x(6)-added_mass[2]*x(2)*x(4),        
         // M(1,1)*body_acc.y+mass*x(11)*x(6)-mass*x(9)*x(8)-bouyancy*cos(x(4))*sin(x(3))-x(13)-Dl(1,1)*x(7)+added_mass[2]*x(2)*x(3)+added_mass[0]*x(0)*x(5),
         // M(2,2)*body_acc.z-mass*x(10)*x(6)+mass*x(9)*x(7)-bouyancy*cos(x(4))*cos(x(3))-x(14)-Dl(2,2)*x(8)+added_mass[1]*x(1)*x(3)-added_mass[0]*x(0)*x(4),
@@ -841,4 +841,48 @@ void BLUEROV2_DOB::applyBodyWrench()
     body_wrench.request.wrench.torque.z = applied_wrench.tz;
     client.call(body_wrench);
     
+}
+
+// coriolis and centripetal forces C(v) = C_RB(v) + C_A(v)
+// v(0-5):u, v, w, p, q, r
+MatrixXd BLUEROV2_DOB::dynamics_C(MatrixXd v)
+{
+    Matrix<double,6,6> C;
+    C<< 0, 0, 0, 0, mass*v(2)+added_mass[2]*v(2), -mass*v(1)+added_mass[1]*v(1),
+        0, 0, 0, -mass*v(2)-added_mass[2]*v(2), 0, mass*v(0)-added_mass[0]*v(0),
+        0, 0, 0, mass*v(1)-added_mass[1]*v(1), -mass*v(0)+added_mass[0]*v(0), 0,
+        0, mass*v(2)-added_mass[2]*v(2), -mass*v(1)+added_mass[1]*v(1), 0, Iz*v(5)-added_mass[5]*v(5), -Iy*v(4)+added_mass[4]*v(4),
+        -mass*v(2)+added_mass[2]*v(2), 0, mass*v(0)-added_mass[0]*v(0), -Iz*v(5)+added_mass[5]*v(5), 0, Ix*v(3)-added_mass[3]*v(3),
+        mass*v(1)-added_mass[1]*v(1), -mass*v(0)+added_mass[0]*v(0), 0, Iy*v(4)-added_mass[4]*v(4), -Ix*v(3)+added_mass[3]*v(3), 0;
+    return C;
+}
+
+// damping forces D(v) = D_L + D_NL(v)
+// v(0-5):u, v, w, p, q, r
+MatrixXd BLUEROV2_DOB::dynamics_D(MatrixXd v)
+{
+    Matrix<double,1,6> D_diagonal;
+    D_diagonal << -Dl[0]-Dnl[0]*abs(v(0)), -Dl[1]-Dnl[1]*abs(v(1)), -Dl[2]-Dnl[2]*abs(v(2)),
+                -Dl[3]-Dnl[3]*abs(v(3)), -Dl[4]-Dnl[4]*abs(v(4)), -Dl[5]-Dnl[5]*abs(v(5));
+
+    Matrix<double,6,6> D;
+    D = D_diagonal.asDiagonal();
+
+    return D;
+}
+
+// gravitational and buoyancy forces g
+// euler(0-2): phi, theta, psi
+MatrixXd BLUEROV2_DOB::dynamics_g(MatrixXd euler)
+{
+    Matrix<double,6,1> g;
+
+    g << bouyancy*sin(euler(1)),
+        -bouyancy*cos(euler(1))*sin(euler(0)),
+        -bouyancy*cos(euler(1))*cos(euler(0)),
+        mass*ZG*g*cos(euler(1))*sin(euler(0)),
+        mass*ZG*g*sin(euler(1)),
+        0;
+
+    return g;
 }
