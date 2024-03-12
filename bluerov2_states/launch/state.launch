@@ -1,0 +1,12 @@
+<launch>
+    <!-- ROS Nodelet manager -->
+    <node pkg="nodelet" type="nodelet" name="bluerov2_states_master" args="manager" output="screen">
+            <!-- <rosparam command="load" file="$(find alan_state_estimation)/launch/configs/alan_pose_estimation.yaml" /> -->
+    </node> 
+
+    <!-- ArucoNodelet -->
+    <node pkg="nodelet" type="nodelet" name="ImuDo" args="load bluerov2_states/ImuDoNodelet bluerov2_states_master" output="screen">
+        <!-- <rosparam command="load" file="$(find alan_state_estimation)/launch/configs/ARUCO_SUBPUB_topics.yaml" /> -->
+    </node>
+
+</launch>
