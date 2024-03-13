@@ -110,6 +110,16 @@ int main()
     p[3] = 0;
     p[4] = 0;
     p[5] = 0;
+    p[6] = 0;
+    p[7] = 0;
+    p[8] = 0;
+    p[9] = 0;
+    p[10] = 0;
+    p[11] = 0;
+    p[12] = 0;
+    p[13] = 0;
+    p[14] = 0;
+    p[15] = 0;
 
     bluerov2_acados_sim_update_params(capsule, p, NP);
   

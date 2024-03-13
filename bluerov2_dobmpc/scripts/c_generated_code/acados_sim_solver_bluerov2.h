@@ -40,7 +40,7 @@
 #define BLUEROV2_NX     12
 #define BLUEROV2_NZ     0
 #define BLUEROV2_NU     4
-#define BLUEROV2_NP     6
+#define BLUEROV2_NP     16
 
 #ifdef __cplusplus
 extern "C" {

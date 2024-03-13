@@ -1,15 +1,9 @@
 auto_yaw: false
 read_wrench: 0
-compensate_d: false
+compensate_d: true
 ref_traj: /home/fyp/bluerov_ws/src/bluerov2/bluerov2_mpc/traj/circle.txt
 applied_forcex: /home/fyp/bluerov_ws/src/bluerov2/bluerov2_dobmpc/config/forcex.txt
 applied_forcey: /home/fyp/bluerov_ws/src/bluerov2/bluerov2_dobmpc/config/forcey.txt
 applied_forcez: /home/fyp/bluerov_ws/src/bluerov2/bluerov2_dobmpc/config/forcez.txt
 applied_torquez: /home/fyp/bluerov_ws/src/bluerov2/bluerov2_dobmpc/config/torquez.txt
 yaml_name: /config/gazebo_param.yaml
-disturbance_x: 0.0
-disturbance_y: 0.0
-disturbance_z: 0.0
-disturbance_phi: 0.0
-disturbance_theta: 0.0
-disturbance_psi: 0.0

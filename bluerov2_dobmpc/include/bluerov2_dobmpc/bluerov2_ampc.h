@@ -1,5 +1,5 @@
-#ifndef BLUEROV2_DOB_H
-#define BLUEROV2_DOB_H
+#ifndef BLUEROV2_AMPC_H
+#define BLUEROV2_AMPC_H
 
 #include <ros/ros.h>
 #include <tf/tf.h>
@@ -36,7 +36,7 @@
 
 using namespace Eigen;
 
-class BLUEROV2_DOB{
+class BLUEROV2_AMPC{
     private:
 
     enum SystemStates{
@@ -138,15 +138,19 @@ class BLUEROV2_DOB{
     // pos pre_pos;
     pos body_pos;
     pos pre_body_pos;
-    acc local_acc;
+    // acc local_acc;
     acc body_acc;
-    thrust current_t;
+    thrust current_t;       // /bluerov2/thrusters/<0-5>/thrust
     wrench applied_wrench;
     nav_msgs::Odometry ref_pose;
     nav_msgs::Odometry error_pose;
     nav_msgs::Odometry esti_pose;
     nav_msgs::Odometry esti_disturbance;
     nav_msgs::Odometry applied_disturbance;
+    nav_msgs::Odometry esti_added_mass;
+    nav_msgs::Odometry esti_damping;
+    nav_msgs::Odometry esti_Ndamping;
+    nav_msgs::Odometry esti_env;
     std::vector<ros::Subscriber> subscribers;
     uuv_gazebo_ros_plugins_msgs::FloatStamped control_input0;
     uuv_gazebo_ros_plugins_msgs::FloatStamped control_input1;
@@ -175,13 +179,11 @@ class BLUEROV2_DOB{
     double compensate_coef = 0.032546960744430276;
     double rotor_constant = 0.026546960744430276;
     double added_mass[6] = {1.7182,0,5.468,0,1.2481,0.4006};
-    double Dl[6] = {-11.7391, -20, -31.8678, -25, -44.9085, -5};
-    double Dnl[6] = {-18.18,-21.66,-36.99,-1.55,-1.55,-1.55};
     Matrix<double,1,6> M_values;    
     Matrix<double,6,6> M;           // mass matrix
     Matrix<double,6,6> invM;        // inverse mass matrix
-    // Matrix<double,1,6> Dl_values;   
-    // Matrix<double,6,6> Dl;          // linear hydrodynamic damping force
+    Matrix<double,1,6> Dl_values;   
+    Matrix<double,6,6> Dl;          // linear hydrodynamic damping force
     Matrix<double,6,6> K;           // propulsion matrix
     Matrix<double,6,1> KAu;         // vehicle's generated forces and moments
     // Matrix<double,18,1> dx;
@@ -213,6 +215,45 @@ class BLUEROV2_DOB{
     int READ_WRENCH;        // 0: periodic disturbance; 1: random disturbance; 2: read wrench from text
     bool COMPENSATE_D;       // 0: no compensate; 1: compensate
     SolverParam solver_param;
+
+    // RLS-FF parameters
+    MatrixXd RLSX_P;        // covariance matrix in RLS
+    MatrixXd RLSY_P;
+    MatrixXd RLSZ_P;
+    MatrixXd RLSK_P;
+    MatrixXd RLSM_P;
+    MatrixXd RLSN_P;
+    double lambda;          // forgetting factor
+    double lambda_X;
+    double lambda_Y;
+    double lambda_Z;
+    double lambda_N;
+    int numParams = 4;          // number of parameters
+    VectorXd theta_X;       // unknown parameter vector
+    VectorXd theta_Y;
+    VectorXd theta_Z;
+    VectorXd theta_K;
+    VectorXd theta_M;
+    VectorXd theta_N;
+
+    int FF_n = 5;
+    int FF_d = 50;
+
+    std::vector<double> Xerror_n;   //prediction error buffer
+    std::vector<double> Xerror_d;
+    std::vector<double> Yerror_n;
+    std::vector<double> Yerror_d;
+    std::vector<double> Zerror_n;
+    std::vector<double> Zerror_d;
+    std::vector<double> Nerror_n;
+    std::vector<double> Nerror_d;
+    
+    double RLSX_F;
+    double RLSY_F;
+    double RLSZ_F;
+    double RLSN_F;
+
+    Matrix<double,6,1> wf_env; // world frame env
 
     // Other variables
     tf::Quaternion tf_quaternion;
@@ -257,7 +298,11 @@ class BLUEROV2_DOB{
     ros::Publisher esti_pose_pub;
     ros::Publisher esti_disturbance_pub;
     ros::Publisher applied_disturbance_pub;
-    ros::Subscriber imu_sub;
+    ros::Publisher esti_added_mass_pub;
+    ros::Publisher esti_damping_pub;
+    ros::Publisher esti_Ndamping_pub;
+    ros::Publisher esti_env_pub;
+    // ros::Subscriber imu_sub;
     ros::ServiceClient client;
 
     // Trajectory variables
@@ -269,29 +314,28 @@ class BLUEROV2_DOB{
 
     bool is_start;
 
-    BLUEROV2_DOB(ros::NodeHandle&);                         // constructor
+    BLUEROV2_AMPC(ros::NodeHandle&);                         // constructor
     Euler q2rpy(const geometry_msgs::Quaternion&);          // quaternion to euler angle
     geometry_msgs::Quaternion rpy2q(const Euler&);          // euler angle to quaternion
     int readDataFromFile(const char* fileName, std::vector<std::vector<double>> &data);     // read trajectory
     void ref_cb(int line_to_read);                          // fill N steps reference points into acados
-    // void ref_cb(const);
     void pose_cb(const nav_msgs::Odometry::ConstPtr& msg);  // get current position
     void solve();                                           // solve MPC
 
     // disturbance observer functions
     void thrusts_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg, int index); // read current thrusts
-    void imu_cb(const sensor_msgs::Imu::ConstPtr& msg);
+    // void imu_cb(const sensor_msgs::Imu::ConstPtr& msg);
     void applyBodyWrench();
-    void EKF();  
+    void EKF();
+    void RLSFF();
+    MatrixXd RLSFF2(VectorXd RLS_x, double RLS_y);
+    // void idValidation();  
     MatrixXd RK4(MatrixXd x, MatrixXd u);                                           // EKF predict and update
     MatrixXd f(MatrixXd x, MatrixXd u);                     // system process model
     MatrixXd h(MatrixXd x);                                 // measurement model
     MatrixXd compute_jacobian_F(MatrixXd x, MatrixXd u);    // compute Jacobian of system process model
     MatrixXd compute_jacobian_H(MatrixXd x);                // compute Jacobian of measurement model
 
-    MatrixXd dynamics_C(MatrixXd v);                         // coriolis and centripetal forces C(v) = C_RB(v) + C_A(v)
-    MatrixXd dynamics_D(MatrixXd v);                         // damping forces D(v) = D_L + D_NL(v)
-    MatrixXd dynamics_g(MatrixXd euler);                     // gravitational and buoyancy forces g
 };
 
 #endif

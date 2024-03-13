@@ -29,29 +29,19 @@
         <arg name="use_ned_frame" value="$(arg use_ned_frame)"/>
     </include>
 
-    <!-- Start the PID controller with its default parameters for the bluerov2 vehicle  -->
-    <!-- <include file="$(find bluerov2_control)/launch/rov_pid_controller.launch"> 
-        <arg name="uuv_name" value="bluerov2"/> 
-        <arg name="model_name" value="bluerov2"/> 
-        <arg name="use_ned_frame" value="$(arg use_ned_frame)"/> 
-    </include>  -->
-
     <!-- Start the MPC controller with its default parameters for the bluerov2 vehicle -->
-    <include file="$(find bluerov2_dobmpc)/launch/dob.launch"/> 
-    
+    <include file="$(find bluerov2_dobmpc)/launch/ampc.launch"/> 
 
-    
-    <!-- <include file="$(find uuv_control_utils)/launch/start_circular_trajectory.launch">
-        <arg name="uuv_name" value="bluerov2"/>
-        <arg name="radius" value="2"/>
-        <arg name="center_x" value="0"/>
-        <arg name="center_y" value="0"/>
-        <arg name="center_z" value="-20"/>
-        <arg name="n_points" value="50"/>
-        <arg name="duration" default="100"/>
-        <arg name="max_forward_speed" value="50"/>
-    </include> -->
-   
+    <!-- Generate Gauss-Markov models for producing random current velocities and angles 
+    <include file="$(find bluerov2_control)/launch/set_gm_current.launch">
+        <arg name="component" default="$(arg component_vel)"/>
+        <arg name="mean" default="$(arg mean_vel)"/>
+        <arg nam e="min" default="$(arg min_vel)"/>
+        <arg name="max" default="$(arg max_vel)"/>
+        <arg name="noise" default="$(arg noise_vel)"/>
+        <arg name="mu" default="$(arg mu_vel)"/>
+    </include>
+    -->
 
     <include file="$(find uuv_control_utils)/launch/apply_body_wrench.launch">
         <arg name="uuv_name" value="bluerov2"/>
@@ -63,15 +53,6 @@
         <arg name="torque_z" default="0"/>
     </include>
     
-    <!-- Real-time 3d plot 
-    <node
-        name="plotter"
-        pkg="bluerov2_mpc"
-        type="python"
-        output="screen"
-        args="$(find bluerov2_mpc)/scripts/plot.py"
-    />
-    -->
     <!-- Initialize the recording fo the simulation according to the record flag  -->
     <include file="$(find uuv_gazebo)/launch/controller_demos/record_demo.launch">
       <arg name="record" value="$(arg record)"/>
