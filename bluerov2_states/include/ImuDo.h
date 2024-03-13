@@ -49,6 +49,10 @@
 
 namespace bluerov2_states 
 {
+    typedef struct synced_data{
+        bool empty;
+        std::pair<std::vector<sensor_msgs::Imu::ConstPtr>, sensor_msgs::NavSatFix::ConstPtr> meas_data;
+    }  synced_data;
 
     class ImuDoNodelet : public nodelet::Nodelet
     {
@@ -56,18 +60,35 @@ namespace bluerov2_states
         nav_msgs::Odometry pose_gt;   
 
         ros::Subscriber gt_sub, imu_sub, gps_sub;
+        ros::Publisher update_pub, imu_pub;
         ros::Timer main_spin_timer;
 
-        std::queue<sensor_msgs::Imu::ConstPtr> imu_buf;
+        std::queue<sensor_msgs::Imu::ConstPtr> imu_buf, imu_calib_buf;
         std::queue<sensor_msgs::NavSatFix::ConstPtr> gps_buf;
 
         std::mutex imu_buf_manage;
         std::mutex gps_buf_manage;
 
+        synced_data SyncMeas();
+
+        std_msgs::Bool pub_data;
+        
+        void ImuPredict();
+        void EskfProcess();
+        void predict();
+        void update();
+
+        bool tracking_start = false;
+        double starting_time = 0;
+        double init_time = 0;
+        bool got_new_synced = false; 
+
         void ground_truth_callback(const nav_msgs::Odometry::ConstPtr& msg);
         void imu_callback(const sensor_msgs::Imu::ConstPtr& msg);
         void gps_callback(const sensor_msgs::NavSatFix::ConstPtr& msg);
         void main_spin_callback(const ros::TimerEvent& e);
+        bool initialization();
+
 
         virtual void onInit()
         {
@@ -88,6 +109,13 @@ namespace bluerov2_states
                 &ImuDoNodelet::main_spin_callback, 
                 this
             );
+
+            update_pub = nh.advertise<std_msgs::Bool>
+                        ("/dummy_update", 1);
+            imu_pub = nh.advertise<std_msgs::Bool>
+                        ("/dummy_imu", 1);
+
+            starting_time = ros::Time::now().toSec();
         };
 
     };

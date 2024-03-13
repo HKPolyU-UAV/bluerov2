@@ -271,6 +271,7 @@ class BLUEROV2_DOB{
     geometry_msgs::Quaternion rpy2q(const Euler&);          // euler angle to quaternion
     int readDataFromFile(const char* fileName, std::vector<std::vector<double>> &data);     // read trajectory
     void ref_cb(int line_to_read);                          // fill N steps reference points into acados
+    // void ref_cb(const);
     void pose_cb(const nav_msgs::Odometry::ConstPtr& msg);  // get current position
     void solve();                                           // solve MPC
 
