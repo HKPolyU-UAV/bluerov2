@@ -23,7 +23,7 @@ find_package(catkin COMPONENTS
   tf
 )
 
-find_package(OpenCV 4 REQUIRED)
+find_package(OpenCV REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(Sophus REQUIRED)
 
