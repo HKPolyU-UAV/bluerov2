@@ -2,7 +2,12 @@ cmake_minimum_required(VERSION 3.0.2)
 project(bluerov2_dobmpc)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-add_compile_options(-std=c++11)
+if (${CMAKE_CXX_COMPILER_VERSION} VERSION_LESS "7.6") # Assuming GCC 4.9 supports C++14
+    add_compile_options(-std=c++11)
+else()
+    add_compile_options(-std=c++14)
+endif()
+
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
