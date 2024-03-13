@@ -1,3 +1,6 @@
+[submodule "realsense-ros-gazebo"]
+	path = realsense-ros-gazebo
+	url = https://github.com/rickstaa/realsense-ros-gazebo.git
 [submodule "airo_message"]
 	path = airo_message
 	url = https://github.com/pattylo/airo_message.git
