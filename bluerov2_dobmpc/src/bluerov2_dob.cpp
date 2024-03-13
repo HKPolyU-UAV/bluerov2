@@ -564,7 +564,7 @@ void BLUEROV2_DOB::EKF()
     esti_disturbance.child_frame_id = "base_link";
     esti_disturbance_pub.publish(esti_disturbance);
 
-    // publish estimate disturbance
+    // publish publish disturbance
     applied_disturbance.pose.pose.position.x = applied_wrench.fx;
     applied_disturbance.pose.pose.position.y = applied_wrench.fy;
     applied_disturbance.pose.pose.position.z = applied_wrench.fz;
