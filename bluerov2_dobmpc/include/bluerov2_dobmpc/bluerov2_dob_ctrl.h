@@ -57,7 +57,6 @@ using namespace Eigen;
 
 class BLUEROV2_DOB_CTRL : private RosUtilities
 {
-
     private:
 
         // solver-related datatype
@@ -72,42 +71,6 @@ class BLUEROV2_DOB_CTRL : private RosUtilities
             double status, kkt_res, cpu_time;
         };
 
-        // struct Euler{
-        //     double phi;
-        //     double theta;
-        //     double psi;
-        // };
-
-        // struct pos{
-            //     double x;
-            //     double y;
-            //     double z;
-            //     double u;
-            //     double v;
-            //     double w;
-            //     double p;
-            //     double q;
-            //     double r;
-            // };
-
-        // struct acc{
-            // double x;
-            // double y;
-            // double z;
-            // double phi;
-            // double theta;
-            // double psi;
-        // };
-
-        // struct SolverParam{
-        //     double disturbance_x;
-        //     double disturbance_y;
-        //     double disturbance_z;
-        //     double disturbance_phi;
-        //     double disturbance_theta;
-        //     double disturbance_psi;
-        // };
-
         // ROS message variables
         uuv_gazebo_ros_plugins_msgs::FloatStamped thrust0;
         uuv_gazebo_ros_plugins_msgs::FloatStamped thrust1;
@@ -116,35 +79,12 @@ class BLUEROV2_DOB_CTRL : private RosUtilities
         uuv_gazebo_ros_plugins_msgs::FloatStamped thrust4;
         uuv_gazebo_ros_plugins_msgs::FloatStamped thrust5;
 
-        // vehicle states
-        Sophus::SE3d vehicle_SE3_world;
-        Sophus::Vector6d vehicle_twist_world;
-        Sophus::Vector6d vehicle_twist_body;
+        
 
-
-
-        // Euler local_euler;
-        // pos local_pos;
-        // pos pre_pos;
-        // pos body_pos;
-        // pos pre_body_pos;
-        // acc local_acc;
-        // acc body_acc;
-        // thrust current_t;
-        // wrench applied_wrench;
         nav_msgs::Odometry ref_pose;
         nav_msgs::Odometry error_pose;
         nav_msgs::Odometry esti_pose;
-        nav_msgs::Odometry esti_disturbance;
-        nav_msgs::Odometry applied_disturbance;
-        std::vector<ros::Subscriber> subscribers;
 
-
-        // ctrller
-        void set_mpc_initial_state();
-        void set_mpc_constraints();
-        double set_current_yaw_for_ctrl();
-        
         uuv_gazebo_ros_plugins_msgs::FloatStamped control_input0;
         uuv_gazebo_ros_plugins_msgs::FloatStamped control_input1;
         uuv_gazebo_ros_plugins_msgs::FloatStamped control_input2;
@@ -187,44 +127,24 @@ class BLUEROV2_DOB_CTRL : private RosUtilities
         Matrix<double,3,3> T_ib;            // rotation matrix for angular from inertial to body frame
 
         // Acados parameter
-        std::string REF_TRAJ;
-        std::string WRENCH_FX;
-        std::string WRENCH_FY;
-        std::string WRENCH_FZ;
-        std::string WRENCH_TZ;
+
         bool AUTO_YAW;
         int READ_WRENCH;        // 0: periodic disturbance; 1: random disturbance; 2: read wrench from text
         bool COMPENSATE_D;       // 0: no compensate; 1: compensate
-        // SolverParam solver_param;
 
-        // Other variables
-        tf::Quaternion tf_quaternion;
-        int cout_counter = 0;
-        int rand_counter = 0;
-        int fx_counter = 0;
-        double dis_time = 0;
-        double periodic_counter = 0;
-        double amplitudeScalingFactor_X;
-        double amplitudeScalingFactor_Y;
-        double amplitudeScalingFactor_Z;
-        double amplitudeScalingFactor_N;
 
-        double logger_time;
+        // weird yaw shit
         float yaw_sum = 0;      // yaw degree as continous number
         float pre_yaw = 0;      // former state yaw degree
         float yaw_diff;         // yaw degree difference in every step
         float yaw_ref;          // yaw degree reference in form of (-pi, pi)
         float yaw_error;        // yaw degree error
-            
 
-        airo_message::Disturbance esti_disturb;
-        
-        // Time
-        ros::Time current_time;
 
         // ros subscriber & publisher
         ros::Subscriber pose_sub;
         ros::Subscriber disturb_esti_sub;
+
         ros::Publisher thrust0_pub;
         ros::Publisher thrust1_pub;
         ros::Publisher thrust2_pub;
@@ -239,31 +159,39 @@ class BLUEROV2_DOB_CTRL : private RosUtilities
         ros::Publisher control_input1_pub;
         ros::Publisher control_input2_pub;
         ros::Publisher control_input3_pub;
-
-        ros::Publisher esti_pose_pub;
-        ros::Publisher esti_disturbance_pub;
-        ros::Publisher applied_disturbance_pub;
-        ros::Subscriber imu_sub;
-        ros::ServiceClient client;
-
-        // Trajectory variables
-        std::vector<std::vector<double>> trajectory;
-        int line_number = 0;
-        int number_of_steps = 0;
-    
-    public:
+        ros::Timer mainspin_timer;
 
         bool is_start;
 
-        BLUEROV2_DOB_CTRL(ros::NodeHandle& nh);                         // constructor
         
+        // config
         void ctrl_config(ros::NodeHandle& nh);
         void communi_config(ros::NodeHandle& nh);
 
-        // void ref_cb(const );                          // fill N steps reference points into acados
-        // void ref_cb(const);
-        void pose_cb(const nav_msgs::Odometry::ConstPtr& msg);  // get current position
+        // ctrller main loop
         void solve();                                           // solve MPC
+        void set_mpc_initial_state();
+        void set_ref();
+        void set_mpc_constraints();
+        
+        double set_current_yaw_for_ctrl();
+        void misc_pub();
+        
+        // callbacks
+        void pose_cb(const nav_msgs::Odometry::ConstPtr& msg);  // get current position
+        void ref_cb(const airo_message::ReferencePreview::ConstPtr& msg);
+        void mainspin_cb(const ros::TimerEvent& e);
+
+        airo_message::Disturbance esti_disturb;
+
+        // vehicle states
+        Sophus::SE3d vehicle_SE3_world;
+        Sophus::Vector6d vehicle_twist_world;
+        Sophus::Vector6d vehicle_twist_body;
+        Eigen::Vector3d vehicle_Euler;
+
+    public:
+        BLUEROV2_DOB_CTRL(ros::NodeHandle& nh);                         // constructor
 
 };
 

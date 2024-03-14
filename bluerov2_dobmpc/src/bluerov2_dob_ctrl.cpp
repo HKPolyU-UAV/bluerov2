@@ -60,8 +60,14 @@ void BLUEROV2_DOB_CTRL::communi_config(ros::NodeHandle& nh)
     control_input1_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/control_input/1",20);
     control_input2_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/control_input/2",20);
     control_input3_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/control_input/3",20);
-}
 
+    // timer
+    mainspin_timer = nh.createTimer(
+        ros::Duration(1.0 / 20.0),
+        &BLUEROV2_DOB_CTRL::mainspin_cb,
+        this
+    );
+}
 
 void BLUEROV2_DOB_CTRL::pose_cb(const nav_msgs::Odometry::ConstPtr& odom)
 {
@@ -69,68 +75,26 @@ void BLUEROV2_DOB_CTRL::pose_cb(const nav_msgs::Odometry::ConstPtr& odom)
 
     vehicle_SE3_world = posemsg_to_SE3(odom->pose.pose);
     vehicle_twist_world = twistmsg_to_velo(odom->twist.twist);
+    
     vehicle_twist_body.head(3) = 
         vehicle_SE3_world.rotationMatrix().inverse() * vehicle_twist_world.head(3);
+    vehicle_twist_body.tail(3) = 
+        Jacobi3d(vehicle_SE3_world).inverse() * vehicle_twist_world.tail(3);
 
-    
-
-    // get linear position x, y, z
-    // local_pos.x = pose->pose.pose.position.x;
-    // local_pos.y = pose->pose.pose.position.y;
-    // local_pos.z = pose->pose.pose.position.z;
-
-    // // get angle phi, theta, psi
-    // tf::quaternionMsgToTF(pose->pose.pose.orientation,tf_quaternion);
-    // tf::Matrix3x3(tf_quaternion).getRPY(local_euler.phi, local_euler.theta, local_euler.psi);
-
-    // // get linear velocity u, v, w
-    // local_pos.u = pose->twist.twist.linear.x;
-    // local_pos.v = pose->twist.twist.linear.y;
-    // local_pos.w = pose->twist.twist.linear.z;
-
-    // // get angular velocity p, q, r
-    // local_pos.p = pose->twist.twist.angular.x;
-    // local_pos.q = pose->twist.twist.angular.y;
-    // local_pos.r = pose->twist.twist.angular.z;
-
-    // // inertial frame velocity to body frame
-    // Matrix<double,3,1> v_linear_inertial;
-    // Matrix<double,3,1> v_angular_inertial;
-
-    // v_linear_inertial << local_pos.u, local_pos.v, local_pos.w;
-    // v_angular_inertial << local_pos.p, local_pos.q, local_pos.r;
-
-    // R_ib << cos(local_euler.psi)*cos(local_euler.theta), -sin(local_euler.psi)*cos(local_euler.phi)+cos(local_euler.psi)*sin(local_euler.theta)*sin(local_euler.phi), sin(local_euler.psi)*sin(local_euler.phi)+cos(local_euler.psi)*cos(local_euler.phi)*sin(local_euler.theta),
-    //         sin(local_euler.psi)*cos(local_euler.theta), cos(local_euler.psi)*cos(local_euler.phi)+sin(local_euler.phi)*sin(local_euler.theta)*sin(local_euler.psi), -cos(local_euler.psi)*sin(local_euler.phi)+sin(local_euler.theta)*sin(local_euler.psi)*cos(local_euler.phi),
-    //         -sin(local_euler.theta), cos(local_euler.theta)*sin(local_euler.phi), cos(local_euler.theta)*cos(local_euler.phi);
-    // T_ib << 1, sin(local_euler.psi)*sin(local_euler.theta)/cos(local_euler.theta), cos(local_euler.phi)*sin(local_euler.theta)/cos(local_euler.theta),
-    //         0, cos(local_euler.phi), sin(local_euler.phi),
-    //         0, sin(local_euler.phi)/cos(local_euler.theta), cos(local_euler.phi)/cos(local_euler.theta);
-    // v_linear_body = R_ib.inverse()*v_linear_inertial;
-    // v_angular_body = T_ib.inverse()*v_angular_inertial;
-
-    // body_acc.x = (v_linear_body[0]-pre_body_pos.u)/dt;
-    // body_acc.y = (v_linear_body[1]-pre_body_pos.v)/dt;
-    // body_acc.z = (v_linear_body[2]-pre_body_pos.w)/dt;
-    // body_acc.phi = (v_angular_body[0]-pre_body_pos.p)/dt;
-    // body_acc.theta = (v_angular_body[1]-pre_body_pos.q)/dt;
-    // body_acc.psi = (v_angular_body[2]-pre_body_pos.r)/dt;
-
-    // pre_body_pos.u = v_linear_body[0];
-    // pre_body_pos.v = v_linear_body[1];
-    // pre_body_pos.w = v_linear_body[2];
-    // pre_body_pos.p = v_angular_body[0];
-    // pre_body_pos.q = v_angular_body[1];
-    // pre_body_pos.r = v_angular_body[2];
+    vehicle_Euler = q2rpy(vehicle_SE3_world.unit_quaternion());
 }
 
-Sophus::SE3d odomMsg_2_SE3d();
-
-
-// void BLUEROV2_DOB_CTRL::ref_cb(int line_to_read)
-// {
+void BLUEROV2_DOB_CTRL::ref_cb(const airo_message::ReferencePreview::ConstPtr& msg)
+{
     
-// }
+
+    
+}
+
+void BLUEROV2_DOB_CTRL::mainspin_cb(const ros::TimerEvent& e)
+{
+    solve();
+}
 
 // solve MPC
 // input: current pose, reference, parameter
@@ -150,7 +114,7 @@ void BLUEROV2_DOB_CTRL::solve()
         yaw_ref = -M_PI + fmod(acados_in.yref[0][5],M_PI);
     }
 
-    // set reference
+    // set reference!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     // ref_cb(line_number); 
 
     for (unsigned int i = 0; i <= BLUEROV2_N; i++)
@@ -194,73 +158,27 @@ void BLUEROV2_DOB_CTRL::solve()
     thrust4_pub.publish(thrust4);
     thrust5_pub.publish(thrust5);
 
-    // publish reference pose
-    tf2::Quaternion quat;
-    quat.setRPY(0, 0, yaw_ref);
-    geometry_msgs::Quaternion quat_msg;
-    tf2::convert(quat, quat_msg);
-    ref_pose.pose.pose.position.x = acados_in.yref[0][0];
-    ref_pose.pose.pose.position.y = acados_in.yref[0][1];
-    ref_pose.pose.pose.position.z = acados_in.yref[0][2];
-    ref_pose.pose.pose.orientation.x = quat_msg.x;
-    ref_pose.pose.pose.orientation.y = quat_msg.y;
-    ref_pose.pose.pose.orientation.z = quat_msg.z;
-    ref_pose.pose.pose.orientation.w = quat_msg.w;
-    ref_pose.header.stamp = ros::Time::now();
-    ref_pose.header.frame_id = "odom_frame";
-    ref_pose.child_frame_id = "base_link";
-    ref_pose_pub.publish(ref_pose);
-
-    // publish error pose
-    tf2::Quaternion quat_error;
-    yaw_error = yaw_sum - acados_in.yref[0][5];
-    quat_error.setRPY(0, 0, yaw_error);
-    geometry_msgs::Quaternion quat_error_msg;
-    tf2::convert(quat_error, quat_error_msg);
-    error_pose.pose.pose.position.x = acados_in.x0[0] - acados_in.yref[0][0];
-    error_pose.pose.pose.position.y = acados_in.x0[1] - acados_in.yref[0][1];
-    error_pose.pose.pose.position.z = acados_in.x0[2] - acados_in.yref[0][2];
-    error_pose.pose.pose.orientation.x = quat_error_msg.x;
-    error_pose.pose.pose.orientation.y = quat_error_msg.y;
-    error_pose.pose.pose.orientation.z = quat_error_msg.z;
-    error_pose.pose.pose.orientation.w = quat_error_msg.w;
-    error_pose.header.stamp = ros::Time::now();
-    error_pose.header.frame_id = "odom_frame";
-    error_pose.child_frame_id = "base_link";
-
-    error_pose_pub.publish(error_pose);
-
-    // publish conrtrol input
-    control_input0.data = acados_out.u0[0];
-    control_input1.data = acados_out.u0[1];
-    control_input2.data = acados_out.u0[2];
-    control_input3.data = acados_out.u0[3];
-
-    control_input0_pub.publish(control_input0);
-    control_input1_pub.publish(control_input1);
-    control_input2_pub.publish(control_input2);
-    control_input3_pub.publish(control_input3);
-    
+    misc_pub();
 }
 
 void BLUEROV2_DOB_CTRL::set_mpc_initial_state()
 {
     // set initial states (current state)
-    // acados_in.x0[s_x] = local_pos.x;
-    // acados_in.x0[s_y] = local_pos.y;
-    // acados_in.x0[s_z] = local_pos.z;
+    acados_in.x0[s_x] = vehicle_SE3_world.translation().x();
+    acados_in.x0[s_y] = vehicle_SE3_world.translation().y();
+    acados_in.x0[s_z] = vehicle_SE3_world.translation().z();
 
-    // acados_in.x0[s_phi] = local_euler.phi;
-    // acados_in.x0[s_theta] = local_euler.theta;
-    // acados_in.x0[s_psi] = yaw_sum;
+    acados_in.x0[s_phi] = vehicle_Euler(0);
+    acados_in.x0[s_theta] = vehicle_Euler(1);
+    acados_in.x0[s_psi] = yaw_sum;
 
-    // acados_in.x0[s_u] = v_linear_body[0];
-    // acados_in.x0[s_v] = v_linear_body[1];
-    // acados_in.x0[s_w] = v_linear_body[2];
+    acados_in.x0[s_u] = vehicle_twist_body(0);
+    acados_in.x0[s_v] = vehicle_twist_body(1);
+    acados_in.x0[s_w] = vehicle_twist_body(2);
 
-    // acados_in.x0[s_p] = v_angular_body[0];
-    // acados_in.x0[s_q] = v_angular_body[1];
-    // acados_in.x0[s_r] = v_angular_body[2];
+    acados_in.x0[s_p] = vehicle_twist_body(3);
+    acados_in.x0[s_q] = vehicle_twist_body(4);
+    acados_in.x0[s_r] = vehicle_twist_body(5);
 }
 
 void BLUEROV2_DOB_CTRL::set_mpc_constraints()
@@ -326,46 +244,97 @@ void BLUEROV2_DOB_CTRL::set_mpc_constraints()
     }
 }
 
+double BLUEROV2_DOB_CTRL::set_current_yaw_for_ctrl()
+{
+    double psi;
 
-// double BLUEROV2_DOB_CTRL::set_current_yaw_for_ctrl()
-// {
-//     // identify turning direction
-//     if (pre_yaw >= 0 && local_euler.psi >=0)
-//     {
-//         yaw_diff = local_euler.psi - pre_yaw;
-//     }
+    // identify turning direction
+    if (pre_yaw >= 0 && psi >=0)
+    {
+        yaw_diff = psi - pre_yaw;
+    }
 
 
-//     else if (pre_yaw >= 0 && local_euler.psi <0)
-//     {
-//         if (2*M_PI+local_euler.psi-pre_yaw >= pre_yaw+abs(local_euler.psi))
-//         {
-//             yaw_diff = -(pre_yaw + abs(local_euler.psi));
-//         }
-//         else
-//         {
-//             yaw_diff = 2 * M_PI + local_euler.psi - pre_yaw;
-//         }
-//     }
-//     else if (pre_yaw < 0 && local_euler.psi >= 0)
-//     {
-//         if (2*M_PI-local_euler.psi+pre_yaw >= abs(pre_yaw)+local_euler.psi)
-//         {
-//             yaw_diff = abs(pre_yaw)+local_euler.psi;
-//         }
-//         else
-//         {
-//             yaw_diff = -(2*M_PI-local_euler.psi+pre_yaw);
-//         }
-//     }
-//     else
-//     {
-//         yaw_diff = local_euler.psi - pre_yaw;
-//     }
+    else if (pre_yaw >= 0 && psi <0)
+    {
+        if (2*M_PI + psi - pre_yaw >= pre_yaw + abs(psi))
+        {
+            yaw_diff = -(pre_yaw + abs(psi));
+        }
+        else
+        {
+            yaw_diff = 2 * M_PI + psi - pre_yaw;
+        }
+    }
+    else if (pre_yaw < 0 && psi >= 0)
+    {
+        if (2*M_PI-psi+pre_yaw >= abs(pre_yaw)+psi)
+        {
+            yaw_diff = abs(pre_yaw)+psi;
+        }
+        else
+        {
+            yaw_diff = -(2*M_PI-psi+pre_yaw);
+        }
+    }
+    else
+    {
+        yaw_diff = psi - pre_yaw;
+    }
 
-//     pre_yaw = local_euler.psi;
+    pre_yaw = psi;
 
-//     yaw_sum = yaw_sum + yaw_diff;
+    yaw_sum = yaw_sum + yaw_diff;
 
-//     return yaw_sum;
-// }
+    return yaw_sum;
+}
+
+void BLUEROV2_DOB_CTRL::misc_pub()
+{
+    // publish reference pose
+    tf2::Quaternion quat;
+    quat.setRPY(0, 0, yaw_ref);
+    geometry_msgs::Quaternion quat_msg;
+    tf2::convert(quat, quat_msg);
+    ref_pose.pose.pose.position.x = acados_in.yref[0][0];
+    ref_pose.pose.pose.position.y = acados_in.yref[0][1];
+    ref_pose.pose.pose.position.z = acados_in.yref[0][2];
+    ref_pose.pose.pose.orientation.x = quat_msg.x;
+    ref_pose.pose.pose.orientation.y = quat_msg.y;
+    ref_pose.pose.pose.orientation.z = quat_msg.z;
+    ref_pose.pose.pose.orientation.w = quat_msg.w;
+    ref_pose.header.stamp = ros::Time::now();
+    ref_pose.header.frame_id = "odom_frame";
+    ref_pose.child_frame_id = "base_link";
+    ref_pose_pub.publish(ref_pose);
+
+    // publish error pose
+    tf2::Quaternion quat_error;
+    yaw_error = yaw_sum - acados_in.yref[0][5];
+    quat_error.setRPY(0, 0, yaw_error);
+    geometry_msgs::Quaternion quat_error_msg;
+    tf2::convert(quat_error, quat_error_msg);
+    error_pose.pose.pose.position.x = acados_in.x0[0] - acados_in.yref[0][0];
+    error_pose.pose.pose.position.y = acados_in.x0[1] - acados_in.yref[0][1];
+    error_pose.pose.pose.position.z = acados_in.x0[2] - acados_in.yref[0][2];
+    error_pose.pose.pose.orientation.x = quat_error_msg.x;
+    error_pose.pose.pose.orientation.y = quat_error_msg.y;
+    error_pose.pose.pose.orientation.z = quat_error_msg.z;
+    error_pose.pose.pose.orientation.w = quat_error_msg.w;
+    error_pose.header.stamp = ros::Time::now();
+    error_pose.header.frame_id = "odom_frame";
+    error_pose.child_frame_id = "base_link";
+
+    error_pose_pub.publish(error_pose);
+
+    // publish conrtrol input
+    control_input0.data = acados_out.u0[0];
+    control_input1.data = acados_out.u0[1];
+    control_input2.data = acados_out.u0[2];
+    control_input3.data = acados_out.u0[3];
+
+    control_input0_pub.publish(control_input0);
+    control_input1_pub.publish(control_input1);
+    control_input2_pub.publish(control_input2);
+    control_input3_pub.publish(control_input3);
+}

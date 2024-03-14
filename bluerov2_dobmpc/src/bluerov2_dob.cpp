@@ -211,6 +211,7 @@ int BLUEROV2_DOB::readDataFromFile(const char* fileName, std::vector<std::vector
 
 	return number_of_lines;
 }
+
 void BLUEROV2_DOB::ref_cb(int line_to_read)
 {
     if (BLUEROV2_N+line_to_read+1 <= number_of_steps)  // All ref points within the file

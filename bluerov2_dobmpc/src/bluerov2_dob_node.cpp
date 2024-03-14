@@ -1,6 +1,5 @@
-#include <ros/ros.h>
-
 #include "bluerov2_dobmpc/bluerov2_dob.h"
+
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "bluerov2_dob_node");
