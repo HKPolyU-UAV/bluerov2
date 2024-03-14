@@ -69,6 +69,8 @@ void BLUEROV2_DOB_CTRL::pose_cb(const nav_msgs::Odometry::ConstPtr& odom)
 
     vehicle_SE3_world = posemsg_to_SE3(odom->pose.pose);
     vehicle_twist_world = twistmsg_to_velo(odom->twist.twist);
+    vehicle_twist_body.head(3) = 
+        vehicle_SE3_world.rotationMatrix().inverse() * vehicle_twist_world.head(3);
 
     
 

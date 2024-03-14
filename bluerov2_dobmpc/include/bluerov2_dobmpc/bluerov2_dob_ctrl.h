@@ -119,6 +119,7 @@ class BLUEROV2_DOB_CTRL : private RosUtilities
         // vehicle states
         Sophus::SE3d vehicle_SE3_world;
         Sophus::Vector6d vehicle_twist_world;
+        Sophus::Vector6d vehicle_twist_body;
 
 
 
