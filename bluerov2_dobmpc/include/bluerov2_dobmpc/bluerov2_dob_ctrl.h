@@ -22,7 +22,6 @@
 #include <iomanip>
 #include <random>
 
-#include <sophus/se3.hpp>
 
 #include "acados/utils/print.h"
 #include "acados_c/ocp_nlp_interface.h"
@@ -36,34 +35,32 @@
 #include "bluerov2_model/bluerov2_model.h"
 #include "acados_solver_bluerov2.h"
 
+#include "airo_message/ReferencePreview.h"
+#include "airo_message/Disturbance.h"
+
+#include "ros_utilities/ros_utilities.h"
+
 using namespace Eigen;
 
-class BLUEROV2_DOB_CTRL{
+#define s_x 0
+#define s_y 1
+#define s_z 2
+#define s_phi 3
+#define s_theta 4
+#define s_psi 5
+#define s_u 6
+#define s_v 7
+#define s_w 8
+#define s_p 9
+#define s_q 10
+#define s_r 11
+
+class BLUEROV2_DOB_CTRL : private RosUtilities
+{
 
     private:
 
-        enum SystemStates{
-            x = 0,
-            y = 1,
-            z = 2,
-            phi = 3,
-            theta = 4,
-            psi = 5,
-            u = 6,
-            v = 7,
-            w = 8,
-            p = 9,
-            q = 10,
-            r = 11,
-        };
-
-        enum ControlInputs{
-            u1 = 0,
-            u2 = 1,
-            u3 = 2,
-            u4 = 3,
-        };
-
+        // solver-related datatype
         struct SolverInput{
             double x0[BLUEROV2_NX];
             double yref[BLUEROV2_N+1][BLUEROV2_NY];
@@ -75,59 +72,41 @@ class BLUEROV2_DOB_CTRL{
             double status, kkt_res, cpu_time;
         };
 
-        struct Euler{
-            double phi;
-            double theta;
-            double psi;
-        };
+        // struct Euler{
+        //     double phi;
+        //     double theta;
+        //     double psi;
+        // };
 
-        struct pos{
-                double x;
-                double y;
-                double z;
-                double u;
-                double v;
-                double w;
-                double p;
-                double q;
-                double r;
-            };
+        // struct pos{
+            //     double x;
+            //     double y;
+            //     double z;
+            //     double u;
+            //     double v;
+            //     double w;
+            //     double p;
+            //     double q;
+            //     double r;
+            // };
 
-        struct acc{
-            double x;
-            double y;
-            double z;
-            double phi;
-            double theta;
-            double psi;
-        };
+        // struct acc{
+            // double x;
+            // double y;
+            // double z;
+            // double phi;
+            // double theta;
+            // double psi;
+        // };
 
-        struct SolverParam{
-            double disturbance_x;
-            double disturbance_y;
-            double disturbance_z;
-            double disturbance_phi;
-            double disturbance_theta;
-            double disturbance_psi;
-        };
-
-        struct thrust{
-            double t0;
-            double t1;
-            double t2;
-            double t3;
-            double t4;
-            double t5;
-        };
-
-        struct wrench{
-            double fx;
-            double fy;
-            double fz;
-            double tx;
-            double ty;
-            double tz;
-        };
+        // struct SolverParam{
+        //     double disturbance_x;
+        //     double disturbance_y;
+        //     double disturbance_z;
+        //     double disturbance_phi;
+        //     double disturbance_theta;
+        //     double disturbance_psi;
+        // };
 
         // ROS message variables
         uuv_gazebo_ros_plugins_msgs::FloatStamped thrust0;
@@ -138,18 +117,20 @@ class BLUEROV2_DOB_CTRL{
         uuv_gazebo_ros_plugins_msgs::FloatStamped thrust5;
 
         // vehicle states
-        Sophus::SE3d vehicle_SE3d_pose_world;
-        Eigen::Matrix<double, 6, 1> vehicle_twist_pose_body;
+        Sophus::SE3d vehicle_SE3_world;
+        Sophus::Vector6d vehicle_twist_world;
 
-        Euler local_euler;
-        pos local_pos;
+
+
+        // Euler local_euler;
+        // pos local_pos;
         // pos pre_pos;
-        pos body_pos;
-        pos pre_body_pos;
-        acc local_acc;
-        acc body_acc;
-        thrust current_t;
-        wrench applied_wrench;
+        // pos body_pos;
+        // pos pre_body_pos;
+        // acc local_acc;
+        // acc body_acc;
+        // thrust current_t;
+        // wrench applied_wrench;
         nav_msgs::Odometry ref_pose;
         nav_msgs::Odometry error_pose;
         nav_msgs::Odometry esti_pose;
@@ -159,6 +140,8 @@ class BLUEROV2_DOB_CTRL{
 
 
         // ctrller
+        void set_mpc_initial_state();
+        void set_mpc_constraints();
         double set_current_yaw_for_ctrl();
         
         uuv_gazebo_ros_plugins_msgs::FloatStamped control_input0;
@@ -211,7 +194,7 @@ class BLUEROV2_DOB_CTRL{
         bool AUTO_YAW;
         int READ_WRENCH;        // 0: periodic disturbance; 1: random disturbance; 2: read wrench from text
         bool COMPENSATE_D;       // 0: no compensate; 1: compensate
-        SolverParam solver_param;
+        // SolverParam solver_param;
 
         // Other variables
         tf::Quaternion tf_quaternion;
@@ -233,6 +216,8 @@ class BLUEROV2_DOB_CTRL{
         float yaw_error;        // yaw degree error
             
 
+        airo_message::Disturbance esti_disturb;
+        
         // Time
         ros::Time current_time;
 
@@ -273,9 +258,6 @@ class BLUEROV2_DOB_CTRL{
         
         void ctrl_config(ros::NodeHandle& nh);
         void communi_config(ros::NodeHandle& nh);
-
-        Euler q2rpy(const geometry_msgs::Quaternion&);          // quaternion to euler angle
-        geometry_msgs::Quaternion rpy2q(const Euler&);          // euler angle to quaternion
 
         // void ref_cb(const );                          // fill N steps reference points into acados
         // void ref_cb(const);

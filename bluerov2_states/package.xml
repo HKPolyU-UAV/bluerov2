@@ -21,6 +21,11 @@
   <exec_depend>message_generation</exec_depend>
 
 
+  <build_depend>ros_utilities</build_depend>
+  <build_export_depend>ros_utilities</build_export_depend>
+  <exec_depend>ros_utilities</exec_depend>
+
+
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>geometry_msgs</build_depend>
   <build_depend>mavros_msgs</build_depend>

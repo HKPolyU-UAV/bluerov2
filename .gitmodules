@@ -4,3 +4,6 @@
 [submodule "realsense-ros-gazebo"]
 	path = realsense-ros-gazebo
 	url = https://github.com/rickstaa/realsense-ros-gazebo
+[submodule "ros_utilities"]
+	path = ros_utilities
+	url = https://github.com/pattylo/ros_utilities.git

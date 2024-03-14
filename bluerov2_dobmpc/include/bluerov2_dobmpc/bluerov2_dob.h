@@ -54,12 +54,12 @@ class BLUEROV2_DOB{
         r = 11,
     };
 
-    enum ControlInputs{
-        u1 = 0,
-        u2 = 1,
-        u3 = 2,
-        u4 = 3,
-    };
+    // enum ControlInputs{
+    //     u1 = 0,
+    //     u2 = 1,
+    //     u3 = 2,
+    //     u4 = 3,
+    // };
 
     struct SolverInput{
         double x0[BLUEROV2_NX];

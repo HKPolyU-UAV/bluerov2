@@ -43,6 +43,9 @@
 
 #include <queue>
 #include <mutex>
+#include "airo_message/ReferencePreview.h"
+
+#include <ros_utilities/ros_utilities.h>
 
 // map definition for convinience
 #define COLOR_SUB_TOPIC CAMERA_SUB_TOPIC_A

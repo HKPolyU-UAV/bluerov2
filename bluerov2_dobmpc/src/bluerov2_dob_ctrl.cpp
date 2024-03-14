@@ -1,4 +1,4 @@
-#include <bluerov2_dobmpc/bluerov2_dob_ctrl.h>
+#include "bluerov2_dobmpc/bluerov2_dob_ctrl.h"
 
 // Initialize MPC
 BLUEROV2_DOB_CTRL::BLUEROV2_DOB_CTRL(ros::NodeHandle& nh)
@@ -63,76 +63,67 @@ void BLUEROV2_DOB_CTRL::communi_config(ros::NodeHandle& nh)
 }
 
 
-void BLUEROV2_DOB_CTRL::pose_cb(const nav_msgs::Odometry::ConstPtr& pose)
+void BLUEROV2_DOB_CTRL::pose_cb(const nav_msgs::Odometry::ConstPtr& odom)
 {
     is_start = true;
 
+    vehicle_SE3_world = posemsg_to_SE3(odom->pose.pose);
+    vehicle_twist_world = twistmsg_to_velo(odom->twist.twist);
+
+    
+
     // get linear position x, y, z
-    local_pos.x = pose->pose.pose.position.x;
-    local_pos.y = pose->pose.pose.position.y;
-    local_pos.z = pose->pose.pose.position.z;
+    // local_pos.x = pose->pose.pose.position.x;
+    // local_pos.y = pose->pose.pose.position.y;
+    // local_pos.z = pose->pose.pose.position.z;
 
-    // get angle phi, theta, psi
-    tf::quaternionMsgToTF(pose->pose.pose.orientation,tf_quaternion);
-    tf::Matrix3x3(tf_quaternion).getRPY(local_euler.phi, local_euler.theta, local_euler.psi);
+    // // get angle phi, theta, psi
+    // tf::quaternionMsgToTF(pose->pose.pose.orientation,tf_quaternion);
+    // tf::Matrix3x3(tf_quaternion).getRPY(local_euler.phi, local_euler.theta, local_euler.psi);
 
-    // get linear velocity u, v, w
-    local_pos.u = pose->twist.twist.linear.x;
-    local_pos.v = pose->twist.twist.linear.y;
-    local_pos.w = pose->twist.twist.linear.z;
+    // // get linear velocity u, v, w
+    // local_pos.u = pose->twist.twist.linear.x;
+    // local_pos.v = pose->twist.twist.linear.y;
+    // local_pos.w = pose->twist.twist.linear.z;
 
-    // get angular velocity p, q, r
-    local_pos.p = pose->twist.twist.angular.x;
-    local_pos.q = pose->twist.twist.angular.y;
-    local_pos.r = pose->twist.twist.angular.z;
+    // // get angular velocity p, q, r
+    // local_pos.p = pose->twist.twist.angular.x;
+    // local_pos.q = pose->twist.twist.angular.y;
+    // local_pos.r = pose->twist.twist.angular.z;
 
-    // inertial frame velocity to body frame
-    Matrix<double,3,1> v_linear_inertial;
-    Matrix<double,3,1> v_angular_inertial;
+    // // inertial frame velocity to body frame
+    // Matrix<double,3,1> v_linear_inertial;
+    // Matrix<double,3,1> v_angular_inertial;
 
-    v_linear_inertial << local_pos.u, local_pos.v, local_pos.w;
-    v_angular_inertial << local_pos.p, local_pos.q, local_pos.r;
+    // v_linear_inertial << local_pos.u, local_pos.v, local_pos.w;
+    // v_angular_inertial << local_pos.p, local_pos.q, local_pos.r;
 
-    R_ib << cos(local_euler.psi)*cos(local_euler.theta), -sin(local_euler.psi)*cos(local_euler.phi)+cos(local_euler.psi)*sin(local_euler.theta)*sin(local_euler.phi), sin(local_euler.psi)*sin(local_euler.phi)+cos(local_euler.psi)*cos(local_euler.phi)*sin(local_euler.theta),
-            sin(local_euler.psi)*cos(local_euler.theta), cos(local_euler.psi)*cos(local_euler.phi)+sin(local_euler.phi)*sin(local_euler.theta)*sin(local_euler.psi), -cos(local_euler.psi)*sin(local_euler.phi)+sin(local_euler.theta)*sin(local_euler.psi)*cos(local_euler.phi),
-            -sin(local_euler.theta), cos(local_euler.theta)*sin(local_euler.phi), cos(local_euler.theta)*cos(local_euler.phi);
-    T_ib << 1, sin(local_euler.psi)*sin(local_euler.theta)/cos(local_euler.theta), cos(local_euler.phi)*sin(local_euler.theta)/cos(local_euler.theta),
-            0, cos(local_euler.phi), sin(local_euler.phi),
-            0, sin(local_euler.phi)/cos(local_euler.theta), cos(local_euler.phi)/cos(local_euler.theta);
-    v_linear_body = R_ib.inverse()*v_linear_inertial;
-    v_angular_body = T_ib.inverse()*v_angular_inertial;
+    // R_ib << cos(local_euler.psi)*cos(local_euler.theta), -sin(local_euler.psi)*cos(local_euler.phi)+cos(local_euler.psi)*sin(local_euler.theta)*sin(local_euler.phi), sin(local_euler.psi)*sin(local_euler.phi)+cos(local_euler.psi)*cos(local_euler.phi)*sin(local_euler.theta),
+    //         sin(local_euler.psi)*cos(local_euler.theta), cos(local_euler.psi)*cos(local_euler.phi)+sin(local_euler.phi)*sin(local_euler.theta)*sin(local_euler.psi), -cos(local_euler.psi)*sin(local_euler.phi)+sin(local_euler.theta)*sin(local_euler.psi)*cos(local_euler.phi),
+    //         -sin(local_euler.theta), cos(local_euler.theta)*sin(local_euler.phi), cos(local_euler.theta)*cos(local_euler.phi);
+    // T_ib << 1, sin(local_euler.psi)*sin(local_euler.theta)/cos(local_euler.theta), cos(local_euler.phi)*sin(local_euler.theta)/cos(local_euler.theta),
+    //         0, cos(local_euler.phi), sin(local_euler.phi),
+    //         0, sin(local_euler.phi)/cos(local_euler.theta), cos(local_euler.phi)/cos(local_euler.theta);
+    // v_linear_body = R_ib.inverse()*v_linear_inertial;
+    // v_angular_body = T_ib.inverse()*v_angular_inertial;
 
-    body_acc.x = (v_linear_body[0]-pre_body_pos.u)/dt;
-    body_acc.y = (v_linear_body[1]-pre_body_pos.v)/dt;
-    body_acc.z = (v_linear_body[2]-pre_body_pos.w)/dt;
-    body_acc.phi = (v_angular_body[0]-pre_body_pos.p)/dt;
-    body_acc.theta = (v_angular_body[1]-pre_body_pos.q)/dt;
-    body_acc.psi = (v_angular_body[2]-pre_body_pos.r)/dt;
+    // body_acc.x = (v_linear_body[0]-pre_body_pos.u)/dt;
+    // body_acc.y = (v_linear_body[1]-pre_body_pos.v)/dt;
+    // body_acc.z = (v_linear_body[2]-pre_body_pos.w)/dt;
+    // body_acc.phi = (v_angular_body[0]-pre_body_pos.p)/dt;
+    // body_acc.theta = (v_angular_body[1]-pre_body_pos.q)/dt;
+    // body_acc.psi = (v_angular_body[2]-pre_body_pos.r)/dt;
 
-    pre_body_pos.u = v_linear_body[0];
-    pre_body_pos.v = v_linear_body[1];
-    pre_body_pos.w = v_linear_body[2];
-    pre_body_pos.p = v_angular_body[0];
-    pre_body_pos.q = v_angular_body[1];
-    pre_body_pos.r = v_angular_body[2];
+    // pre_body_pos.u = v_linear_body[0];
+    // pre_body_pos.v = v_linear_body[1];
+    // pre_body_pos.w = v_linear_body[2];
+    // pre_body_pos.p = v_angular_body[0];
+    // pre_body_pos.q = v_angular_body[1];
+    // pre_body_pos.r = v_angular_body[2];
 }
 
 Sophus::SE3d odomMsg_2_SE3d();
 
-// quaternion to euler angle
-BLUEROV2_DOB_CTRL::Euler BLUEROV2_DOB_CTRL::q2rpy(const geometry_msgs::Quaternion& quaternion){
-    tf::Quaternion tf_quaternion;
-    Euler euler;
-    tf::quaternionMsgToTF(quaternion,tf_quaternion);
-    tf::Matrix3x3(tf_quaternion).getRPY(euler.phi, euler.theta, euler.psi);
-    return euler;
-}
-
-// euler angle to quaternion
-geometry_msgs::Quaternion BLUEROV2_DOB_CTRL::rpy2q(const Euler& euler){
-    geometry_msgs::Quaternion quaternion = tf::createQuaternionMsgFromRollPitchYaw(euler.phi, euler.theta, euler.psi);
-    return quaternion;
-}
 
 // void BLUEROV2_DOB_CTRL::ref_cb(int line_to_read)
 // {
@@ -144,82 +135,8 @@ geometry_msgs::Quaternion BLUEROV2_DOB_CTRL::rpy2q(const Euler& euler){
 // output: thrust<0-5>
 void BLUEROV2_DOB_CTRL::solve()
 {
-    // set initial states (current state)
-    acados_in.x0[x] = local_pos.x;
-    acados_in.x0[y] = local_pos.y;
-    acados_in.x0[z] = local_pos.z;
-
-    acados_in.x0[phi] = local_euler.phi;
-    acados_in.x0[theta] = local_euler.theta;
-    acados_in.x0[psi] = yaw_sum;
-
-    acados_in.x0[u] = v_linear_body[0];
-    acados_in.x0[v] = v_linear_body[1];
-    acados_in.x0[w] = v_linear_body[2];
-
-    acados_in.x0[p] = v_angular_body[0];
-    acados_in.x0[q] = v_angular_body[1];
-    acados_in.x0[r] = v_angular_body[2];
-
-    ocp_nlp_constraints_model_set(
-        mpc_capsule->nlp_config,
-        mpc_capsule->nlp_dims,
-        mpc_capsule->nlp_in, 
-        0, 
-        "lbx", 
-        acados_in.x0
-    );
-
-    ocp_nlp_constraints_model_set(
-        mpc_capsule->nlp_config,
-        mpc_capsule->nlp_dims,
-        mpc_capsule->nlp_in, 
-        0, 
-        "ubx", 
-        acados_in.x0
-    );
-
-    // set parameters
-    for (int i = 0; i < BLUEROV2_N+1; i++)
-    {
-        if(COMPENSATE_D == false){
-            // sub
-            acados_param[i][0] = solver_param.disturbance_x;
-            acados_param[i][1] = solver_param.disturbance_y;
-            acados_param[i][2] = solver_param.disturbance_z;
-            acados_param[i][3] = solver_param.disturbance_psi;
-        }
-        else if(COMPENSATE_D == true){
-
-            //! what is this
-            // acados_param[i][0] = esti_x(12)/compensate_coef;
-            // acados_param[i][1] = esti_x(13)/compensate_coef;
-            // acados_param[i][2] = esti_x(14)/rotor_constant;
-            // acados_param[i][3] = esti_x(17)/rotor_constant;  
-        }
-        // added mass
-        acados_param[i][4] = 1.7182;
-        acados_param[i][5] = 0;
-        acados_param[i][6] = 5.468;
-        acados_param[i][7] = 0.4006;
-        // linear d
-        acados_param[i][8] = -11.7391;
-        acados_param[i][9] = -20;
-        acados_param[i][10] = -31.8678;
-        acados_param[i][11] = -5;
-        // nonlinear d
-        acados_param[i][12] = -18.18;
-        acados_param[i][13] = -21.66;
-        acados_param[i][14] = -36.99;
-        acados_param[i][15] = -1.55;
-
-        bluerov2_acados_update_params(
-            mpc_capsule,
-            i,
-            acados_param[i],
-            BLUEROV2_NP
-        );
-    }
+    set_mpc_initial_state();
+    set_mpc_constraints();
 
     //now reference
     // change into form of (-pi, pi)
@@ -324,48 +241,129 @@ void BLUEROV2_DOB_CTRL::solve()
     
 }
 
-
-
-
-double BLUEROV2_DOB_CTRL::set_current_yaw_for_ctrl()
+void BLUEROV2_DOB_CTRL::set_mpc_initial_state()
 {
-    // identify turning direction
-    if (pre_yaw >= 0 && local_euler.psi >=0)
-    {
-        yaw_diff = local_euler.psi - pre_yaw;
-    }
+    // set initial states (current state)
+    // acados_in.x0[s_x] = local_pos.x;
+    // acados_in.x0[s_y] = local_pos.y;
+    // acados_in.x0[s_z] = local_pos.z;
 
+    // acados_in.x0[s_phi] = local_euler.phi;
+    // acados_in.x0[s_theta] = local_euler.theta;
+    // acados_in.x0[s_psi] = yaw_sum;
 
-    else if (pre_yaw >= 0 && local_euler.psi <0)
-    {
-        if (2*M_PI+local_euler.psi-pre_yaw >= pre_yaw+abs(local_euler.psi))
-        {
-            yaw_diff = -(pre_yaw + abs(local_euler.psi));
-        }
-        else
-        {
-            yaw_diff = 2 * M_PI + local_euler.psi - pre_yaw;
-        }
-    }
-    else if (pre_yaw < 0 && local_euler.psi >= 0)
-    {
-        if (2*M_PI-local_euler.psi+pre_yaw >= abs(pre_yaw)+local_euler.psi)
-        {
-            yaw_diff = abs(pre_yaw)+local_euler.psi;
-        }
-        else
-        {
-            yaw_diff = -(2*M_PI-local_euler.psi+pre_yaw);
-        }
-    }
-    else
-    {
-        yaw_diff = local_euler.psi - pre_yaw;
-    }
+    // acados_in.x0[s_u] = v_linear_body[0];
+    // acados_in.x0[s_v] = v_linear_body[1];
+    // acados_in.x0[s_w] = v_linear_body[2];
 
-    pre_yaw = local_euler.psi;
-
-    yaw_sum = yaw_sum + yaw_diff;
-
-    return yaw_sum;
+    // acados_in.x0[s_p] = v_angular_body[0];
+    // acados_in.x0[s_q] = v_angular_body[1];
+    // acados_in.x0[s_r] = v_angular_body[2];
 }
+
+void BLUEROV2_DOB_CTRL::set_mpc_constraints()
+{
+    ocp_nlp_constraints_model_set(
+        mpc_capsule->nlp_config,
+        mpc_capsule->nlp_dims,
+        mpc_capsule->nlp_in, 
+        0, 
+        "lbx", 
+        acados_in.x0
+    );
+
+    ocp_nlp_constraints_model_set(
+        mpc_capsule->nlp_config,
+        mpc_capsule->nlp_dims,
+        mpc_capsule->nlp_in, 
+        0, 
+        "ubx", 
+        acados_in.x0
+    );
+
+    // set parameters
+    for (int i = 0; i < BLUEROV2_N+1; i++)
+    {
+        if(COMPENSATE_D == false){
+            // sub
+            // acados_param[i][0] = esti_disturb.disturb_x;
+            // acados_param[i][1] = esti_disturb.disturb_y;
+            // acados_param[i][2] = esti_disturb.disturb_x;
+            // acados_param[i][3] = esti_disturb.disturb_x;
+        }
+        else if(COMPENSATE_D == true){
+
+            //! what is this
+            // acados_param[i][0] = esti_x(12)/compensate_coef;
+            // acados_param[i][1] = esti_x(13)/compensate_coef;
+            // acados_param[i][2] = esti_x(14)/rotor_constant;
+            // acados_param[i][3] = esti_x(17)/rotor_constant;  
+        }
+        // added mass
+        acados_param[i][4] = 1.7182;
+        acados_param[i][5] = 0;
+        acados_param[i][6] = 5.468;
+        acados_param[i][7] = 0.4006;
+        // linear d
+        acados_param[i][8] = -11.7391;
+        acados_param[i][9] = -20;
+        acados_param[i][10] = -31.8678;
+        acados_param[i][11] = -5;
+        // nonlinear d
+        acados_param[i][12] = -18.18;
+        acados_param[i][13] = -21.66;
+        acados_param[i][14] = -36.99;
+        acados_param[i][15] = -1.55;
+
+        bluerov2_acados_update_params(
+            mpc_capsule,
+            i,
+            acados_param[i],
+            BLUEROV2_NP
+        );
+    }
+}
+
+
+// double BLUEROV2_DOB_CTRL::set_current_yaw_for_ctrl()
+// {
+//     // identify turning direction
+//     if (pre_yaw >= 0 && local_euler.psi >=0)
+//     {
+//         yaw_diff = local_euler.psi - pre_yaw;
+//     }
+
+
+//     else if (pre_yaw >= 0 && local_euler.psi <0)
+//     {
+//         if (2*M_PI+local_euler.psi-pre_yaw >= pre_yaw+abs(local_euler.psi))
+//         {
+//             yaw_diff = -(pre_yaw + abs(local_euler.psi));
+//         }
+//         else
+//         {
+//             yaw_diff = 2 * M_PI + local_euler.psi - pre_yaw;
+//         }
+//     }
+//     else if (pre_yaw < 0 && local_euler.psi >= 0)
+//     {
+//         if (2*M_PI-local_euler.psi+pre_yaw >= abs(pre_yaw)+local_euler.psi)
+//         {
+//             yaw_diff = abs(pre_yaw)+local_euler.psi;
+//         }
+//         else
+//         {
+//             yaw_diff = -(2*M_PI-local_euler.psi+pre_yaw);
+//         }
+//     }
+//     else
+//     {
+//         yaw_diff = local_euler.psi - pre_yaw;
+//     }
+
+//     pre_yaw = local_euler.psi;
+
+//     yaw_sum = yaw_sum + yaw_diff;
+
+//     return yaw_sum;
+// }
