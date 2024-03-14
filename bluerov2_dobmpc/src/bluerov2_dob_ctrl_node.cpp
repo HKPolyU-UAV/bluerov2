@@ -7,7 +7,7 @@ int main(int argc, char **argv)
     ROS_INFO("WELCOME TO DOB-MPC CTRL 4 BLUEROV2!");
     
     ros::NodeHandle nh;
-    BLUEROV2_DOB br(nh);
+    BLUEROV2_DOB_CTRL br(nh);
 
     ros::spin();
 

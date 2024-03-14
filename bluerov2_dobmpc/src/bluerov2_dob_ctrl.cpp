@@ -1,13 +1,17 @@
 #include <bluerov2_dobmpc/bluerov2_dob_ctrl.h>
 
 // Initialize MPC
-BLUEROV2_DOB::BLUEROV2_DOB(ros::NodeHandle& nh)
+BLUEROV2_DOB_CTRL::BLUEROV2_DOB_CTRL(ros::NodeHandle& nh)
+{
+    ctrl_config(nh);
+    communi_config(nh);
+}
+
+void BLUEROV2_DOB_CTRL::ctrl_config(ros::NodeHandle& nh)
 {
     // read parameter
     nh.getParam("/bluerov2_dob_node/auto_yaw",AUTO_YAW);
-    nh.getParam("/bluerov2_dob_node/read_wrench",READ_WRENCH);
     nh.getParam("/bluerov2_dob_node/compensate_d",COMPENSATE_D);
-    nh.getParam("/bluerov2_dob_node/ref_traj", REF_TRAJ);
 
     // Initialize MPC
     int create_status = 1;
@@ -17,6 +21,7 @@ BLUEROV2_DOB::BLUEROV2_DOB(ros::NodeHandle& nh)
         exit(1);
     }
 
+    // propulsion matrix should be written with yaml
     K << 0.7071067811847433, 0.7071067811847433, -0.7071067811919605, -0.7071067811919605, 0.0, 0.0,
        0.7071067811883519, -0.7071067811883519, 0.7071067811811348, -0.7071067811811348, 0.0, 0.0,
        0, 0, 0, 0, 1, 1,
@@ -24,29 +29,6 @@ BLUEROV2_DOB::BLUEROV2_DOB(ros::NodeHandle& nh)
        -0.05126524163589389, -0.051265241635893896, 0.05126524163641713, 0.05126524163641713, -0.002499999999974481, -0.002499999999974481,
        0.16652364696949604, -0.16652364696949604, -0.17500892834341342, 0.17500892834341342, 0.0, 0.0;
    
-
-    // ros subsriber & publisher
-    pose_sub = nh.subscribe<nav_msgs::Odometry>("/bluerov2/pose_gt", 20, &BLUEROV2_DOB::pose_cb, this);
-
-        // ctrl pub
-    thrust0_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/0/input",20);
-    thrust1_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/1/input",20);
-    thrust2_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/2/input",20);
-    thrust3_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/3/input",20);
-    thrust4_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/4/input",20);
-    thrust5_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/5/input",20);
-        
-        // vis pub
-    ref_pose_pub = nh.advertise<nav_msgs::Odometry>("/bluerov2/mpc/reference",20);
-    error_pose_pub = nh.advertise<nav_msgs::Odometry>("/bluerov2/mpc/error",20);
-    control_input0_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/control_input/0",20);
-    control_input1_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/control_input/1",20);
-    control_input2_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/control_input/2",20);
-    control_input3_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/control_input/3",20);    
-
-    applied_disturbance_pub = nh.advertise<nav_msgs::Odometry>("/bluerov2/applied_disturbance",20);
-
-    
     // initialize
     for(unsigned int i=0; i < BLUEROV2_NU; i++) 
         acados_out.u0[i] = 0.0;
@@ -56,7 +38,32 @@ BLUEROV2_DOB::BLUEROV2_DOB(ros::NodeHandle& nh)
     is_start = false;
 }
 
-void BLUEROV2_DOB::pose_cb(const nav_msgs::Odometry::ConstPtr& pose)
+void BLUEROV2_DOB_CTRL::communi_config(ros::NodeHandle& nh)
+{
+    // odom subsriber 
+    // topic name should be written with yaml
+    pose_sub = nh.subscribe<nav_msgs::Odometry>("/bluerov2/pose_gt", 20, &BLUEROV2_DOB_CTRL::pose_cb, this);
+    // disturb_esti_sub = nh.subscribe<
+
+    // ctrl pub
+    thrust0_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/0/input",20);
+    thrust1_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/1/input",20);
+    thrust2_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/2/input",20);
+    thrust3_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/3/input",20);
+    thrust4_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/4/input",20);
+    thrust5_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/5/input",20);
+        
+    // vis pub
+    ref_pose_pub = nh.advertise<nav_msgs::Odometry>("/bluerov2/mpc/reference",20);
+    error_pose_pub = nh.advertise<nav_msgs::Odometry>("/bluerov2/mpc/error",20);
+    control_input0_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/control_input/0",20);
+    control_input1_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/control_input/1",20);
+    control_input2_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/control_input/2",20);
+    control_input3_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/control_input/3",20);
+}
+
+
+void BLUEROV2_DOB_CTRL::pose_cb(const nav_msgs::Odometry::ConstPtr& pose)
 {
     is_start = true;
 
@@ -108,16 +115,12 @@ void BLUEROV2_DOB::pose_cb(const nav_msgs::Odometry::ConstPtr& pose)
     pre_body_pos.p = v_angular_body[0];
     pre_body_pos.q = v_angular_body[1];
     pre_body_pos.r = v_angular_body[2];
-
-    Matrix<double,3,1> compensate_f_inertial;
-    Matrix<double,3,1> compensate_f_body;
-    compensate_f_inertial << 20,0,0;
-    compensate_f_body = R_ib.inverse()*compensate_f_inertial;
-
 }
 
+Sophus::SE3d odomMsg_2_SE3d();
+
 // quaternion to euler angle
-BLUEROV2_DOB::Euler BLUEROV2_DOB::q2rpy(const geometry_msgs::Quaternion& quaternion){
+BLUEROV2_DOB_CTRL::Euler BLUEROV2_DOB_CTRL::q2rpy(const geometry_msgs::Quaternion& quaternion){
     tf::Quaternion tf_quaternion;
     Euler euler;
     tf::quaternionMsgToTF(quaternion,tf_quaternion);
@@ -126,20 +129,20 @@ BLUEROV2_DOB::Euler BLUEROV2_DOB::q2rpy(const geometry_msgs::Quaternion& quatern
 }
 
 // euler angle to quaternion
-geometry_msgs::Quaternion BLUEROV2_DOB::rpy2q(const Euler& euler){
+geometry_msgs::Quaternion BLUEROV2_DOB_CTRL::rpy2q(const Euler& euler){
     geometry_msgs::Quaternion quaternion = tf::createQuaternionMsgFromRollPitchYaw(euler.phi, euler.theta, euler.psi);
     return quaternion;
 }
 
-void BLUEROV2_DOB::ref_cb(int line_to_read)
-{
+// void BLUEROV2_DOB_CTRL::ref_cb(int line_to_read)
+// {
     
-}
+// }
 
 // solve MPC
 // input: current pose, reference, parameter
 // output: thrust<0-5>
-void BLUEROV2_DOB::solve()
+void BLUEROV2_DOB_CTRL::solve()
 {
     // set initial states (current state)
     acados_in.x0[x] = local_pos.x;
@@ -189,10 +192,10 @@ void BLUEROV2_DOB::solve()
         else if(COMPENSATE_D == true){
 
             //! what is this
-            acados_param[i][0] = esti_x(12)/compensate_coef;
-            acados_param[i][1] = esti_x(13)/compensate_coef;
-            acados_param[i][2] = esti_x(14)/rotor_constant;
-            acados_param[i][3] = esti_x(17)/rotor_constant;  
+            // acados_param[i][0] = esti_x(12)/compensate_coef;
+            // acados_param[i][1] = esti_x(13)/compensate_coef;
+            // acados_param[i][2] = esti_x(14)/rotor_constant;
+            // acados_param[i][3] = esti_x(17)/rotor_constant;  
         }
         // added mass
         acados_param[i][4] = 1.7182;
@@ -229,8 +232,7 @@ void BLUEROV2_DOB::solve()
     }
 
     // set reference
-    ref_cb(line_number); 
-    line_number++;
+    // ref_cb(line_number); 
 
     for (unsigned int i = 0; i <= BLUEROV2_N; i++)
     {
@@ -323,7 +325,9 @@ void BLUEROV2_DOB::solve()
 }
 
 
-double set_current_yaw()
+
+
+double BLUEROV2_DOB_CTRL::set_current_yaw_for_ctrl()
 {
     // identify turning direction
     if (pre_yaw >= 0 && local_euler.psi >=0)
@@ -362,53 +366,6 @@ double set_current_yaw()
     pre_yaw = local_euler.psi;
 
     yaw_sum = yaw_sum + yaw_diff;
-}
 
-
-void 
-{
-    if (BLUEROV2_N+line_to_read+1 <= number_of_steps)  // All ref points within the file
-    {
-        for (unsigned int i = 0; i <= BLUEROV2_N; i++)  // Fill all horizon with file data
-        {
-            for (unsigned int j = 0; j <= BLUEROV2_NY; j++)
-            {
-                acados_in.yref[i][j] = trajectory[i+line_to_read][j];
-            }
-        }
-    }
-    else if(line_to_read < number_of_steps)    // Part of ref points within the file
-    {
-        for (unsigned int i = 0; i < number_of_steps-line_to_read; i++)    // Fill part of horizon with file data
-        {
-            
-            for (unsigned int j = 0; j <= BLUEROV2_NY; j++)
-            {
-                acados_in.yref[i][j] = trajectory[i+line_to_read][j];
-            }
-            
-        }
-
-        for (unsigned int i = number_of_steps-line_to_read; i <= BLUEROV2_N; i++)  // Fill the rest horizon with the last point
-        {
-            
-            for (unsigned int j = 0; j <= BLUEROV2_NY; j++)
-            {
-                acados_in.yref[i][j] = trajectory[number_of_steps-1][j];
-            }
-            
-        }
-    }
-    else    // none of ref points within the file
-    {
-        for (unsigned int i = 0; i <= BLUEROV2_N; i++)  // Fill all horizon with the last point
-        {
-            
-            for (unsigned int j = 0; j <= BLUEROV2_NY; j++)
-            {
-                acados_in.yref[i][j] = trajectory[number_of_steps-1][j];
-            }
-            
-        }
-    }
+    return yaw_sum;
 }
