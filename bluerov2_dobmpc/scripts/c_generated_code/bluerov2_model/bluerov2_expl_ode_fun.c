@@ -30,6 +30,7 @@ extern "C" {
 
 /* Add prefix to internal symbols */
 #define casadi_f0 CASADI_PREFIX(f0)
+#define casadi_fabs CASADI_PREFIX(fabs)
 #define casadi_s0 CASADI_PREFIX(s0)
 #define casadi_s1 CASADI_PREFIX(s1)
 #define casadi_s2 CASADI_PREFIX(s2)
@@ -48,6 +49,15 @@ extern "C" {
     #define CASADI_SYMBOL_EXPORT
   #endif
 #endif
+
+casadi_real casadi_fabs(casadi_real x) {
+/* Pre-c99 compatibility */
+#if __STDC_VERSION__ < 199901L
+  return x>0 ? x : -x;
+#else
+  return fabs(x);
+#endif
+}
 
 static const casadi_int casadi_s0[16] = {12, 1, 0, 12, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
 static const casadi_int casadi_s1[8] = {4, 1, 0, 4, 0, 1, 2, 3};
@@ -205,7 +215,7 @@ static int casadi_f0(const casadi_real** arg, casadi_real** res, casadi_int* iw,
   a18=(a18*a3);
   a14=(a14+a18);
   a18=arg[2]? arg[2][12] : 0;
-  a19=fabs(a3);
+  a19=casadi_fabs(a3);
   a18=(a18*a19);
   a18=(a18*a3);
   a14=(a14+a18);
@@ -237,7 +247,7 @@ static int casadi_f0(const casadi_real** arg, casadi_real** res, casadi_int* iw,
   a16=(a16*a6);
   a14=(a14+a16);
   a16=arg[2]? arg[2][13] : 0;
-  a0=fabs(a6);
+  a0=casadi_fabs(a6);
   a16=(a16*a0);
   a16=(a16*a6);
   a14=(a14+a16);
@@ -266,7 +276,7 @@ static int casadi_f0(const casadi_real** arg, casadi_real** res, casadi_int* iw,
   a8=(a8*a7);
   a14=(a14+a8);
   a8=arg[2]? arg[2][14] : 0;
-  a16=fabs(a7);
+  a16=casadi_fabs(a7);
   a8=(a8*a16);
   a8=(a8*a7);
   a14=(a14+a8);
@@ -316,7 +326,7 @@ static int casadi_f0(const casadi_real** arg, casadi_real** res, casadi_int* iw,
   a11=(a11*a9);
   a14=(a14+a11);
   a11=arg[2]? arg[2][15] : 0;
-  a4=fabs(a9);
+  a4=casadi_fabs(a9);
   a11=(a11*a4);
   a11=(a11*a9);
   a14=(a14+a11);

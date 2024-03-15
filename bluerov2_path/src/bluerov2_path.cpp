@@ -35,9 +35,11 @@ BLUEROV2_PATH::BLUEROV2_PATH(ros::NodeHandle& nh)
 
 void BLUEROV2_PATH::mainspin_cb(const ros::TimerEvent& e)
 {
-    read_N_pub(number_of_steps);
+    if(line_number > number_of_steps)
+        return;
+
+    read_N_pub(line_number);
     line_number++;
-    std::cout<<line_number<<std::endl;
 }
 
 int BLUEROV2_PATH::readDataFromFile(const char* fileName, std::vector<std::vector<double>> &data)
@@ -104,6 +106,7 @@ void BLUEROV2_PATH::read_N_pub(int line_to_read)
     }
 
     std::cout<<"TRAJ_SIZE: "<<ref_traj.preview.size()<<std::endl;
+    std::cout<<"WHICH LINE: "<<line_to_read<<std::endl<<std::endl;;
 
     ref_pub.publish(ref_traj);
 }

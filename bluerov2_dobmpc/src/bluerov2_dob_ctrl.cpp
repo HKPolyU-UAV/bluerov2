@@ -16,6 +16,7 @@ void BLUEROV2_DOB_CTRL::ctrl_config(ros::NodeHandle& nh)
     // Initialize MPC
     int create_status = 1;
     create_status = bluerov2_acados_create(mpc_capsule);
+    
     if (create_status != 0){
         ROS_INFO_STREAM("acados_create() returned status " << create_status << ". Exiting." << std::endl);
         exit(1);
@@ -86,6 +87,7 @@ void BLUEROV2_DOB_CTRL::pose_cb(const nav_msgs::Odometry::ConstPtr& odom)
 void BLUEROV2_DOB_CTRL::ref_cb(const airo_message::BlueRefPreview::ConstPtr& msg)
 {
     is_start = true;
+    got_path = true;
     ref_traj = *msg;
 }
 
@@ -93,6 +95,8 @@ void BLUEROV2_DOB_CTRL::mainspin_cb(const ros::TimerEvent& e)
 {
     if(is_start)
         solve();
+
+    got_path = false;
 }
 
 // solve MPC
@@ -104,6 +108,8 @@ void BLUEROV2_DOB_CTRL::solve()
     set_mpc_constraints();
 
     set_ref();
+
+    return;
 
     for (unsigned int i = 0; i <= BLUEROV2_N; i++)
     {
@@ -172,6 +178,8 @@ void BLUEROV2_DOB_CTRL::set_mpc_initial_state()
 
 void BLUEROV2_DOB_CTRL::set_mpc_constraints()
 {
+    std::cout<<"hi"<<std::endl;
+
     ocp_nlp_constraints_model_set(
         mpc_capsule->nlp_config,
         mpc_capsule->nlp_dims,
@@ -195,18 +203,18 @@ void BLUEROV2_DOB_CTRL::set_mpc_constraints()
     {
         if(COMPENSATE_D == false){
             // sub
-            // acados_param[i][0] = esti_disturb.disturb_x;
-            // acados_param[i][1] = esti_disturb.disturb_y;
-            // acados_param[i][2] = esti_disturb.disturb_x;
-            // acados_param[i][3] = esti_disturb.disturb_x;
+            acados_param[i][0] = 0; //esti_disturb.disturb_x;
+            acados_param[i][1] = 0; //esti_disturb.disturb_y;
+            acados_param[i][2] = 0; //esti_disturb.disturb_x;
+            acados_param[i][3] = 0; //esti_disturb.disturb_x;
         }
         else if(COMPENSATE_D == true){
 
             //! what is this
-            // acados_param[i][0] = esti_x(12)/compensate_coef;
-            // acados_param[i][1] = esti_x(13)/compensate_coef;
-            // acados_param[i][2] = esti_x(14)/rotor_constant;
-            // acados_param[i][3] = esti_x(17)/rotor_constant;  
+            acados_param[i][0] = 0; //esti_x(12)/compensate_coef;
+            acados_param[i][1] = 0; //esti_x(13)/compensate_coef;
+            acados_param[i][2] = 0; //esti_x(14)/rotor_constant;
+            acados_param[i][3] = 0; //esti_x(17)/rotor_constant;  
         }
         // added mass
         acados_param[i][4] = 1.7182;
@@ -231,6 +239,8 @@ void BLUEROV2_DOB_CTRL::set_mpc_constraints()
             BLUEROV2_NP
         );
     }
+
+    std::cout<<"hi"<<std::endl;
 }
 
 void BLUEROV2_DOB_CTRL::set_current_yaw_for_ctrl()
@@ -276,8 +286,113 @@ void BLUEROV2_DOB_CTRL::set_current_yaw_for_ctrl()
     yaw_sum = yaw_sum + yaw_diff;
 }
 
+
+void BLUEROV2_DOB_CTRL::set_ref()
+{
+    if(!got_path)
+    {
+        ROS_RED_STREAM("NO PATH!");
+
+        for(int i = 0; i <= BLUEROV2_N; i++)
+            convert_refmsg_2_acados(i, last_ref);
+        
+        return;
+    }
+
+    ROS_GREEN_STREAM("GOT PATH!");
+
+    // need to 
+    if(ref_traj.preview.size() != BLUEROV2_N + 1)
+        pc::pattyDebug("SIZE WRONG!");
+
+    for(int i = 0 ; i <= BLUEROV2_N; i++)
+        convert_refmsg_2_acados(i, ref_traj.preview[i]);
+    
+    set_last_ref();
+}
+
+void BLUEROV2_DOB_CTRL::set_last_ref()
+{
+    std_msgs::Header header_temp;
+    header_temp.frame_id = "world";
+    header_temp.stamp = ros::Time::now();
+
+    last_ref.ref_pos.x = vehicle_SE3_world.translation().x();
+    last_ref.ref_pos.y = vehicle_SE3_world.translation().y();
+    last_ref.ref_pos.z = vehicle_SE3_world.translation().z();
+
+    last_ref.ref_ang.x = vehicle_Euler.x();
+    last_ref.ref_ang.y = vehicle_Euler.y();
+    last_ref.ref_ang.z = vehicle_Euler.z();
+}
+
+void BLUEROV2_DOB_CTRL::convert_refmsg_2_acados(
+    const int i,
+    const airo_message::BlueRef ref_current
+)
+{
+    acados_in.yref[i][0] = ref_current.ref_pos.x;
+    acados_in.yref[i][1] = ref_current.ref_pos.y;
+    acados_in.yref[i][2] = ref_current.ref_pos.z;
+
+    acados_in.yref[i][3] = ref_current.ref_ang.x;
+    acados_in.yref[i][4] = ref_current.ref_ang.y;
+    acados_in.yref[i][5] = ref_current.ref_ang.z;
+
+    acados_in.yref[i][6] = ref_current.ref_twist.linear.x;
+    acados_in.yref[i][7] = ref_current.ref_twist.linear.y;
+    acados_in.yref[i][8] = ref_current.ref_twist.linear.z;
+
+    acados_in.yref[i][9] = ref_current.ref_twist.angular.x;
+    acados_in.yref[i][10] = ref_current.ref_twist.angular.y;
+    acados_in.yref[i][11] = ref_current.ref_twist.angular.z;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 void BLUEROV2_DOB_CTRL::misc_pub()
 {
+    // change into form of (-pi, pi)
+    if(sin(acados_in.yref[0][5]) >= 0)
+        yaw_ref = fmod(
+            acados_in.yref[0][5],
+            M_PI
+        );
+    
+    else
+        yaw_ref = -M_PI + fmod(
+            acados_in.yref[0][5],
+            M_PI
+        );
+
+
     // publish reference pose
     tf2::Quaternion quat;
     quat.setRPY(0, 0, yaw_ref);
@@ -324,17 +439,4 @@ void BLUEROV2_DOB_CTRL::misc_pub()
     control_input1_pub.publish(control_input1);
     control_input2_pub.publish(control_input2);
     control_input3_pub.publish(control_input3);
-}
-
-void BLUEROV2_DOB_CTRL::set_ref()
-{
-    //now reference
-    // change into form of (-pi, pi)
-    if(sin(acados_in.yref[0][5]) >= 0)
-    {
-        yaw_ref = fmod(acados_in.yref[0][5],M_PI);
-    }
-    else{
-        yaw_ref = -M_PI + fmod(acados_in.yref[0][5],M_PI);
-    }
 }

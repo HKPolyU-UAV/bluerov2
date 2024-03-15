@@ -163,8 +163,10 @@ class BLUEROV2_DOB_CTRL : private RosUtilities
         ros::Timer mainspin_timer;
 
         bool is_start;
+        bool got_path;
 
         airo_message::BlueRefPreview ref_traj;
+        airo_message::BlueRef last_ref;
 
         
         // config
@@ -175,6 +177,11 @@ class BLUEROV2_DOB_CTRL : private RosUtilities
         void solve();                                           // solve MPC
         void set_mpc_initial_state();
         void set_ref();
+        void convert_refmsg_2_acados(
+            const int i, 
+            const airo_message::BlueRef ref_current
+        );
+        void set_last_ref();
         void set_mpc_constraints();
         
         void set_current_yaw_for_ctrl();
