@@ -35,10 +35,10 @@
 #include "bluerov2_model/bluerov2_model.h"
 #include "acados_solver_bluerov2.h"
 
-#include "airo_message/ReferencePreview.h"
-#include "airo_message/Disturbance.h"
-
 #include "ros_utilities/ros_utilities.h"
+
+#include "airo_message/BlueRefPreview.h"
+#include "airo_message/Disturbance.h"
 
 using namespace Eigen;
 
@@ -144,6 +144,7 @@ class BLUEROV2_DOB_CTRL : private RosUtilities
         // ros subscriber & publisher
         ros::Subscriber pose_sub;
         ros::Subscriber disturb_esti_sub;
+        ros::Subscriber ref_sub;
 
         ros::Publisher thrust0_pub;
         ros::Publisher thrust1_pub;
@@ -163,6 +164,8 @@ class BLUEROV2_DOB_CTRL : private RosUtilities
 
         bool is_start;
 
+        airo_message::BlueRefPreview ref_traj;
+
         
         // config
         void ctrl_config(ros::NodeHandle& nh);
@@ -174,12 +177,12 @@ class BLUEROV2_DOB_CTRL : private RosUtilities
         void set_ref();
         void set_mpc_constraints();
         
-        double set_current_yaw_for_ctrl();
+        void set_current_yaw_for_ctrl();
         void misc_pub();
         
         // callbacks
         void pose_cb(const nav_msgs::Odometry::ConstPtr& msg);  // get current position
-        void ref_cb(const airo_message::ReferencePreview::ConstPtr& msg);
+        void ref_cb(const airo_message::BlueRefPreview::ConstPtr& msg);
         void mainspin_cb(const ros::TimerEvent& e);
 
         airo_message::Disturbance esti_disturb;

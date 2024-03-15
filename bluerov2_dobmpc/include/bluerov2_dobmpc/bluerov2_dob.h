@@ -88,7 +88,7 @@ class BLUEROV2_DOB{
             double p;
             double q;
             double r;
-        };
+    };
 
     struct acc{
         double x;

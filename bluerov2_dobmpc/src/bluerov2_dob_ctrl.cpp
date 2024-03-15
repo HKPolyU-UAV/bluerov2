@@ -34,16 +34,17 @@ void BLUEROV2_DOB_CTRL::ctrl_config(ros::NodeHandle& nh)
         acados_out.u0[i] = 0.0;
     for(unsigned int i=0; i < BLUEROV2_NX; i++) 
         acados_in.x0[i] = 0.0;
-
-    is_start = false;
 }
 
 void BLUEROV2_DOB_CTRL::communi_config(ros::NodeHandle& nh)
 {
     // odom subsriber 
     // topic name should be written with yaml
-    pose_sub = nh.subscribe<nav_msgs::Odometry>("/bluerov2/pose_gt", 20, &BLUEROV2_DOB_CTRL::pose_cb, this);
+    pose_sub = nh.subscribe<nav_msgs::Odometry>
+                ("/bluerov2/pose_gt", 20, &BLUEROV2_DOB_CTRL::pose_cb, this);
     // disturb_esti_sub = nh.subscribe<
+    ref_sub = nh.subscribe<airo_message::BlueRefPreview>
+                ("/ref_traj", 1, &BLUEROV2_DOB_CTRL::ref_cb, this);
 
     // ctrl pub
     thrust0_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/0/input",20);
@@ -71,29 +72,27 @@ void BLUEROV2_DOB_CTRL::communi_config(ros::NodeHandle& nh)
 
 void BLUEROV2_DOB_CTRL::pose_cb(const nav_msgs::Odometry::ConstPtr& odom)
 {
-    is_start = true;
-
     vehicle_SE3_world = posemsg_to_SE3(odom->pose.pose);
     vehicle_twist_world = twistmsg_to_velo(odom->twist.twist);
     
     vehicle_twist_body.head(3) = 
         vehicle_SE3_world.rotationMatrix().inverse() * vehicle_twist_world.head(3);
     vehicle_twist_body.tail(3) = 
-        Jacobi3d(vehicle_SE3_world).inverse() * vehicle_twist_world.tail(3);
+        Jacobi3dR(vehicle_SE3_world).inverse() * vehicle_twist_world.tail(3);
 
     vehicle_Euler = q2rpy(vehicle_SE3_world.unit_quaternion());
 }
 
-void BLUEROV2_DOB_CTRL::ref_cb(const airo_message::ReferencePreview::ConstPtr& msg)
+void BLUEROV2_DOB_CTRL::ref_cb(const airo_message::BlueRefPreview::ConstPtr& msg)
 {
-    
-
-    
+    is_start = true;
+    ref_traj = *msg;
 }
 
 void BLUEROV2_DOB_CTRL::mainspin_cb(const ros::TimerEvent& e)
 {
-    solve();
+    if(is_start)
+        solve();
 }
 
 // solve MPC
@@ -104,18 +103,7 @@ void BLUEROV2_DOB_CTRL::solve()
     set_mpc_initial_state();
     set_mpc_constraints();
 
-    //now reference
-    // change into form of (-pi, pi)
-    if(sin(acados_in.yref[0][5]) >= 0)
-    {
-        yaw_ref = fmod(acados_in.yref[0][5],M_PI);
-    }
-    else{
-        yaw_ref = -M_PI + fmod(acados_in.yref[0][5],M_PI);
-    }
-
-    // set reference!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    // ref_cb(line_number); 
+    set_ref();
 
     for (unsigned int i = 0; i <= BLUEROV2_N; i++)
     {
@@ -163,6 +151,7 @@ void BLUEROV2_DOB_CTRL::solve()
 
 void BLUEROV2_DOB_CTRL::set_mpc_initial_state()
 {
+    set_current_yaw_for_ctrl();
     // set initial states (current state)
     acados_in.x0[s_x] = vehicle_SE3_world.translation().x();
     acados_in.x0[s_y] = vehicle_SE3_world.translation().y();
@@ -244,7 +233,7 @@ void BLUEROV2_DOB_CTRL::set_mpc_constraints()
     }
 }
 
-double BLUEROV2_DOB_CTRL::set_current_yaw_for_ctrl()
+void BLUEROV2_DOB_CTRL::set_current_yaw_for_ctrl()
 {
     double psi;
 
@@ -285,8 +274,6 @@ double BLUEROV2_DOB_CTRL::set_current_yaw_for_ctrl()
     pre_yaw = psi;
 
     yaw_sum = yaw_sum + yaw_diff;
-
-    return yaw_sum;
 }
 
 void BLUEROV2_DOB_CTRL::misc_pub()
@@ -337,4 +324,17 @@ void BLUEROV2_DOB_CTRL::misc_pub()
     control_input1_pub.publish(control_input1);
     control_input2_pub.publish(control_input2);
     control_input3_pub.publish(control_input3);
+}
+
+void BLUEROV2_DOB_CTRL::set_ref()
+{
+    //now reference
+    // change into form of (-pi, pi)
+    if(sin(acados_in.yref[0][5]) >= 0)
+    {
+        yaw_ref = fmod(acados_in.yref[0][5],M_PI);
+    }
+    else{
+        yaw_ref = -M_PI + fmod(acados_in.yref[0][5],M_PI);
+    }
 }

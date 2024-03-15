@@ -1,0 +1,1 @@
+ref_traj: "$(find bluerov2_path)/config/traj/circle.txt"
