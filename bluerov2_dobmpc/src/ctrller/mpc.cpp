@@ -1,10 +1,10 @@
-#include "bluerov2_dobmpc/bluerov2_dob_ctrl.h"
+#include "bluerov2_dobmpc/bluerov2_ctrl.h"
 
 
 // solve MPC
 // input: current pose, reference, parameter
 // output: thrust<0-5>
-void BLUEROV2_DOB_CTRL::mpc_solve()
+void BLUEROV2_CTRL::mpc_solve()
 {
     set_mpc_initial_state();
     set_mpc_constraints();
@@ -52,7 +52,7 @@ void BLUEROV2_DOB_CTRL::mpc_solve()
     misc_pub();
 }
 
-void BLUEROV2_DOB_CTRL::set_mpc_initial_state()
+void BLUEROV2_CTRL::set_mpc_initial_state()
 {
     set_current_yaw_for_ctrl();
     // set initial states (current state)
@@ -73,7 +73,7 @@ void BLUEROV2_DOB_CTRL::set_mpc_initial_state()
     acados_in.x0[s_r] = vehicle_twist_body(5);
 }
 
-void BLUEROV2_DOB_CTRL::set_mpc_constraints()
+void BLUEROV2_CTRL::set_mpc_constraints()
 {
     ocp_nlp_constraints_model_set(
         mpc_capsule->nlp_config,
@@ -112,7 +112,7 @@ void BLUEROV2_DOB_CTRL::set_mpc_constraints()
             acados_param[i][3] = 0; //esti_x(17)/rotor_constant;  
         }
 
-        
+
         // added mass
         acados_param[i][4] = 1.7182;
         acados_param[i][5] = 0;
@@ -139,7 +139,7 @@ void BLUEROV2_DOB_CTRL::set_mpc_constraints()
 }
 
 
-void BLUEROV2_DOB_CTRL::set_ref()
+void BLUEROV2_CTRL::set_ref()
 {
     if(!got_path)
     {
@@ -163,7 +163,7 @@ void BLUEROV2_DOB_CTRL::set_ref()
     set_last_ref();
 }
 
-void BLUEROV2_DOB_CTRL::set_last_ref()
+void BLUEROV2_CTRL::set_last_ref()
 {
     std_msgs::Header header_temp;
     header_temp.frame_id = "world";
@@ -178,7 +178,7 @@ void BLUEROV2_DOB_CTRL::set_last_ref()
     last_ref.ref_ang.z = vehicle_Euler.z();
 }
 
-void BLUEROV2_DOB_CTRL::convert_refmsg_2_acados(
+void BLUEROV2_CTRL::convert_refmsg_2_acados(
     const int i,
     const airo_message::BlueRef ref_current
 )

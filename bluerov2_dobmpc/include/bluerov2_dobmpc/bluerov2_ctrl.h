@@ -1,5 +1,5 @@
-#ifndef BLUEROV2_DOB_CTRL_H
-#define BLUEROV2_DOB_CTRL_H
+#ifndef BLUEROV2_CTRL_H
+#define BLUEROV2_CTRL_H
 
 #include <ros/ros.h>
 #include <tf/tf.h>
@@ -58,7 +58,7 @@ using namespace Eigen;
 #define MPC 0
 #define PID 1
 
-class BLUEROV2_DOB_CTRL : private RosUtilities
+class BLUEROV2_CTRL : private RosUtilities
 {
     private:
 
@@ -235,7 +235,7 @@ class BLUEROV2_DOB_CTRL : private RosUtilities
         
 
     public:
-        BLUEROV2_DOB_CTRL(ros::NodeHandle& nh);                         // constructor
+        BLUEROV2_CTRL(ros::NodeHandle& nh);                         // constructor
 
 };
 

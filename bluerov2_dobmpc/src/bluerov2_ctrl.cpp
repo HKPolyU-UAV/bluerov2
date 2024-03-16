@@ -1,19 +1,19 @@
-#include "bluerov2_dobmpc/bluerov2_dob_ctrl.h"
+#include "bluerov2_dobmpc/bluerov2_ctrl.h"
 
 // Initialize MPC
-BLUEROV2_DOB_CTRL::BLUEROV2_DOB_CTRL(ros::NodeHandle& nh)
+BLUEROV2_CTRL::BLUEROV2_CTRL(ros::NodeHandle& nh)
 {
     ctrl_config(nh);
     communi_config(nh);
 }
 
-void BLUEROV2_DOB_CTRL::ctrl_config(ros::NodeHandle& nh)
+void BLUEROV2_CTRL::ctrl_config(ros::NodeHandle& nh)
 {
     // read parameter
-    nh.getParam("/bluerov2_dob_ctrl_node/auto_yaw",AUTO_YAW);
-    nh.getParam("/bluerov2_dob_ctrl_node/compensate_d",COMPENSATE_D);
+    nh.getParam("/bluerov2_ctrl_node/auto_yaw",AUTO_YAW);
+    nh.getParam("/bluerov2_ctrl_node/compensate_d",COMPENSATE_D);
 
-    nh.getParam("/bluerov2_dob_ctrl_node/ctrl_type", ctrller_type);
+    nh.getParam("/bluerov2_ctrl_node/ctrl_type", ctrller_type);
 
     // Initialize MPC
     int create_status = 1;
@@ -39,15 +39,15 @@ void BLUEROV2_DOB_CTRL::ctrl_config(ros::NodeHandle& nh)
         acados_in.x0[i] = 0.0;
 }
 
-void BLUEROV2_DOB_CTRL::communi_config(ros::NodeHandle& nh)
+void BLUEROV2_CTRL::communi_config(ros::NodeHandle& nh)
 {
     // odom subsriber 
     // topic name should be written with yaml
     pose_sub = nh.subscribe<nav_msgs::Odometry>
-                ("/bluerov2/pose_gt", 20, &BLUEROV2_DOB_CTRL::pose_cb, this);
+                ("/bluerov2/pose_gt", 20, &BLUEROV2_CTRL::pose_cb, this);
     // disturb_esti_sub = nh.subscribe<
     ref_sub = nh.subscribe<airo_message::BlueRefPreview>
-                ("/ref_traj", 1, &BLUEROV2_DOB_CTRL::ref_cb, this);
+                ("/ref_traj", 1, &BLUEROV2_CTRL::ref_cb, this);
 
     // ctrl pub
     thrust0_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/0/input",20);
@@ -68,12 +68,12 @@ void BLUEROV2_DOB_CTRL::communi_config(ros::NodeHandle& nh)
     // timer
     mainspin_timer = nh.createTimer(
         ros::Duration(1.0 / 20.0),
-        &BLUEROV2_DOB_CTRL::mainspin_cb,
+        &BLUEROV2_CTRL::mainspin_cb,
         this
     );
 }
 
-void BLUEROV2_DOB_CTRL::pose_cb(const nav_msgs::Odometry::ConstPtr& odom)
+void BLUEROV2_CTRL::pose_cb(const nav_msgs::Odometry::ConstPtr& odom)
 {
     vehicle_SE3_world = posemsg_to_SE3(odom->pose.pose);
     vehicle_twist_world = twistmsg_to_velo(odom->twist.twist);
@@ -86,7 +86,7 @@ void BLUEROV2_DOB_CTRL::pose_cb(const nav_msgs::Odometry::ConstPtr& odom)
     vehicle_Euler = q2rpy(vehicle_SE3_world.unit_quaternion());
 }
 
-void BLUEROV2_DOB_CTRL::ref_cb(const airo_message::BlueRefPreview::ConstPtr& msg)
+void BLUEROV2_CTRL::ref_cb(const airo_message::BlueRefPreview::ConstPtr& msg)
 {
     is_start = true;
     got_path = true;
@@ -102,7 +102,7 @@ void BLUEROV2_DOB_CTRL::ref_cb(const airo_message::BlueRefPreview::ConstPtr& msg
     }
 }
 
-void BLUEROV2_DOB_CTRL::mainspin_cb(const ros::TimerEvent& e)
+void BLUEROV2_CTRL::mainspin_cb(const ros::TimerEvent& e)
 {
     if(!is_start)
         return;
@@ -124,7 +124,7 @@ void BLUEROV2_DOB_CTRL::mainspin_cb(const ros::TimerEvent& e)
     got_path = false;
 }
 
-void BLUEROV2_DOB_CTRL::set_current_yaw_for_ctrl()
+void BLUEROV2_CTRL::set_current_yaw_for_ctrl()
 {
     double psi = vehicle_Euler(2);
 
@@ -166,7 +166,7 @@ void BLUEROV2_DOB_CTRL::set_current_yaw_for_ctrl()
     yaw_sum = yaw_sum + yaw_diff;
 }
 
-void BLUEROV2_DOB_CTRL::ctrl_allocate(const SolverOutput& u_out)
+void BLUEROV2_CTRL::ctrl_allocate(const SolverOutput& u_out)
 {
     thrust0.data=(-u_out.u0[0]+u_out.u0[1]+u_out.u0[3])/rotor_constant;
     thrust1.data=(-u_out.u0[0]-u_out.u0[1]-u_out.u0[3])/rotor_constant;
@@ -198,7 +198,7 @@ void BLUEROV2_DOB_CTRL::ctrl_allocate(const SolverOutput& u_out)
 
 
 
-void BLUEROV2_DOB_CTRL::misc_pub()
+void BLUEROV2_CTRL::misc_pub()
 {
     // change into form of (-pi, pi)
     if(sin(acados_in.yref[0][5]) >= 0)

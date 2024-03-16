@@ -100,21 +100,21 @@ target_link_libraries(bluerov2_dob_node
 add_dependencies(bluerov2_dob_node uuv_gazebo_ros_plugins_msgs_generate_messages_cpp)
 
 ################################################################################################
-# bluerov2_dob_ctrl_node
-add_executable(bluerov2_dob_ctrl_node 
-  src/bluerov2_dob_ctrl_node.cpp
-  src/bluerov2_dob_ctrl.cpp
+# bluerov2_ctrl_node
+add_executable(bluerov2_ctrl_node 
+  src/bluerov2_ctrl_node.cpp
+  src/bluerov2_ctrl.cpp
   src/ctrller/mpc.cpp
   src/ctrller/pid.cpp
 )
 
-target_link_libraries(bluerov2_dob_ctrl_node
+target_link_libraries(bluerov2_ctrl_node
   ${bluerov2_model}/libacados_ocp_solver_bluerov2.so
   ${acados_lib}/libacados.so
   ${catkin_LIBRARIES}
 )
 
-add_dependencies(bluerov2_dob_ctrl_node 
+add_dependencies(bluerov2_ctrl_node 
   uuv_gazebo_ros_plugins_msgs_generate_messages_cpp
   airo_message_generate_messages_cpp
   ros_utilities

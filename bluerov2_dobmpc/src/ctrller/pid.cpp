@@ -1,12 +1,13 @@
-#include "bluerov2_dobmpc/bluerov2_dob_ctrl.h"
+#include "bluerov2_dobmpc/bluerov2_ctrl.h"
 
-void BLUEROV2_DOB_CTRL::pid_solve()
+void BLUEROV2_CTRL::pid_solve()
 {
     // set_pid_ref();
-    // set_pid_pose();
-    // pid_4D();
-    // ctrl_allocate();
 
+    pid_4D(
+        get_pid_ref(),
+        get_pid_pose()
+    );
 
     thrust0_pub.publish(thrust0);
     thrust1_pub.publish(thrust1);
@@ -18,7 +19,7 @@ void BLUEROV2_DOB_CTRL::pid_solve()
     misc_pub();
 }
 
-void BLUEROV2_DOB_CTRL::pid_4D(
+void BLUEROV2_CTRL::pid_4D(
     const Sophus::Vector4d& Ref,
     const Sophus::Vector4d& Pose
 )
@@ -42,7 +43,7 @@ void BLUEROV2_DOB_CTRL::pid_4D(
 
 };
 
-Sophus::Vector4d BLUEROV2_DOB_CTRL::get_pid_ref()
+Sophus::Vector4d BLUEROV2_CTRL::get_pid_ref()
 {
     return (
         Sophus::Vector4d() << 
@@ -53,7 +54,7 @@ Sophus::Vector4d BLUEROV2_DOB_CTRL::get_pid_ref()
     ).finished();
 }
 
-Sophus::Vector4d BLUEROV2_DOB_CTRL::get_pid_pose()
+Sophus::Vector4d BLUEROV2_CTRL::get_pid_pose()
 {
     set_current_yaw_for_ctrl();
 
