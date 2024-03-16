@@ -56,7 +56,8 @@ using namespace Eigen;
 #define s_r 11
 
 #define MPC 0
-#define PID 1
+#define DOMPC 1
+#define PID 2
 
 class BLUEROV2_CTRL : private RosUtilities
 {
@@ -151,7 +152,15 @@ class BLUEROV2_CTRL : private RosUtilities
         void misc_pub();
         double dt = 0.05;
 
+
+/*
+    Note that the below should be written into sub-classes.
+*/
 // MPC STUFF
+        void mpc_config(
+            bool hv_disrub,
+            ros::NodeHandle& nh
+        );
         // Acados variables
         SolverInput acados_in;
         SolverOutput acados_out;
@@ -205,6 +214,7 @@ class BLUEROV2_CTRL : private RosUtilities
         void set_mpc_constraints();
         
 // PID STUFF
+        void pid_config(ros::NodeHandle& nh);
         // pid
         void pid_solve();
         void pid_4D(

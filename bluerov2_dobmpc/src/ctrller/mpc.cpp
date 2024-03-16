@@ -4,6 +4,37 @@
 // solve MPC
 // input: current pose, reference, parameter
 // output: thrust<0-5>
+void BLUEROV2_CTRL::mpc_config(
+    bool hv_disrub,
+    ros::NodeHandle& nh
+)
+{
+    // Initialize MPC
+    int create_status = 1;
+    create_status = bluerov2_acados_create(mpc_capsule);
+    
+    if (create_status != 0){
+        ROS_INFO_STREAM("acados_create() returned status " << create_status << ". Exiting." << std::endl);
+        exit(1);
+    }
+
+    // propulsion matrix should be written with yaml
+    K << 0.7071067811847433, 0.7071067811847433, -0.7071067811919605, -0.7071067811919605, 0.0, 0.0,
+       0.7071067811883519, -0.7071067811883519, 0.7071067811811348, -0.7071067811811348, 0.0, 0.0,
+       0, 0, 0, 0, 1, 1,
+       0.051265241636155506, -0.05126524163615552, 0.05126524163563227, -0.05126524163563227, -0.11050000000000001, 0.11050000000000003,
+       -0.05126524163589389, -0.051265241635893896, 0.05126524163641713, 0.05126524163641713, -0.002499999999974481, -0.002499999999974481,
+       0.16652364696949604, -0.16652364696949604, -0.17500892834341342, 0.17500892834341342, 0.0, 0.0;
+   
+    // initialize
+    for(unsigned int i=0; i < BLUEROV2_NU; i++) 
+        acados_out.u0[i] = 0.0;
+    for(unsigned int i=0; i < BLUEROV2_NX; i++) 
+        acados_in.x0[i] = 0.0;
+
+    
+}
+
 void BLUEROV2_CTRL::mpc_solve()
 {
     set_mpc_initial_state();

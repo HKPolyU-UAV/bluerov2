@@ -12,31 +12,31 @@ void BLUEROV2_CTRL::ctrl_config(ros::NodeHandle& nh)
     // read parameter
     nh.getParam("/bluerov2_ctrl_node/auto_yaw",AUTO_YAW);
     nh.getParam("/bluerov2_ctrl_node/compensate_d",COMPENSATE_D);
+    nh.getParam("/bluerov2_ctrl_node/ctrller_type", ctrller_type);
 
-    nh.getParam("/bluerov2_ctrl_node/ctrl_type", ctrller_type);
+    switch (ctrller_type)
+    {
+    case MPC:
+        /* code */
+        ROS_GREEN_STREAM("MPC IN CHARGE!");
+        mpc_config(false, nh);
+        break;
 
-    // Initialize MPC
-    int create_status = 1;
-    create_status = bluerov2_acados_create(mpc_capsule);
+    case DOMPC:
+        ROS_GREEN_STREAM("DOMPC IN CHARGE!");
+        mpc_config(true, nh);
+        break;
     
-    if (create_status != 0){
-        ROS_INFO_STREAM("acados_create() returned status " << create_status << ". Exiting." << std::endl);
-        exit(1);
+    case PID:
+        /* code */
+        ROS_GREEN_STREAM("PID IN CHARGE!");
+        pid_config(nh);
+        break;
+    
+    default:
+        ROS_ERROR("CTRLLER TYPE WRONG!");
+        break;
     }
-
-    // propulsion matrix should be written with yaml
-    K << 0.7071067811847433, 0.7071067811847433, -0.7071067811919605, -0.7071067811919605, 0.0, 0.0,
-       0.7071067811883519, -0.7071067811883519, 0.7071067811811348, -0.7071067811811348, 0.0, 0.0,
-       0, 0, 0, 0, 1, 1,
-       0.051265241636155506, -0.05126524163615552, 0.05126524163563227, -0.05126524163563227, -0.11050000000000001, 0.11050000000000003,
-       -0.05126524163589389, -0.051265241635893896, 0.05126524163641713, 0.05126524163641713, -0.002499999999974481, -0.002499999999974481,
-       0.16652364696949604, -0.16652364696949604, -0.17500892834341342, 0.17500892834341342, 0.0, 0.0;
-   
-    // initialize
-    for(unsigned int i=0; i < BLUEROV2_NU; i++) 
-        acados_out.u0[i] = 0.0;
-    for(unsigned int i=0; i < BLUEROV2_NX; i++) 
-        acados_in.x0[i] = 0.0;
 }
 
 void BLUEROV2_CTRL::communi_config(ros::NodeHandle& nh)

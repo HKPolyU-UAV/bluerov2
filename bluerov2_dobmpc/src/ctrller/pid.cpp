@@ -1,5 +1,36 @@
 #include "bluerov2_dobmpc/bluerov2_ctrl.h"
 
+
+
+void BLUEROV2_CTRL::pid_config(ros::NodeHandle& nh)
+{
+    using namespace std;
+
+    XmlRpc::XmlRpcValue Kp_list, Ki_list, Kd_list;
+
+    nh.getParam("/bluerov2_ctrl_node/Kp_list", Kp_list);
+    nh.getParam("/bluerov2_ctrl_node/Ki_list", Ki_list);
+    nh.getParam("/bluerov2_ctrl_node/Kd_list", Kd_list);
+
+    cout<<"FINISH LOADING!"<<endl;
+
+    std::ostringstream ostr;
+    std::istringstream istr;
+
+    cout<<Kp.size()<<endl;
+
+    for (int i = 0; i < 4; i++) {
+        Kp(i) = static_cast<double>(Kp_list[i]);
+        Ki(i) = static_cast<double>(Ki_list[i]);
+        Kd(i) = static_cast<double>(Kd_list[i]);
+    }
+
+    cout<<"Kp: "<<Kp<<endl<<endl;
+    cout<<"Ki: "<<Ki<<endl<<endl;
+    cout<<"Kd: "<<Kd<<endl<<endl;
+
+}
+
 void BLUEROV2_CTRL::pid_solve()
 {
     // set_pid_ref();
