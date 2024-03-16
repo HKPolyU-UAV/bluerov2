@@ -55,10 +55,14 @@ using namespace Eigen;
 #define s_q 10
 #define s_r 11
 
+#define MPC 0
+#define PID 1
+
 class BLUEROV2_DOB_CTRL : private RosUtilities
 {
     private:
 
+// GENERAL STUFF
         // solver-related datatype
         struct SolverInput{
             double x0[BLUEROV2_NX];
@@ -79,8 +83,6 @@ class BLUEROV2_DOB_CTRL : private RosUtilities
         uuv_gazebo_ros_plugins_msgs::FloatStamped thrust4;
         uuv_gazebo_ros_plugins_msgs::FloatStamped thrust5;
 
-        
-
         nav_msgs::Odometry ref_pose;
         nav_msgs::Odometry error_pose;
         nav_msgs::Odometry esti_pose;
@@ -89,49 +91,6 @@ class BLUEROV2_DOB_CTRL : private RosUtilities
         uuv_gazebo_ros_plugins_msgs::FloatStamped control_input1;
         uuv_gazebo_ros_plugins_msgs::FloatStamped control_input2;
         uuv_gazebo_ros_plugins_msgs::FloatStamped control_input3;
-
-        // Acados variables
-        SolverInput acados_in;
-        SolverOutput acados_out;
-        double acados_param[BLUEROV2_N+1][BLUEROV2_NP];  // disturbances
-        int acados_status;   
-        bluerov2_solver_capsule * mpc_capsule = bluerov2_acados_create_capsule();
-
-        // dynamics parameters
-        // These should all be written into yaml file
-        double dt = 0.05;
-        double mass = 11.26;
-        double Ix = 0.3;
-        double Iy = 0.63;
-        double Iz = 0.58;
-        double ZG = 0.02;
-        double g = 9.81;
-        double bouyancy = 0.661618;
-        double compensate_coef = 0.032546960744430276;
-        double rotor_constant = 0.026546960744430276;
-        double added_mass[6] = {1.7182,0,5.468,0,1.2481,0.4006};
-        double Dl[6] = {-11.7391, -20, -31.8678, -25, -44.9085, -5};
-        double Dnl[6] = {-18.18,-21.66,-36.99,-1.55,-1.55,-1.55};
-        
-        Matrix<double,1,6> M_values;    
-        Matrix<double,6,6> M;           // mass matrix
-        Matrix<double,6,6> invM;        // inverse mass matrix
-        // Matrix<double,1,6> Dl_values;   
-        // Matrix<double,6,6> Dl;          // linear hydrodynamic damping force
-        Matrix<double,6,6> K;           // propulsion matrix
-        Matrix<double,6,1> KAu;         // vehicle's generated forces and moments
-        // Matrix<double,18,1> dx;
-        Matrix<double,3,1> v_linear_body;   // linear velocity in body frame
-        Matrix<double,3,1> v_angular_body;  // angular velocity in body frame
-        Matrix<double,3,3> R_ib;            // rotation matrix for linear from inertial to body frame
-        Matrix<double,3,3> T_ib;            // rotation matrix for angular from inertial to body frame
-
-        // Acados parameter
-
-        bool AUTO_YAW;
-        int READ_WRENCH;        // 0: periodic disturbance; 1: random disturbance; 2: read wrench from text
-        bool COMPENSATE_D;       // 0: no compensate; 1: compensate
-
 
         // weird yaw shit
         float yaw_sum = 0;      // yaw degree as continous number
@@ -165,16 +124,77 @@ class BLUEROV2_DOB_CTRL : private RosUtilities
         bool is_start;
         bool got_path;
 
-        airo_message::BlueRefPreview ref_traj;
-        airo_message::BlueRef last_ref;
+        // general control
+        int ctrller_type;
+        void set_current_yaw_for_ctrl();
+        void ctrl_allocate(const SolverOutput& u_out);
 
+        airo_message::BlueRefPreview ref_traj;
+        airo_message::BlueRef ref_single_pt;
+        airo_message::BlueRef last_ref;
         
         // config
         void ctrl_config(ros::NodeHandle& nh);
         void communi_config(ros::NodeHandle& nh);
 
-        // ctrller main loop
-        void solve();                                           // solve MPC
+        // callbacks
+        void pose_cb(const nav_msgs::Odometry::ConstPtr& msg);  // get current position
+        void ref_cb(const airo_message::BlueRefPreview::ConstPtr& msg);
+        void mainspin_cb(const ros::TimerEvent& e);
+
+        // vehicle states
+        Sophus::SE3d vehicle_SE3_world;
+        Sophus::Vector6d vehicle_twist_world;
+        Sophus::Vector6d vehicle_twist_body;
+        Eigen::Vector3d vehicle_Euler;
+
+        void misc_pub();
+        double dt = 0.05;
+
+// MPC STUFF
+        // Acados variables
+        SolverInput acados_in;
+        SolverOutput acados_out;
+        double acados_param[BLUEROV2_N+1][BLUEROV2_NP];  // disturbances
+        int acados_status;   
+        bluerov2_solver_capsule * mpc_capsule = bluerov2_acados_create_capsule();
+
+        // dynamics parameters
+        // These should all be written into yaml file
+        
+        double mass = 11.26;
+        double Ix = 0.3;
+        double Iy = 0.63;
+        double Iz = 0.58;
+        double ZG = 0.02;
+        double g = 9.81;
+        double bouyancy = 0.661618;
+        double compensate_coef = 0.032546960744430276;
+        double rotor_constant = 0.026546960744430276;
+        double added_mass[6] = {1.7182,0,5.468,0,1.2481,0.4006};
+        double Dl[6] = {-11.7391, -20, -31.8678, -25, -44.9085, -5};
+        double Dnl[6] = {-18.18,-21.66,-36.99,-1.55,-1.55,-1.55};
+        
+        Matrix<double,1,6> M_values;    
+        Matrix<double,6,6> M;           // mass matrix
+        Matrix<double,6,6> invM;        // inverse mass matrix
+        // Matrix<double,1,6> Dl_values;   
+        // Matrix<double,6,6> Dl;          // linear hydrodynamic damping force
+        Matrix<double,6,6> K;           // propulsion matrix
+        Matrix<double,6,1> KAu;         // vehicle's generated forces and moments
+        // Matrix<double,18,1> dx;
+        Matrix<double,3,1> v_linear_body;   // linear velocity in body frame
+        Matrix<double,3,1> v_angular_body;  // angular velocity in body frame
+        Matrix<double,3,3> R_ib;            // rotation matrix for linear from inertial to body frame
+        Matrix<double,3,3> T_ib;            // rotation matrix for angular from inertial to body frame
+
+        // Acados parameter
+        bool AUTO_YAW;
+        int READ_WRENCH;        // 0: periodic disturbance; 1: random disturbance; 2: read wrench from text
+        bool COMPENSATE_D;       // 0: no compensate; 1: compensate
+
+        // mpc
+        void mpc_solve();                                           // solve MPC
         void set_mpc_initial_state();
         void set_ref();
         void convert_refmsg_2_acados(
@@ -184,21 +204,35 @@ class BLUEROV2_DOB_CTRL : private RosUtilities
         void set_last_ref();
         void set_mpc_constraints();
         
-        void set_current_yaw_for_ctrl();
-        void misc_pub();
-        
-        // callbacks
-        void pose_cb(const nav_msgs::Odometry::ConstPtr& msg);  // get current position
-        void ref_cb(const airo_message::BlueRefPreview::ConstPtr& msg);
-        void mainspin_cb(const ros::TimerEvent& e);
+// PID STUFF
+        // pid
+        void pid_solve();
+        void pid_4D(
+            const Sophus::Vector4d& ref,
+            const Sophus::Vector4d& current
+        );
 
+        SolverOutput pid_out;
+
+        // Ks
+        Sophus::Vector4d Kp, Ki, Kd;
+    
+        Sophus::Vector4d Error;
+        Sophus::Vector4d Derivative;
+        Sophus::Vector4d Integral;
+        Sophus::Vector4d prevError;
+
+        Sophus::Vector4d get_pid_ref();
+        Sophus::Vector4d get_pid_pose();
+        
+
+
+        
+
+// DISTURBANCE STUFF
         airo_message::Disturbance esti_disturb;
 
-        // vehicle states
-        Sophus::SE3d vehicle_SE3_world;
-        Sophus::Vector6d vehicle_twist_world;
-        Sophus::Vector6d vehicle_twist_body;
-        Eigen::Vector3d vehicle_Euler;
+        
 
     public:
         BLUEROV2_DOB_CTRL(ros::NodeHandle& nh);                         // constructor

@@ -1,10 +1,8 @@
 #include "bluerov2_path/bluerov2_path.h"
 
-
 BLUEROV2_PATH::BLUEROV2_PATH(ros::NodeHandle& nh)
-: _nh(nh)
 {
-    _nh.getParam("/bluerov2_path_node/ref_traj", REF_TRAJ);
+    nh.getParam("/bluerov2_path_node/ref_traj", REF_TRAJ);
     std::cout<<REF_TRAJ<<std::endl;
     const char * c = REF_TRAJ.c_str();
 
@@ -19,10 +17,12 @@ BLUEROV2_PATH::BLUEROV2_PATH(ros::NodeHandle& nh)
             << std::endl
         );
 
-    ref_pub = _nh.advertise<airo_message::BlueRefPreview>
+    ref_traj_pub = nh.advertise<airo_message::BlueRefPreview>
                 ("/ref_traj", 1);
+    ref_pt_pub = nh.advertise<uuv_control_msgs::TrajectoryPoint>
+                ("/bluerov2/reference",1);
 
-    mainspin_timer = _nh.createTimer(
+    mainspin_timer = nh.createTimer(
         ros::Duration(1.0/20.0),
         &BLUEROV2_PATH::mainspin_cb,
         this
@@ -40,6 +40,12 @@ void BLUEROV2_PATH::mainspin_cb(const ros::TimerEvent& e)
 
     read_N_pub(line_number);
     line_number++;
+
+    ref_point.pose.position.x = 10;
+    ref_point.pose.position.y = 0;
+    ref_point.pose.position.z = -20;
+
+    ref_pt_pub.publish(ref_point);
 }
 
 int BLUEROV2_PATH::readDataFromFile(const char* fileName, std::vector<std::vector<double>> &data)
@@ -108,7 +114,7 @@ void BLUEROV2_PATH::read_N_pub(int line_to_read)
     std::cout<<"TRAJ_SIZE: "<<ref_traj.preview.size()<<std::endl;
     std::cout<<"WHICH LINE: "<<line_to_read<<std::endl<<std::endl;;
 
-    ref_pub.publish(ref_traj);
+    ref_traj_pub.publish(ref_traj);
 }
 
 airo_message::BlueRef BLUEROV2_PATH::extract_ref_pt(const int no_of_line)

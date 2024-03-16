@@ -1,0 +1,8 @@
+<launch>
+    <arg name="use_ned_frame" default="false"/>
+    <include file="$(find bluerov2_control)/launch/rov_pid_controller.launch"> 
+        <arg name="uuv_name" value="bluerov2"/> 
+        <arg name="model_name" value="bluerov2"/> 
+        <arg name="use_ned_frame" value="$(arg use_ned_frame)"/> 
+    </include> 
+</launch>

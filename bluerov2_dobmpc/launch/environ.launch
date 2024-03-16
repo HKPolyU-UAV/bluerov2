@@ -1,0 +1,27 @@
+<launch>
+    <!-- Flag to start recoding a rosbag  -->
+    <arg name="record" default="false"/>
+    <!-- Initial position and heading of the vehicle (wrt Gazebo's inertial frame)  -->
+    <arg name="x" default="-2"/>
+    <arg name="y" default="0"/>
+    <arg name="z" default="-20"/>
+    <arg name="yaw" default="-1.570796"/>
+
+    <arg name="use_ned_frame" default="false"/>
+
+    <!-- Initialize the Gazebo world  -->
+    <include file="$(find bluerov2_description)/launch/ocean_waves.launch"/>
+
+    <!-- Add the BlueROV2 vehicle to the world  -->
+    <include file="$(find bluerov2_description)/launch/upload.launch">
+        <arg name="x" default="$(arg x)"/>
+        <arg name="y" default="$(arg y)"/>
+        <arg name="z" default="$(arg z)"/>
+        <arg name="yaw" default="$(arg yaw)"/>
+        <arg name="use_ned_frame" value="$(arg use_ned_frame)"/>
+    </include>   
+
+    <!-- Start RViz --> 
+    <!-- <node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find bluerov2_control)/rviz/bluerov2_control.rviz"/> -->
+    
+</launch>
