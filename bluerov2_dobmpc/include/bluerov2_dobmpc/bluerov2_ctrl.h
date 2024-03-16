@@ -141,6 +141,7 @@ class BLUEROV2_CTRL : private RosUtilities
         // callbacks
         void pose_cb(const nav_msgs::Odometry::ConstPtr& msg);  // get current position
         void ref_cb(const airo_message::BlueRefPreview::ConstPtr& msg);
+        void dist_cb(const airo_message::Disturbance::ConstPtr &msg);
         void mainspin_cb(const ros::TimerEvent& e);
 
         // vehicle states

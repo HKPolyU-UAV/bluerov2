@@ -1,4 +1,3 @@
-#include <ros/ros.h>
 #include "bluerov2_dobmpc/bluerov2_ctrl.h"
 
 int main(int argc, char **argv)
@@ -10,7 +9,6 @@ int main(int argc, char **argv)
     BLUEROV2_CTRL br(nh);
 
     ros::spin();
-
 
     return 0;
 }

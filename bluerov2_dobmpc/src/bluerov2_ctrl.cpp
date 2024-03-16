@@ -45,9 +45,12 @@ void BLUEROV2_CTRL::communi_config(ros::NodeHandle& nh)
     // topic name should be written with yaml
     pose_sub = nh.subscribe<nav_msgs::Odometry>
                 ("/bluerov2/pose_gt", 20, &BLUEROV2_CTRL::pose_cb, this);
-    // disturb_esti_sub = nh.subscribe<
+    
     ref_sub = nh.subscribe<airo_message::BlueRefPreview>
                 ("/ref_traj", 1, &BLUEROV2_CTRL::ref_cb, this);
+
+    disturb_esti_sub = nh.subscribe<airo_message::Disturbance>
+                ("/disturbance", 1, &BLUEROV2_CTRL::dist_cb, this);
 
     // ctrl pub
     thrust0_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/0/input",20);
@@ -100,6 +103,11 @@ void BLUEROV2_CTRL::ref_cb(const airo_message::BlueRefPreview::ConstPtr& msg)
     {
         ref_single_pt = ref_traj.preview[0];
     }
+}
+
+void BLUEROV2_CTRL::dist_cb(const airo_message::Disturbance::ConstPtr& msg)
+{
+    esti_disturb = *msg;
 }
 
 void BLUEROV2_CTRL::mainspin_cb(const ros::TimerEvent& e)
