@@ -127,20 +127,19 @@ void BLUEROV2_CTRL::set_mpc_constraints()
     // set parameters
     for (int i = 0; i < BLUEROV2_N+1; i++)
     {
-        if(COMPENSATE_D == false){
-            // sub
+        if(COMPENSATE_D == false)
+        {
             acados_param[i][0] = 0; //esti_disturb.disturb_x;
             acados_param[i][1] = 0; //esti_disturb.disturb_y;
             acados_param[i][2] = 0; //esti_disturb.disturb_x;
             acados_param[i][3] = 0; //esti_disturb.disturb_x;
         }
-        else if(COMPENSATE_D == true){
-
-            //! what is this
-            acados_param[i][0] = 0; //esti_x(12)/compensate_coef;
-            acados_param[i][1] = 0; //esti_x(13)/compensate_coef;
-            acados_param[i][2] = 0; //esti_x(14)/rotor_constant;
-            acados_param[i][3] = 0; //esti_x(17)/rotor_constant;  
+        else if(COMPENSATE_D == true)
+        {
+            acados_param[i][0] = esti_disturb.disturb.linear.x; //esti_x(12)/compensate_coef;
+            acados_param[i][1] = esti_disturb.disturb.linear.y; //esti_x(13)/compensate_coef;
+            acados_param[i][2] = esti_disturb.disturb.linear.z; //esti_x(14)/rotor_constant;
+            acados_param[i][3] = esti_disturb.disturb.angular.z; //esti_x(17)/rotor_constant;  
         }
 
 
@@ -168,7 +167,6 @@ void BLUEROV2_CTRL::set_mpc_constraints()
         );
     }
 }
-
 
 void BLUEROV2_CTRL::set_ref()
 {
