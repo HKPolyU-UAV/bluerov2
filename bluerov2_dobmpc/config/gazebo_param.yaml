@@ -1,6 +1,6 @@
 auto_yaw: false
 read_wrench: 0
-compensate_d: true
+compensate_d: false
 ref_traj: /root/catkin_ws/src/bluerov2/bluerov2_mpc/traj/circle.txt
 applied_forcex: /root/catkin_ws/src/bluerov2/bluerov2_dobmpc/config/forcex.txt
 applied_forcey: /root/catkin_ws/src/bluerov2/bluerov2_dobmpc/config/forcey.txt

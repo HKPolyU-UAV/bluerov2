@@ -80,6 +80,8 @@ BLUEROV2_DOB::BLUEROV2_DOB(ros::NodeHandle& nh)
     thrust3_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/3/input",20);
     thrust4_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/4/input",20);
     thrust5_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/5/input",20);
+
+
     ref_pose_pub = nh.advertise<nav_msgs::Odometry>("/bluerov2/mpc/reference",20);
     error_pose_pub = nh.advertise<nav_msgs::Odometry>("/bluerov2/mpc/error",20);
     control_input0_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/control_input/0",20);
@@ -313,6 +315,7 @@ void BLUEROV2_DOB::solve(){
     acados_in.x0[p] = v_angular_body[0];
     acados_in.x0[q] = v_angular_body[1];
     acados_in.x0[r] = v_angular_body[2];
+
     ocp_nlp_constraints_model_set(mpc_capsule->nlp_config,mpc_capsule->nlp_dims,mpc_capsule->nlp_in, 0, "lbx", acados_in.x0);
     ocp_nlp_constraints_model_set(mpc_capsule->nlp_config,mpc_capsule->nlp_dims,mpc_capsule->nlp_in, 0, "ubx", acados_in.x0);
 
@@ -320,10 +323,10 @@ void BLUEROV2_DOB::solve(){
     for (int i = 0; i < BLUEROV2_N+1; i++)
     {
         if(COMPENSATE_D == false){
-            acados_param[i][0] = solver_param.disturbance_x;
-            acados_param[i][1] = solver_param.disturbance_y;
-            acados_param[i][2] = solver_param.disturbance_z;
-            acados_param[i][3] = solver_param.disturbance_psi;
+            acados_param[i][0] = 0;
+            acados_param[i][1] = 0;
+            acados_param[i][2] = 0;
+            acados_param[i][3] = 0;
         }
         else if(COMPENSATE_D == true){
             acados_param[i][0] = esti_x(12)/compensate_coef;
@@ -361,12 +364,15 @@ void BLUEROV2_DOB::solve(){
     // set reference
     ref_cb(line_number); 
     line_number++;
+
     for (unsigned int i = 0; i <= BLUEROV2_N; i++){
         ocp_nlp_cost_model_set(mpc_capsule->nlp_config, mpc_capsule->nlp_dims, mpc_capsule->nlp_in, i, "yref", acados_in.yref[i]);
     }
 
     // Solve OCP
     acados_status = bluerov2_acados_solve(mpc_capsule);
+
+    std::cout<<acados_status<<std::endl;
 
     if (acados_status != 0){
         ROS_INFO_STREAM("acados returned status " << acados_status << std::endl);

@@ -19,8 +19,6 @@ BLUEROV2_PATH::BLUEROV2_PATH(ros::NodeHandle& nh)
 
     ref_traj_pub = nh.advertise<airo_message::BlueRefPreview>
                 ("/ref_traj", 1);
-    ref_pt_pub = nh.advertise<geometry_msgs::PoseStamped>
-                ("/bluerov2/cmd_pose",1);
 
     mainspin_timer = nh.createTimer(
         ros::Duration(1.0/20.0),
@@ -40,15 +38,6 @@ void BLUEROV2_PATH::mainspin_cb(const ros::TimerEvent& e)
 
     read_N_pub(line_number);
     line_number++;
-
-    ref_point.header.frame_id = "world";
-    ref_point.header.stamp = ros::Time::now();
-    
-    ref_point.pose.position.x = -5;
-    ref_point.pose.position.y = -5;
-    ref_point.pose.position.z = -20;
-
-    ref_pt_pub.publish(ref_point);
 }
 
 int BLUEROV2_PATH::readDataFromFile(const char* fileName, std::vector<std::vector<double>> &data)
@@ -117,7 +106,7 @@ void BLUEROV2_PATH::read_N_pub(int line_to_read)
     std::cout<<"TRAJ_SIZE: "<<ref_traj.preview.size()<<std::endl;
     std::cout<<"WHICH LINE: "<<line_to_read<<std::endl<<std::endl;;
 
-    
+    ref_traj_pub.publish(ref_traj);
 }
 
 airo_message::BlueRef BLUEROV2_PATH::extract_ref_pt(const int no_of_line)

@@ -30,12 +30,6 @@ void BLUEROV2_CTRL::pid_config(ros::NodeHandle& nh)
         Kd(i) = static_cast<double>(Kd_list[i]);
     }
 
-    XmlRpc::XmlRpcValue starting_pt_list;
-    nh.getParam("/bluerov2_ctrl_node/starting_setpt", starting_pt_list);
-    for(int i = 0; i < 3; i++) 
-        starting_setpt(i) = static_cast<double>(starting_pt_list[i]);
-
-    cout<<starting_setpt<<endl;
 
     Error.setZero();
     Derivative.setZero();
@@ -45,10 +39,6 @@ void BLUEROV2_CTRL::pid_config(ros::NodeHandle& nh)
 
 void BLUEROV2_CTRL::pid_solve()
 {
-    // ref_traj_pub.publish(ref_traj);
-
-    // return;
-
     using namespace std;
 
     Sophus::Vector4d ref = get_pid_ref();

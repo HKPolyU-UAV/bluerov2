@@ -30,9 +30,11 @@ void BLUEROV2_CTRL::mpc_config(
     for(unsigned int i=0; i < BLUEROV2_NU; i++) 
         acados_out.u0[i] = 0.0;
     for(unsigned int i=0; i < BLUEROV2_NX; i++) 
-        acados_in.x0[i] = 0.0;
+        acados_in.x0[i] = 0.0; 
 
-    
+    if(hv_disrub)
+        disturb_esti_sub = nh.subscribe<airo_message::Disturbance>
+                ("/disturbance", 1, &BLUEROV2_CTRL::dist_cb, this);
 }
 
 void BLUEROV2_CTRL::mpc_solve()
@@ -41,8 +43,6 @@ void BLUEROV2_CTRL::mpc_solve()
     set_mpc_constraints();
 
     set_ref();
-
-    return;
 
     for (unsigned int i = 0; i <= BLUEROV2_N; i++)
     {
@@ -62,7 +62,11 @@ void BLUEROV2_CTRL::mpc_solve()
 
     if (acados_status != 0){
         ROS_INFO_STREAM("acados returned status " << acados_status << std::endl);
+        std::cout<<"EXIT!"<<std::endl;
+        return;
     }
+
+    ROS_GREEN_STREAM("SUCCEED!");
 
     acados_out.status = acados_status;
     acados_out.kkt_res = (double)mpc_capsule->nlp_out->inf_norm_res;
@@ -72,7 +76,7 @@ void BLUEROV2_CTRL::mpc_solve()
     ocp_nlp_out_get(mpc_capsule->nlp_config, mpc_capsule->nlp_dims, mpc_capsule->nlp_out, 0, "u", (void *)acados_out.u0);
     
     ctrl_allocate(acados_out);
-    
+
     thrust0_pub.publish(thrust0);
     thrust1_pub.publish(thrust1);
     thrust2_pub.publish(thrust2);
@@ -102,6 +106,13 @@ void BLUEROV2_CTRL::set_mpc_initial_state()
     acados_in.x0[s_p] = vehicle_twist_body(3);
     acados_in.x0[s_q] = vehicle_twist_body(4);
     acados_in.x0[s_r] = vehicle_twist_body(5);
+
+    std::cout<<"PASS TO ACADOS VALUE"<<std::endl;
+    for(auto what : acados_in.x0)
+    {
+        std::cout<<what<<std::endl;
+    }
+    std::cout<<std::endl;
 }
 
 void BLUEROV2_CTRL::set_mpc_constraints()
@@ -170,12 +181,25 @@ void BLUEROV2_CTRL::set_mpc_constraints()
 
 void BLUEROV2_CTRL::set_ref()
 {
+    // change into form of (-pi, pi)
+    if(sin(acados_in.yref[0][5]) >= 0)
+    {
+        yaw_ref = fmod(acados_in.yref[0][5],M_PI);
+    }
+    else{
+        yaw_ref = -M_PI + fmod(acados_in.yref[0][5],M_PI);
+    }
+
     if(!got_path)
     {
         ROS_RED_STREAM("NO PATH!");
 
         for(int i = 0; i <= BLUEROV2_N; i++)
             convert_refmsg_2_acados(i, last_ref);
+
+        std::cout<<last_ref.ref_pos.x<<std::endl;
+        std::cout<<last_ref.ref_pos.y<<std::endl;
+        std::cout<<last_ref.ref_pos.z<<std::endl;
         
         return;
     }
@@ -188,24 +212,8 @@ void BLUEROV2_CTRL::set_ref()
 
     for(int i = 0 ; i <= BLUEROV2_N; i++)
         convert_refmsg_2_acados(i, ref_traj.preview[i]);
-    
-    set_last_ref();
 }
 
-void BLUEROV2_CTRL::set_last_ref()
-{
-    std_msgs::Header header_temp;
-    header_temp.frame_id = "world";
-    header_temp.stamp = ros::Time::now();
-
-    last_ref.ref_pos.x = vehicle_SE3_world.translation().x();
-    last_ref.ref_pos.y = vehicle_SE3_world.translation().y();
-    last_ref.ref_pos.z = vehicle_SE3_world.translation().z();
-
-    last_ref.ref_ang.x = vehicle_Euler.x();
-    last_ref.ref_ang.y = vehicle_Euler.y();
-    last_ref.ref_ang.z = vehicle_Euler.z();
-}
 
 void BLUEROV2_CTRL::convert_refmsg_2_acados(
     const int i,

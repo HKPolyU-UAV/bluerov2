@@ -20,11 +20,8 @@ class BLUEROV2_PATH
         int number_of_steps = 0;
 
         airo_message::BlueRefPreview ref_traj;
-        geometry_msgs::PoseStamped ref_point;
 
         ros::Publisher ref_traj_pub;
-        ros::Publisher ref_pt_pub;
-        // ros::Subs
         ros::Timer mainspin_timer;
 
         void mainspin_cb(const ros::TimerEvent& e);

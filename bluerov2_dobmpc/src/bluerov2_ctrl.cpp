@@ -16,6 +16,17 @@ void BLUEROV2_CTRL::ctrl_config(ros::NodeHandle& nh)
     nh.getParam("/bluerov2_ctrl_node/compensate_d",COMPENSATE_D);
     nh.getParam("/bluerov2_ctrl_node/ctrller_type", ctrller_type);
 
+    XmlRpc::XmlRpcValue starting_pt_list;
+    nh.getParam("/bluerov2_ctrl_node/starting_setpt", starting_pt_list);
+    for(int i = 0; i < 3; i++) 
+        starting_setpt(i) = static_cast<double>(starting_pt_list[i]);
+
+    // cout<<starting_setpt<<endl;
+
+    last_ref.ref_pos.x = starting_setpt.x();
+    last_ref.ref_pos.y = starting_setpt.y();
+    last_ref.ref_pos.z = starting_setpt.z();
+
     switch (ctrller_type)
     {
     case MPC:
@@ -50,9 +61,6 @@ void BLUEROV2_CTRL::communi_config(ros::NodeHandle& nh)
     
     ref_sub = nh.subscribe<airo_message::BlueRefPreview>
                 ("/ref_traj", 1, &BLUEROV2_CTRL::ref_cb, this);
-
-    disturb_esti_sub = nh.subscribe<airo_message::Disturbance>
-                ("/disturbance", 1, &BLUEROV2_CTRL::dist_cb, this);
 
     // ctrl pub
     thrust0_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/0/input",20);
@@ -94,6 +102,10 @@ void BLUEROV2_CTRL::pose_cb(const nav_msgs::Odometry::ConstPtr& odom)
 
 void BLUEROV2_CTRL::ref_cb(const airo_message::BlueRefPreview::ConstPtr& msg)
 {
+    using namespace std;
+
+    cout<<"hi"<<endl;
+
     got_path = true;
     ref_traj = *msg;
 
@@ -120,14 +132,22 @@ void BLUEROV2_CTRL::mainspin_cb(const ros::TimerEvent& e)
     if(!got_path)
     {
         ROS_WARN("NO PATH");
-        ref_single_pt.ref_pos.x = starting_setpt.x();
-        ref_single_pt.ref_pos.y = starting_setpt.y();
-        ref_single_pt.ref_pos.z = starting_setpt.z();
+        ref_single_pt.ref_pos.x = last_ref.ref_pos.x;
+        ref_single_pt.ref_pos.y = last_ref.ref_pos.y;
+        ref_single_pt.ref_pos.z = last_ref.ref_pos.z;
     }
+    else
+        set_last_ref();
 
     switch (ctrller_type)
     {
-    case MPC || DOMPC:
+    case MPC:
+        ROS_GREEN_STREAM("MPC HERE");
+        mpc_solve();
+        break;
+
+    case DOMPC:
+        ROS_GREEN_STREAM("DOMPC HERE");
         mpc_solve();
         break;
     
@@ -139,8 +159,25 @@ void BLUEROV2_CTRL::mainspin_cb(const ros::TimerEvent& e)
     default:
         break;
     }
+        
+    // got_path = false;
+    
+}
 
-    got_path = false;
+
+void BLUEROV2_CTRL::set_last_ref()
+{
+    std_msgs::Header header_temp;
+    header_temp.frame_id = "world";
+    header_temp.stamp = ros::Time::now();
+
+    last_ref.ref_pos.x = vehicle_SE3_world.translation().x();
+    last_ref.ref_pos.y = vehicle_SE3_world.translation().y();
+    last_ref.ref_pos.z = vehicle_SE3_world.translation().z();
+
+    last_ref.ref_ang.x = 0;
+    last_ref.ref_ang.y = 0;
+    last_ref.ref_ang.z = 0;
 }
 
 void BLUEROV2_CTRL::set_current_yaw_for_ctrl()
@@ -202,17 +239,17 @@ void BLUEROV2_CTRL::ctrl_allocate(const SolverOutput& u_out)
     cout<<endl;
 
     thrust0.data=(-u_out.u0[0] + u_out.u0[1] + u_out.u0[3]) / rotor_constant;
-    // cout<<thrust0.data<<endl;
+    cout<<thrust0.data<<endl;
     thrust1.data=(-u_out.u0[0] - u_out.u0[1] - u_out.u0[3]) / rotor_constant;
-    // cout<<thrust1.data<<endl;
+    cout<<thrust1.data<<endl;
     thrust2.data=(u_out.u0[0] + u_out.u0[1] - u_out.u0[3]) / rotor_constant;
-    // cout<<thrust2.data<<endl;
+    cout<<thrust2.data<<endl;
     thrust3.data=(u_out.u0[0] - u_out.u0[1] + u_out.u0[3]) / rotor_constant;
-    // cout<<thrust3.data<<endl;
-    thrust4.data=(u_out.u0[2]) / rotor_constant;
-    // cout<<thrust4.data<<endl;
-    thrust5.data=(u_out.u0[2]) / rotor_constant;
-    // cout<<thrust5.data<<endl;
+    cout<<thrust3.data<<endl;
+    thrust4.data=(-u_out.u0[2]) / rotor_constant;
+    cout<<thrust4.data<<endl;
+    thrust5.data=(-u_out.u0[2]) / rotor_constant;
+    cout<<thrust5.data<<endl;
 
     // why thrust 4 and 5 (+-) are different when applying pid or mpc
 }
@@ -241,18 +278,18 @@ void BLUEROV2_CTRL::ctrl_allocate(const SolverOutput& u_out)
 
 void BLUEROV2_CTRL::misc_pub()
 {
-    // change into form of (-pi, pi)
-    if(sin(acados_in.yref[0][5]) >= 0)
-        yaw_ref = fmod(
-            acados_in.yref[0][5],
-            M_PI
-        );
+    // // change into form of (-pi, pi)
+    // if(sin(acados_in.yref[0][5]) >= 0)
+    //     yaw_ref = fmod(
+    //         acados_in.yref[0][5],
+    //         M_PI
+    //     );
     
-    else
-        yaw_ref = -M_PI + fmod(
-            acados_in.yref[0][5],
-            M_PI
-        );
+    // else
+    //     yaw_ref = -M_PI + fmod(
+    //         acados_in.yref[0][5],
+    //         M_PI
+    //     );
 
 
     // publish reference pose
