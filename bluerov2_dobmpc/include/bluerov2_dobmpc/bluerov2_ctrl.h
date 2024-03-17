@@ -15,6 +15,8 @@
 #include <gazebo_msgs/ApplyBodyWrench.h>
 #include <gazebo_msgs/LinkState.h>
 
+#include <geometry_msgs/Wrench.h>
+
 #include <iostream>
 #include <fstream>
 #include <cmath>
@@ -120,6 +122,7 @@ class BLUEROV2_CTRL : private RosUtilities
         ros::Publisher control_input1_pub;
         ros::Publisher control_input2_pub;
         ros::Publisher control_input3_pub;
+
         ros::Timer mainspin_timer;
 
         bool is_start;
@@ -223,6 +226,8 @@ class BLUEROV2_CTRL : private RosUtilities
             const Sophus::Vector4d& current
         );
 
+        Eigen::Vector3d starting_setpt;
+
         SolverOutput pid_out;
 
         // Ks
@@ -235,6 +240,9 @@ class BLUEROV2_CTRL : private RosUtilities
 
         Sophus::Vector4d get_pid_ref();
         Sophus::Vector4d get_pid_pose();
+
+        ros::Publisher control_input_pub;
+        geometry_msgs::Wrench control_input_to_thrust;
         
 
 

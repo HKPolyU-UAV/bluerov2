@@ -1,4 +1,6 @@
 #include "bluerov2_dobmpc/bluerov2_ctrl.h"
+#include <cmath>
+
 
 // Initialize MPC
 BLUEROV2_CTRL::BLUEROV2_CTRL(ros::NodeHandle& nh)
@@ -78,6 +80,7 @@ void BLUEROV2_CTRL::communi_config(ros::NodeHandle& nh)
 
 void BLUEROV2_CTRL::pose_cb(const nav_msgs::Odometry::ConstPtr& odom)
 {
+    is_start = true;
     vehicle_SE3_world = posemsg_to_SE3(odom->pose.pose);
     vehicle_twist_world = twistmsg_to_velo(odom->twist.twist);
     
@@ -91,7 +94,6 @@ void BLUEROV2_CTRL::pose_cb(const nav_msgs::Odometry::ConstPtr& odom)
 
 void BLUEROV2_CTRL::ref_cb(const airo_message::BlueRefPreview::ConstPtr& msg)
 {
-    is_start = true;
     got_path = true;
     ref_traj = *msg;
 
@@ -115,13 +117,22 @@ void BLUEROV2_CTRL::mainspin_cb(const ros::TimerEvent& e)
     if(!is_start)
         return;
 
+    if(!got_path)
+    {
+        ROS_WARN("NO PATH");
+        ref_single_pt.ref_pos.x = starting_setpt.x();
+        ref_single_pt.ref_pos.y = starting_setpt.y();
+        ref_single_pt.ref_pos.z = starting_setpt.z();
+    }
+
     switch (ctrller_type)
     {
-    case MPC:
+    case MPC || DOMPC:
         mpc_solve();
         break;
     
     case PID:
+        ROS_GREEN_STREAM("PID HERE");
         pid_solve();
         break;
 
@@ -176,12 +187,34 @@ void BLUEROV2_CTRL::set_current_yaw_for_ctrl()
 
 void BLUEROV2_CTRL::ctrl_allocate(const SolverOutput& u_out)
 {
-    thrust0.data=(-u_out.u0[0]+u_out.u0[1]+u_out.u0[3])/rotor_constant;
-    thrust1.data=(-u_out.u0[0]-u_out.u0[1]-u_out.u0[3])/rotor_constant;
-    thrust2.data=(u_out.u0[0]+u_out.u0[1]-u_out.u0[3])/rotor_constant;
-    thrust3.data=(u_out.u0[0]-u_out.u0[1]+u_out.u0[3])/rotor_constant;
-    thrust4.data=(-u_out.u0[2])/rotor_constant;
-    thrust5.data=(-u_out.u0[2])/rotor_constant;
+    using namespace std;
+    cout<<"within allocation"<<endl;
+    for(auto what : u_out.u0)
+    {
+        cout<<what<<endl;
+        if(isnan(what))
+        {
+            ROS_ERROR("SOVLER WRONG!");
+            return;
+        }
+    }
+
+    cout<<endl;
+
+    thrust0.data=(-u_out.u0[0] + u_out.u0[1] + u_out.u0[3]) / rotor_constant;
+    // cout<<thrust0.data<<endl;
+    thrust1.data=(-u_out.u0[0] - u_out.u0[1] - u_out.u0[3]) / rotor_constant;
+    // cout<<thrust1.data<<endl;
+    thrust2.data=(u_out.u0[0] + u_out.u0[1] - u_out.u0[3]) / rotor_constant;
+    // cout<<thrust2.data<<endl;
+    thrust3.data=(u_out.u0[0] - u_out.u0[1] + u_out.u0[3]) / rotor_constant;
+    // cout<<thrust3.data<<endl;
+    thrust4.data=(u_out.u0[2]) / rotor_constant;
+    // cout<<thrust4.data<<endl;
+    thrust5.data=(u_out.u0[2]) / rotor_constant;
+    // cout<<thrust5.data<<endl;
+
+    // why thrust 4 and 5 (+-) are different when applying pid or mpc
 }
 
 

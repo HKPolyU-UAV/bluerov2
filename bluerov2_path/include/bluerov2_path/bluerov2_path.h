@@ -20,7 +20,7 @@ class BLUEROV2_PATH
         int number_of_steps = 0;
 
         airo_message::BlueRefPreview ref_traj;
-        uuv_control_msgs::TrajectoryPoint ref_point;
+        geometry_msgs::PoseStamped ref_point;
 
         ros::Publisher ref_traj_pub;
         ros::Publisher ref_pt_pub;
