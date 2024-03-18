@@ -26,8 +26,6 @@
 #ifndef IMU_DO_H
 #define IMU_DO_H
 
-#include "essential.h"
-
 #include <sophus/se3.hpp>
 
 #include <pluginlib/class_list_macros.h>

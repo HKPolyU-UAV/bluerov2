@@ -23,7 +23,7 @@
  * \brief source file for imu_based OD
  */
 
-#include "../include/ImuDo.h"
+#include "bluerov2_states/ImuDo.h"
 
 void bluerov2_states::ImuDoNodelet::ground_truth_callback(
     const nav_msgs::Odometry::ConstPtr& msg
