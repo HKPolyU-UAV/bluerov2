@@ -63,6 +63,7 @@ include_directories(
 ## ImuDo nodelet
 add_library(ImuDo
   src/ImuDo.cpp
+  src/Dynamics.cpp
 )
 
 ## Specify libraries to link a library or executable target against

@@ -26,42 +26,35 @@
 #ifndef IMU_DO_H
 #define IMU_DO_H
 
-#include <sophus/se3.hpp>
-
 #include <pluginlib/class_list_macros.h>
 #include <nodelet/nodelet.h>
 
 #include <pthread.h>
-#include <tf/tf.h>
 #include <boost/thread.hpp>
 
-#include <sensor_msgs/NavSatFix.h>
-#include <sensor_msgs/Imu.h>
-#include <nav_msgs/Odometry.h>
-
-#include <queue>
-#include <mutex>
 #include "airo_message/ReferencePreview.h"
 
 #include <ros_utilities/ros_utilities.h>
 
+#include "airo_message/Disturbance.h"
+
 // map definition for convinience
 #define COLOR_SUB_TOPIC CAMERA_SUB_TOPIC_A
 
-namespace bluerov2_states 
+namespace BLUEROV2_STATES 
 {
     typedef struct synced_data{
         bool empty;
         std::pair<std::vector<sensor_msgs::Imu::ConstPtr>, sensor_msgs::NavSatFix::ConstPtr> meas_data;
     }  synced_data;
 
-    class ImuDoNodelet : public nodelet::Nodelet
+    class ImuDoNodelet : public nodelet::Nodelet, private RosUtilities
     {
     private:
         nav_msgs::Odometry pose_gt;   
 
         ros::Subscriber gt_sub, imu_sub, gps_sub;
-        ros::Publisher update_pub, imu_pub;
+        ros::Publisher update_pub, imu_pub, esti_dist_pub;
         ros::Timer main_spin_timer;
 
         std::queue<sensor_msgs::Imu::ConstPtr> imu_buf, imu_calib_buf;
@@ -73,11 +66,15 @@ namespace bluerov2_states
         synced_data SyncMeas();
 
         std_msgs::Bool pub_data;
+
+        airo_message::Disturbance esti_dist;
         
         void ImuPredict();
         void EskfProcess();
         void predict();
         void update();
+
+        void DistRawMeas();
 
         bool tracking_start = false;
         double starting_time = 0;
@@ -90,37 +87,26 @@ namespace bluerov2_states
         void main_spin_callback(const ros::TimerEvent& e);
         bool initialization();
 
+        virtual void onInit();
 
-        virtual void onInit()
-        {
-            ros::NodeHandle& nh = getMTNodeHandle();
-            ROS_INFO("ImuDo Nodelet Initiated...");
+//      Dynamics.cpp
+        double mass = 11.26;
+        double added_mass[6] = {1.7182,0,5.468,0,1.2481,0.4006};
+        double Ix = 0.3;
+        double Iy = 0.63;
+        double Iz = 0.58;
+        double Dl[6] = {-11.7391, -20, -31.8678, -25, -44.9085, -5};
+        double Dnl[6] = {-18.18,-21.66,-36.99,-1.55,-1.55,-1.55};
+        double ZG = 0.02;
+        double bouyancy = 0.661618;
 
-            gt_sub = nh.subscribe<nav_msgs::Odometry>
-                        ("/bluerov2/pose_gt", 1, &ImuDoNodelet::ground_truth_callback, this);
-            
-            imu_sub = nh.subscribe<sensor_msgs::Imu>
-                        ("/bluerov2/imu", 1, &ImuDoNodelet::imu_callback, this);
-            
-            gps_sub = nh.subscribe<sensor_msgs::NavSatFix>
-                        ("/bluerov2/gps", 1, &ImuDoNodelet::gps_callback, this);
-
-            main_spin_timer = nh.createTimer(
-                ros::Duration(0.02), 
-                &ImuDoNodelet::main_spin_callback, 
-                this
-            );
-
-            update_pub = nh.advertise<std_msgs::Bool>
-                        ("/dummy_update", 1);
-            imu_pub = nh.advertise<std_msgs::Bool>
-                        ("/dummy_imu", 1);
-
-            starting_time = ros::Time::now().toSec();
-        };
+        void dynamics_parameter_config();
+        Eigen::MatrixXd dynamics_C(const Sophus::Vector6d& twist_B);
+        Eigen::MatrixXd dynamics_D(const Sophus::Vector6d& twist_B);
+        Eigen::MatrixXd dynamics_g(const Eigen::Vector3d& euler);
 
     };
-    PLUGINLIB_EXPORT_CLASS(bluerov2_states::ImuDoNodelet, nodelet::Nodelet)
+    PLUGINLIB_EXPORT_CLASS(BLUEROV2_STATES::ImuDoNodelet, nodelet::Nodelet)
 }
 
 #endif

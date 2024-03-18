@@ -1,6 +1,6 @@
 <library path="lib/libImuDo">
-    <class name ="bluerov2_states/ImuDoNodelet" 
-        type="bluerov2_states::ImuDoNodelet"
+    <class name ="BLUEROV2_STATES/ImuDoNodelet" 
+        type="BLUEROV2_STATES::ImuDoNodelet"
         base_class_type="nodelet::Nodelet">
         <description>
             Launch nodelet here. ImuDo it is.

@@ -62,6 +62,7 @@ void BLUEROV2_CTRL::mpc_solve()
 
     if (acados_status != 0){
         ROS_INFO_STREAM("acados returned status " << acados_status << std::endl);
+        patty::Debug("HOW THE FUCK?");
         std::cout<<"EXIT!"<<std::endl;
         return;
     }
@@ -103,16 +104,18 @@ void BLUEROV2_CTRL::set_mpc_initial_state()
     acados_in.x0[s_v] = vehicle_twist_body(1);
     acados_in.x0[s_w] = vehicle_twist_body(2);
 
+
     acados_in.x0[s_p] = vehicle_twist_body(3);
     acados_in.x0[s_q] = vehicle_twist_body(4);
     acados_in.x0[s_r] = vehicle_twist_body(5);
 
-    std::cout<<"PASS TO ACADOS VALUE"<<std::endl;
-    for(auto what : acados_in.x0)
-    {
-        std::cout<<what<<std::endl;
-    }
-    std::cout<<std::endl;
+    // std::cout<<"PASS TO ACADOS VALUE"<<std::endl;
+    // for(auto what : acados_in.x0)
+    // {
+    //     std::cout<<what<<std::endl;
+    // }
+    // std::cout<<std::endl;
+    // std::cout<<"ENDING PASS TO ACADOS VALUE"<<std::endl;
 }
 
 void BLUEROV2_CTRL::set_mpc_constraints()
@@ -181,6 +184,8 @@ void BLUEROV2_CTRL::set_mpc_constraints()
 
 void BLUEROV2_CTRL::set_ref()
 {
+    using namespace std;
+
     // change into form of (-pi, pi)
     if(sin(acados_in.yref[0][5]) >= 0)
     {
@@ -197,10 +202,6 @@ void BLUEROV2_CTRL::set_ref()
         for(int i = 0; i <= BLUEROV2_N; i++)
             convert_refmsg_2_acados(i, last_ref);
 
-        std::cout<<last_ref.ref_pos.x<<std::endl;
-        std::cout<<last_ref.ref_pos.y<<std::endl;
-        std::cout<<last_ref.ref_pos.z<<std::endl;
-        
         return;
     }
 
@@ -208,7 +209,7 @@ void BLUEROV2_CTRL::set_ref()
 
     // need to 
     if(ref_traj.preview.size() != BLUEROV2_N + 1)
-        pc::pattyDebug("SIZE WRONG!");
+        patty::Debug("SIZE WRONG!");
 
     for(int i = 0 ; i <= BLUEROV2_N; i++)
         convert_refmsg_2_acados(i, ref_traj.preview[i]);

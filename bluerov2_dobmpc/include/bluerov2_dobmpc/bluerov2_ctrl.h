@@ -156,6 +156,8 @@ class BLUEROV2_CTRL : private RosUtilities
         void misc_pub();
         double dt = 0.05;
 
+        void starting_pt_config(ros::NodeHandle& nh);
+
 
 /*
     Note that the below should be written into sub-classes.

@@ -1,21 +1,29 @@
 <?xml version="1.0"?>
 <launch>
+	<arg name="ctrller_type" value="2"/> 
+	<!-- mpc = 0; dompc = 1; pid = 2 -->
+
 	<arg name="uuv_name" value="bluerov2"/> 
 	<arg name="model_name" value="bluerov2"/> 
 	<arg name="use_ned_frame" value="false"/> 
 	<arg name="thruster_manager_output_dir" default="$(find bluerov2_control)/config"/>
 	<arg name="thruster_manager_config_file" default="$(find bluerov2_control)/config/thruster_manager.yaml"/>
 	<arg name="tam_file" default="$(find bluerov2_control)/config/TAM.yaml"/>
-	<include file="$(find uuv_thruster_manager)/launch/thruster_manager.launch">
-     <arg name="uuv_name" value="$(arg uuv_name)" />
-     <arg name="model_name" value="$(arg model_name)" />
-     <arg name="output_dir" value="$(arg thruster_manager_output_dir)" />
-     <arg name="config_file" value="$(arg thruster_manager_config_file)" />
-     <arg name="tam_file" value="$(arg tam_file)" />
-   </include>
+	
+	 <group if="$(eval arg('ctrller_type') == 2)">
+		<include file="$(find uuv_thruster_manager)/launch/thruster_manager.launch">
+			<arg name="uuv_name" value="$(arg uuv_name)" />
+			<arg name="model_name" value="$(arg model_name)" />
+			<arg name="output_dir" value="$(arg thruster_manager_output_dir)" />
+			<arg name="config_file" value="$(arg thruster_manager_config_file)" />
+			<arg name="tam_file" value="$(arg tam_file)" />
+		</include>
+  	</group>
+	
 
 	<node pkg="bluerov2_dobmpc" type="bluerov2_ctrl_node" name="bluerov2_ctrl_node" output="screen">
         <rosparam command="load" file="$(find bluerov2_dobmpc)/config/ctrl.yaml" />
+		<param name="ctrller_type" type="double" value="$(arg ctrller_type)" />
 	</node>
 
 </launch>

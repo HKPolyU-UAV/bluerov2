@@ -7,25 +7,15 @@ BLUEROV2_CTRL::BLUEROV2_CTRL(ros::NodeHandle& nh)
 {
     ctrl_config(nh);
     communi_config(nh);
+    starting_pt_config(nh);
 }
 
 void BLUEROV2_CTRL::ctrl_config(ros::NodeHandle& nh)
 {
     // read parameter
-    nh.getParam("/bluerov2_ctrl_node/auto_yaw",AUTO_YAW);
-    nh.getParam("/bluerov2_ctrl_node/compensate_d",COMPENSATE_D);
-    nh.getParam("/bluerov2_ctrl_node/ctrller_type", ctrller_type);
-
-    XmlRpc::XmlRpcValue starting_pt_list;
-    nh.getParam("/bluerov2_ctrl_node/starting_setpt", starting_pt_list);
-    for(int i = 0; i < 3; i++) 
-        starting_setpt(i) = static_cast<double>(starting_pt_list[i]);
-
-    // cout<<starting_setpt<<endl;
-
-    last_ref.ref_pos.x = starting_setpt.x();
-    last_ref.ref_pos.y = starting_setpt.y();
-    last_ref.ref_pos.z = starting_setpt.z();
+    nh.getParam("auto_yaw",AUTO_YAW);
+    nh.getParam("compensate_d",COMPENSATE_D);
+    nh.getParam("ctrller_type", ctrller_type);
 
     switch (ctrller_type)
     {
@@ -62,6 +52,14 @@ void BLUEROV2_CTRL::communi_config(ros::NodeHandle& nh)
     ref_sub = nh.subscribe<airo_message::BlueRefPreview>
                 ("/ref_traj", 1, &BLUEROV2_CTRL::ref_cb, this);
 
+    ros::Rate rate(10.0);
+    while(!is_start)
+    {
+        ROS_INFO("WAIT FOR POSE_CB!");
+        ros::spinOnce();
+        rate.sleep();
+    }
+
     // ctrl pub
     thrust0_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/0/input",20);
     thrust1_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/1/input",20);
@@ -86,6 +84,36 @@ void BLUEROV2_CTRL::communi_config(ros::NodeHandle& nh)
     );
 }
 
+void BLUEROV2_CTRL::starting_pt_config(ros::NodeHandle& nh)
+{
+    bool setpt_or_not;
+    nh.getParam("setpt", setpt_or_not);
+
+    if(setpt_or_not)
+    {
+        XmlRpc::XmlRpcValue starting_pt_list;
+        nh.getParam("/bluerov2_ctrl_node/starting_setpt", starting_pt_list);
+        for(int i = 0; i < 3; i++) 
+            starting_setpt(i) = static_cast<double>(starting_pt_list[i]);
+
+        last_ref.ref_pos.x = starting_setpt.x();
+        last_ref.ref_pos.y = starting_setpt.y();
+        last_ref.ref_pos.z = starting_setpt.z();
+        last_ref.ref_ang.x = 0;
+        last_ref.ref_ang.y = 0;
+        last_ref.ref_ang.z = 0;
+    }
+    else
+    {
+        last_ref.ref_pos.x = vehicle_SE3_world.translation().x();
+        last_ref.ref_pos.y = vehicle_SE3_world.translation().y();
+        last_ref.ref_pos.z = vehicle_SE3_world.translation().z();
+        last_ref.ref_ang.x = vehicle_Euler.x();
+        last_ref.ref_ang.y = vehicle_Euler.y();
+        last_ref.ref_ang.z = vehicle_Euler.z();
+    }
+}
+
 void BLUEROV2_CTRL::pose_cb(const nav_msgs::Odometry::ConstPtr& odom)
 {
     is_start = true;
@@ -102,10 +130,6 @@ void BLUEROV2_CTRL::pose_cb(const nav_msgs::Odometry::ConstPtr& odom)
 
 void BLUEROV2_CTRL::ref_cb(const airo_message::BlueRefPreview::ConstPtr& msg)
 {
-    using namespace std;
-
-    cout<<"hi"<<endl;
-
     got_path = true;
     ref_traj = *msg;
 
@@ -179,7 +203,7 @@ void BLUEROV2_CTRL::set_last_ref()
 
 void BLUEROV2_CTRL::set_current_yaw_for_ctrl()
 {
-    double psi = vehicle_Euler(2);
+    const double psi = vehicle_Euler(2);
 
     // identify turning direction
     if (pre_yaw >= 0 && psi >=0)
@@ -222,10 +246,11 @@ void BLUEROV2_CTRL::set_current_yaw_for_ctrl()
 void BLUEROV2_CTRL::ctrl_allocate(const SolverOutput& u_out)
 {
     using namespace std;
-    cout<<"within allocation"<<endl;
+    
+    // cout<<"within allocation"<<endl;
     for(auto what : u_out.u0)
     {
-        cout<<what<<endl;
+        // cout<<what<<endl;
         if(isnan(what))
         {
             ROS_ERROR("SOVLER WRONG!");
@@ -233,20 +258,20 @@ void BLUEROV2_CTRL::ctrl_allocate(const SolverOutput& u_out)
         }
     }
 
-    cout<<endl;
+    // cout<<endl;
 
     thrust0.data=(-u_out.u0[0] + u_out.u0[1] + u_out.u0[3]) / rotor_constant;
-    cout<<thrust0.data<<endl;
+    // cout<<thrust0.data<<endl;
     thrust1.data=(-u_out.u0[0] - u_out.u0[1] - u_out.u0[3]) / rotor_constant;
-    cout<<thrust1.data<<endl;
+    // cout<<thrust1.data<<endl;
     thrust2.data=(u_out.u0[0] + u_out.u0[1] - u_out.u0[3]) / rotor_constant;
-    cout<<thrust2.data<<endl;
+    // cout<<thrust2.data<<endl;
     thrust3.data=(u_out.u0[0] - u_out.u0[1] + u_out.u0[3]) / rotor_constant;
-    cout<<thrust3.data<<endl;
+    // cout<<thrust3.data<<endl;
     thrust4.data=(-u_out.u0[2]) / rotor_constant;
-    cout<<thrust4.data<<endl;
+    // cout<<thrust4.data<<endl;
     thrust5.data=(-u_out.u0[2]) / rotor_constant;
-    cout<<thrust5.data<<endl;
+    // cout<<thrust5.data<<endl;
 
     // why thrust 4 and 5 (+-) are different when applying pid or mpc
 }
