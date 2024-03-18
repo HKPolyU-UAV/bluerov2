@@ -1,8 +1,8 @@
 auto_yaw: false
 read_wrench: 0
-compensate_d: false
+compensate_d: true
 
-setpt: true
+setpt: false
 starting_setpt: [-2.0, 0.0, -20.0]
 
 Kp_list: [24000.0, 24000.0, 24000.0, 0.2]

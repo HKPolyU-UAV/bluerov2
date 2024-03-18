@@ -143,10 +143,7 @@ void BLUEROV2_CTRL::ref_cb(const airo_message::BlueRefPreview::ConstPtr& msg)
     }
 }
 
-void BLUEROV2_CTRL::dist_cb(const airo_message::Disturbance::ConstPtr& msg)
-{
-    esti_disturb = *msg;
-}
+
 
 void BLUEROV2_CTRL::mainspin_cb(const ros::TimerEvent& e)
 {

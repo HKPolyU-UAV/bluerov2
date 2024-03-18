@@ -150,9 +150,11 @@ void BLUEROV2_CTRL::set_mpc_constraints()
         }
         else if(COMPENSATE_D == true)
         {
-            acados_param[i][0] = esti_disturb.disturb.linear.x; //esti_x(12)/compensate_coef;
-            acados_param[i][1] = esti_disturb.disturb.linear.y; //esti_x(13)/compensate_coef;
-            acados_param[i][2] = esti_disturb.disturb.linear.z; //esti_x(14)/rotor_constant;
+            // std::cout<<"jhaha"<<std::endl;
+            std::cout<<esti_disturb.disturb.linear.x<<std::endl;
+            acados_param[i][0] = esti_disturb.disturb.linear.x / compensate_coef; //esti_x(12)/compensate_coef;
+            acados_param[i][1] = esti_disturb.disturb.linear.y / compensate_coef; //esti_x(13)/compensate_coef;
+            acados_param[i][2] = esti_disturb.disturb.linear.z / rotor_constant; //esti_x(14)/rotor_constant;
             acados_param[i][3] = esti_disturb.disturb.angular.z; //esti_x(17)/rotor_constant;  
         }
 
@@ -180,6 +182,11 @@ void BLUEROV2_CTRL::set_mpc_constraints()
             BLUEROV2_NP
         );
     }
+
+    esti_disturb.disturb.linear.x = 0;
+    esti_disturb.disturb.linear.y = 0;
+    esti_disturb.disturb.linear.z = 0;
+    esti_disturb.disturb.angular.z = 0;
 }
 
 void BLUEROV2_CTRL::set_ref()
@@ -236,5 +243,11 @@ void BLUEROV2_CTRL::convert_refmsg_2_acados(
     acados_in.yref[i][9] = ref_current.ref_twist.angular.x;
     acados_in.yref[i][10] = ref_current.ref_twist.angular.y;
     acados_in.yref[i][11] = ref_current.ref_twist.angular.z;
+}
+
+void BLUEROV2_CTRL::dist_cb(const airo_message::Disturbance::ConstPtr& msg)
+{
+    
+    esti_disturb = *msg;
 }
 

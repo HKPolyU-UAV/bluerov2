@@ -32,11 +32,11 @@
 #include <pthread.h>
 #include <boost/thread.hpp>
 
-#include "airo_message/ReferencePreview.h"
-
 #include <ros_utilities/ros_utilities.h>
 
 #include "airo_message/Disturbance.h"
+#include "airo_message/ReferencePreview.h"
+#include "uuv_gazebo_ros_plugins_msgs/FloatStamped.h"
 
 // map definition for convinience
 #define COLOR_SUB_TOPIC CAMERA_SUB_TOPIC_A
@@ -46,7 +46,16 @@ namespace BLUEROV2_STATES
     typedef struct synced_data{
         bool empty;
         std::pair<std::vector<sensor_msgs::Imu::ConstPtr>, sensor_msgs::NavSatFix::ConstPtr> meas_data;
-    }  synced_data;
+    }synced_data;
+
+    struct thrust{
+        double t0;
+        double t1;
+        double t2;
+        double t3;
+        double t4;
+        double t5;
+    };
 
     class ImuDoNodelet : public nodelet::Nodelet, private RosUtilities
     {
@@ -54,6 +63,7 @@ namespace BLUEROV2_STATES
         nav_msgs::Odometry pose_gt;   
 
         ros::Subscriber gt_sub, imu_sub, gps_sub;
+
         ros::Publisher update_pub, imu_pub, esti_dist_pub;
         ros::Timer main_spin_timer;
 
@@ -74,16 +84,25 @@ namespace BLUEROV2_STATES
         void predict();
         void update();
 
-        void DistRawMeas();
+        // vehicle states
+        Sophus::SE3d vehicle_SE3_world_gt;
+        Sophus::Vector6d vehicle_twist_world_gt;
+        Sophus::Vector6d vehicle_twist_body_gt;
+        Eigen::Vector3d vehicle_Euler_gt;
+
+        Sophus::SE3d vehicle_SE3_world_est;
+        Sophus::Vector6d vehicle_twist_world_est;
+        Sophus::Vector6d vehicle_twist_body_est;
+        Eigen::Vector3d vehicle_Euler_est;
 
         bool tracking_start = false;
         double starting_time = 0;
         double init_time = 0;
         bool got_new_synced = false; 
 
-        void ground_truth_callback(const nav_msgs::Odometry::ConstPtr& msg);
         void imu_callback(const sensor_msgs::Imu::ConstPtr& msg);
         void gps_callback(const sensor_msgs::NavSatFix::ConstPtr& msg);
+        void pose_gt_callback(const nav_msgs::Odometry::ConstPtr& msg);
         void main_spin_callback(const ros::TimerEvent& e);
         bool initialization();
 
@@ -99,11 +118,33 @@ namespace BLUEROV2_STATES
         double Dnl[6] = {-18.18,-21.66,-36.99,-1.55,-1.55,-1.55};
         double ZG = 0.02;
         double bouyancy = 0.661618;
+        double g_constant = 9.81;
+        Eigen::Matrix<double,6,6> K;   
+        Eigen::Matrix<double,1,6> M_values;    
+        Eigen::Matrix<double,6,6> M;           // mass matrix
+        Eigen::Matrix<double,6,6> M_rb;        // rigid body mass matrix
+        Eigen::Matrix<double,6,6> M_a;         // added mass matrix
+        Eigen::Matrix<double,6,6> invM; 
 
+        Sophus::Vector6d imu_raw_B;
+
+        void thrusts_cb(
+            const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg, 
+            int index
+        ); // read current thrusts
+        // thrust current_th;
+        Sophus::Vector6d current_th;
+        std::vector<ros::Subscriber> th_subs;
+
+        void DistRawMeas();
         void dynamics_parameter_config();
-        Eigen::MatrixXd dynamics_C(const Sophus::Vector6d& twist_B);
-        Eigen::MatrixXd dynamics_D(const Sophus::Vector6d& twist_B);
-        Eigen::MatrixXd dynamics_g(const Eigen::Vector3d& euler);
+        Sophus::Vector6d cal_system_wrench();
+        Sophus::Vector6d dynamics_Tau(const Sophus::Vector6d& u);
+        Sophus::Vector6d dynamics_C(const Sophus::Vector6d& twist_B);
+        Sophus::Vector6d dynamics_D(const Sophus::Vector6d& twist_B);
+        Sophus::Vector6d dynamics_Ma(const Sophus::Vector6d& imu_B);
+        Sophus::Vector6d dynamics_g(const Eigen::Vector3d& euler);
+    
 
     };
     PLUGINLIB_EXPORT_CLASS(BLUEROV2_STATES::ImuDoNodelet, nodelet::Nodelet)

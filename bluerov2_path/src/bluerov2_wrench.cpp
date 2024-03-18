@@ -19,7 +19,7 @@ void applyDisturbance()
     wrench.request.reference_frame = "world"; //NED
     wrench.request.wrench.force.x = applied_wrench.fx;
     wrench.request.wrench.force.y = applied_wrench.fy;
-    wrench.request.wrench.force.z = -applied_wrench.fz; //as +ve = Down
+    wrench.request.wrench.force.z = applied_wrench.fz; 
     wrench.request.reference_point.x = 0.0;
     wrench.request.reference_point.y = 0.0;
     wrench.request.reference_point.z = 0.0;

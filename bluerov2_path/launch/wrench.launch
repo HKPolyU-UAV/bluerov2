@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <launch>
 	<node pkg="bluerov2_path" type="bluerov2_wrench" name="bluerov2_wrench" output="screen">
-        <param name="wrench_x" type="double" value="100.0"/>
-        <param name="wrench_y" type="double" value="100.0"/>
-        <param name="wrench_z" type="double" value="0.0"/>
+        <param name="wrench_x" type="double" value="-40.0"/>
+        <param name="wrench_y" type="double" value="-40.0"/>
+        <param name="wrench_z" type="double" value="10.0"/>
 	</node>
 </launch>
