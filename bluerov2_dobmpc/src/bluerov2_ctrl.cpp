@@ -159,9 +159,6 @@ void BLUEROV2_CTRL::mainspin_cb(const ros::TimerEvent& e)
     default:
         break;
     }
-        
-    // got_path = false;
-    
 }
 
 

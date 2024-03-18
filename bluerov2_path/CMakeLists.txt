@@ -81,3 +81,12 @@ add_dependencies(bluerov2_path_node
   airo_message_generate_messages_cpp
   ros_utilities
 )
+
+################################################################################################
+# bluerov2_path_wrench
+add_executable(bluerov2_wrench
+  src/bluerov2_wrench.cpp)
+
+target_link_libraries(bluerov2_wrench
+  ${catkin_LIBRARIES}
+)
