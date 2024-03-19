@@ -501,6 +501,12 @@ void BLUEROV2_DOB::EKF()
     meas_y << local_pos.x, local_pos.y, local_pos.z, local_euler.phi, local_euler.theta, local_euler.psi,
             v_linear_body[0], v_linear_body[1], v_linear_body[2], v_angular_body[0], v_angular_body[1], v_angular_body[2],
             tau(0),tau(1),tau(2),tau(3),tau(4),tau(5);
+
+            /*
+                
+                
+            
+            */ 
     
     // Define Jacobian matrices of system dynamics and measurement model
     Matrix<double,18,18> F;     // Jacobian of system dynamics
@@ -693,6 +699,7 @@ MatrixXd BLUEROV2_DOB::h(MatrixXd x)
     Matrix<double,18,1> y;
     y << x(0),x(1),x(2),x(3),x(4),x(5),
         x(6),x(7),x(8),x(9),x(10),x(11),
+
         M(0,0)*body_acc.x-mass*x(11)*x(7)+mass*x(10)*x(8)+bouyancy*sin(x(4))-x(12)-Dl[0]*x(6)-Dnl[0]*abs(x(6))*x(6),        
         M(1,1)*body_acc.y+mass*x(11)*x(6)-mass*x(9)*x(8)-bouyancy*cos(x(4))*sin(x(3))-x(13)-Dl[1]*x(7)-Dnl[1]*abs(x(7))*x(7),
         M(2,2)*body_acc.z-mass*x(10)*x(6)+mass*x(9)*x(7)-bouyancy*cos(x(4))*cos(x(3))-x(14)-Dl[2]*x(8)-Dnl[2]*abs(x(8))*x(8),
@@ -732,6 +739,7 @@ MatrixXd BLUEROV2_DOB::compute_jacobian_H(MatrixXd x)
     Matrix<double,18,18> H;
     double d = 1e-6;                    // finite difference step size
     VectorXd f0 = h(x);
+    
     for (int i = 0; i < n; i++){
         VectorXd x1 = x;
         x1(i) += d;

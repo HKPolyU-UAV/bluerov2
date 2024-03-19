@@ -14,7 +14,6 @@ void BLUEROV2_CTRL::ctrl_config(ros::NodeHandle& nh)
 {
     // read parameter
     nh.getParam("auto_yaw",AUTO_YAW);
-    nh.getParam("compensate_d",COMPENSATE_D);
     nh.getParam("ctrller_type", ctrller_type);
 
     switch (ctrller_type)

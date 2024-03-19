@@ -141,14 +141,14 @@ void BLUEROV2_CTRL::set_mpc_constraints()
     // set parameters
     for (int i = 0; i < BLUEROV2_N+1; i++)
     {
-        if(COMPENSATE_D == false)
+        if(ctrller_type == MPC)
         {
             acados_param[i][0] = 0; //esti_disturb.disturb_x;
             acados_param[i][1] = 0; //esti_disturb.disturb_y;
             acados_param[i][2] = 0; //esti_disturb.disturb_x;
             acados_param[i][3] = 0; //esti_disturb.disturb_x;
         }
-        else if(COMPENSATE_D == true)
+        else if(ctrller_type == DOMPC)
         {
             // std::cout<<"jhaha"<<std::endl;
             std::cout<<esti_disturb.disturb.linear.x<<std::endl;

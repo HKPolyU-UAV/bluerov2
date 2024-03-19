@@ -1,6 +1,5 @@
 auto_yaw: false
 read_wrench: 0
-compensate_d: true
 
 setpt: false
 starting_setpt: [-2.0, 0.0, -20.0]

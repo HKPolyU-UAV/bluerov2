@@ -3,7 +3,6 @@
 void BLUEROV2_STATES::ImuDoNodelet::DistRawMeas()
 {
     Sophus::Vector6d sys_wrench_B = cal_system_wrench();
-    // cout<<"haha"
 
     // M * imu_B = sys_wrench_B + delta_B
     Sophus::Vector6d delta_raw_B = M_rb * imu_raw_B - sys_wrench_B;

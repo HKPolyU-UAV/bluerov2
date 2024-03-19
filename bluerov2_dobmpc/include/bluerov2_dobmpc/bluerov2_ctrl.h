@@ -206,7 +206,6 @@ class BLUEROV2_CTRL : private RosUtilities
         // Acados parameter
         bool AUTO_YAW;
         int READ_WRENCH;        // 0: periodic disturbance; 1: random disturbance; 2: read wrench from text
-        bool COMPENSATE_D;       // 0: no compensate; 1: compensate
 
         // mpc
         void mpc_solve();                                           // solve MPC

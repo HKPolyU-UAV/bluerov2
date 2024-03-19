@@ -47,7 +47,7 @@ catkin_package(
     roscpp
     std_msgs
     message_generation
-    ros_utilities
+    # ros_utilities
 )
 
 set(Sophus_LIBRARIES libSophus.so)
@@ -63,6 +63,7 @@ include_directories(
 ## ImuDo nodelet
 add_library(ImuDo
   src/ImuDo.cpp
+  src/Eskf.cpp
   src/Dynamics.cpp
 )
 
@@ -71,7 +72,6 @@ target_link_libraries(ImuDo
     ${catkin_LIBRARIES}
     ${OpenCV_INCLUDE_DIRS}
     ${Sophus_INCLUDE_DIRS}
-    ros_utilities
 )
 
 add_dependencies(ImuDo 

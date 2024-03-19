@@ -32,6 +32,8 @@ void BLUEROV2_STATES::ImuDoNodelet::imu_callback(
     // std::cout<<"imu"<<std::endl;
     imu_raw_B = imumsg_to_accl(*msg);
 
+    // msg->orientation.w;
+
     imu_buf_manage.lock();
     imu_buf.push(msg);
     imu_buf_manage.unlock();
@@ -101,11 +103,6 @@ bool BLUEROV2_STATES::ImuDoNodelet::initialization()
     return false;
 }
 
-void BLUEROV2_STATES::ImuDoNodelet::EskfProcess()
-{
-    update_pub.publish(pub_data);
-
-}
 
 BLUEROV2_STATES::synced_data BLUEROV2_STATES::ImuDoNodelet::SyncMeas()
 // reference: VINS-Mono
@@ -161,11 +158,6 @@ BLUEROV2_STATES::synced_data BLUEROV2_STATES::ImuDoNodelet::SyncMeas()
     
     std::cout<<"sync"<<std::endl;
     return meas_return;
-}
-
-void BLUEROV2_STATES::ImuDoNodelet::ImuPredict()
-{
-    imu_pub.publish(pub_data);
 }
 
 void BLUEROV2_STATES::ImuDoNodelet::onInit()

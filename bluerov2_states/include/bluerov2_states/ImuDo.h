@@ -78,11 +78,6 @@ namespace BLUEROV2_STATES
         std_msgs::Bool pub_data;
 
         airo_message::Disturbance esti_dist;
-        
-        void ImuPredict();
-        void EskfProcess();
-        void predict();
-        void update();
 
         // vehicle states
         Sophus::SE3d vehicle_SE3_world_gt;
@@ -92,8 +87,6 @@ namespace BLUEROV2_STATES
 
         Sophus::SE3d vehicle_SE3_world_est;
         Sophus::Vector6d vehicle_twist_world_est;
-        Sophus::Vector6d vehicle_twist_body_est;
-        Eigen::Vector3d vehicle_Euler_est;
 
         bool tracking_start = false;
         double starting_time = 0;
@@ -144,7 +137,44 @@ namespace BLUEROV2_STATES
         Sophus::Vector6d dynamics_D(const Sophus::Vector6d& twist_B);
         Sophus::Vector6d dynamics_Ma(const Sophus::Vector6d& imu_B);
         Sophus::Vector6d dynamics_g(const Eigen::Vector3d& euler);
-    
+
+//      ESKF.cpp
+        bool filter_start;
+
+        Sophus::SE3d SE3_est_I;
+        Eigen::Vector3d v_I = Eigen::Vector3d::Zero();
+        Eigen::Vector3d b_g_B = Eigen::Vector3d::Zero();
+        Eigen::Vector3d b_a_B = Eigen::Vector3d::Zero();
+        Eigen::Vector3d g_vector_I = Eigen::Vector3d::Zero();
+        Eigen::Vector3d xi_I = Eigen::Vector3d::Zero();
+        
+        // error state p, R, v, b_a, b_g, g, xi
+        Eigen::Matrix<double, 21, 1> dx = Eigen::Matrix<double, 21, 1>::Zero();
+
+        Eigen::Matrix<double, 21, 21> P_cov = Eigen::Matrix<double, 21, 21>::Zero();
+        
+        Eigen::Matrix<double, 21, 21> F_predict = Eigen::Matrix<double, 21, 21>::Zero();
+        Eigen::Matrix<double, 21, 21> Q_process = Eigen::Matrix<double, 21, 21>::Zero();
+        Eigen::Matrix<double, 9, 9> R_meas = Eigen::Matrix<double, 9, 9>::Zero();
+
+        Eigen::Matrix<double, 9, 21> H_update = Eigen::Matrix<double, 9, 21>::Zero();
+        Eigen::Matrix<double, 21, 9> K_gain = Eigen::Matrix<double, 21, 9>::Zero();
+
+        void EskfProcess();
+        void predict(
+            const Sophus::Vector6d& imu_
+        );
+        void update();
+
+        double dt;
+        double t_prev;
+
+        double p_meas_noise, r_meas_noise, th_meas_noise;
+
+
+
+
+
 
     };
     PLUGINLIB_EXPORT_CLASS(BLUEROV2_STATES::ImuDoNodelet, nodelet::Nodelet)
