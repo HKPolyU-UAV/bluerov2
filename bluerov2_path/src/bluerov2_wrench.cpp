@@ -37,7 +37,6 @@ void applyDisturbance()
 void mainspin_cb(const ros::TimerEvent& e)
 {
     applyDisturbance();
-
 }
 
 int main(int argc, char** argv)

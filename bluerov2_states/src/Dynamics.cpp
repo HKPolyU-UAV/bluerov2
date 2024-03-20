@@ -2,6 +2,7 @@
 
 void BLUEROV2_STATES::ImuDoNodelet::DistRawMeas()
 {
+    
     Sophus::Vector6d sys_wrench_B = cal_system_wrench();
 
     // M * imu_B = sys_wrench_B + delta_B
@@ -18,6 +19,8 @@ void BLUEROV2_STATES::ImuDoNodelet::DistRawMeas()
         )
     <<std::endl;
     std::cout<<"===================="<<std::endl;
+
+    std::cout<<imu_raw_B - vehicle_twist_body_gt<<std::endl;
 
     esti_dist.disturb.linear.x = delta_raw_B(0);
     esti_dist.disturb.linear.y = delta_raw_B(1);

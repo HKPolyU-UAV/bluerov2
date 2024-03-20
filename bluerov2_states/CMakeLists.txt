@@ -60,6 +60,9 @@ include_directories(
   ros_utilities
 )
 
+
+####################################
+####################################
 ## ImuDo nodelet
 add_library(ImuDo
   src/ImuDo.cpp
@@ -78,3 +81,13 @@ add_dependencies(ImuDo
     airo_message_generate_messages_cpp
 )
 
+
+####################################
+####################################
+## ImuCalibrate
+add_executable(ImuCalibrate
+  src/ImuCalibrate.cpp)
+
+target_link_libraries(ImuCalibrate
+  ${catkin_LIBRARIES}
+)

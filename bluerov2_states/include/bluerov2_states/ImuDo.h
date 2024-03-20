@@ -132,7 +132,9 @@ namespace BLUEROV2_STATES
         void DistRawMeas();
         void dynamics_parameter_config();
         Sophus::Vector6d cal_system_wrench();
-        Sophus::Vector6d dynamics_Tau(const Sophus::Vector6d& u);
+
+        Sophus::Vector6d dynamics_Mrb(const Sophus::Vector6d& imu_B);
+        Sophus::Vector6d dynamics_Tau(const Sophus::Vector6d& u_B);
         Sophus::Vector6d dynamics_C(const Sophus::Vector6d& twist_B);
         Sophus::Vector6d dynamics_D(const Sophus::Vector6d& twist_B);
         Sophus::Vector6d dynamics_Ma(const Sophus::Vector6d& imu_B);
@@ -142,40 +144,49 @@ namespace BLUEROV2_STATES
         bool filter_start;
 
         Sophus::SE3d SE3_est_I;
-        Eigen::Vector3d v_I = Eigen::Vector3d::Zero();
-        Eigen::Vector3d b_g_B = Eigen::Vector3d::Zero();
-        Eigen::Vector3d b_a_B = Eigen::Vector3d::Zero();
-        Eigen::Vector3d g_vector_I = Eigen::Vector3d::Zero();
-        Eigen::Vector3d xi_I = Eigen::Vector3d::Zero();
+        Eigen::Vector3d v_est_I = Eigen::Vector3d::Zero();
+        Eigen::Vector3d b_g_est_B = Eigen::Vector3d::Zero();
+        Eigen::Vector3d b_a_est_B = Eigen::Vector3d::Zero();
+        Eigen::Vector3d g_vector_est_I = Eigen::Vector3d::Zero();
+        Eigen::Vector3d xi_est_I = Eigen::Vector3d::Zero();
         
         // error state p, R, v, b_a, b_g, g, xi
         Eigen::Matrix<double, 21, 1> dx = Eigen::Matrix<double, 21, 1>::Zero();
-
         Eigen::Matrix<double, 21, 21> P_cov = Eigen::Matrix<double, 21, 21>::Zero();
-        
+
         Eigen::Matrix<double, 21, 21> F_predict = Eigen::Matrix<double, 21, 21>::Zero();
+        void set_F(
+            Eigen::Matrix<double, 21, 21>& F_,
+            const Sophus::Vector6d& imu_data_B_,
+            const double& dt_
+        );
         Eigen::Matrix<double, 21, 21> Q_process = Eigen::Matrix<double, 21, 21>::Zero();
+        
+        Eigen::Matrix<double, 9,  1> y_innov = Eigen::Matrix<double, 9, 1>::Zero();
+        Eigen::Matrix<double, 9, 21> H_update = Eigen::Matrix<double, 9, 21>::Zero();
+        void set_H(
+            Eigen::Matrix<double, 9, 21>& H
+        );
+        Eigen::Matrix<double, 21, 9> K_gain = Eigen::Matrix<double, 21, 9>::Zero();
         Eigen::Matrix<double, 9, 9> R_meas = Eigen::Matrix<double, 9, 9>::Zero();
 
-        Eigen::Matrix<double, 9, 21> H_update = Eigen::Matrix<double, 9, 21>::Zero();
-        Eigen::Matrix<double, 21, 9> K_gain = Eigen::Matrix<double, 21, 9>::Zero();
-
         void EskfProcess();
+        void EskfConfig();
         void predict(
-            const Sophus::Vector6d& imu_
+            const Sophus::Vector6d& imu_B
         );
-        void update();
+        void update(
+            const Sophus::SE3d& gps_I,
+            const Eigen::Vector3d& tau_data_B
+        );
+        void inject(
+            const Eigen::Matrix<double, 21, 1>& dx_
+        );
 
         double dt;
         double t_prev;
 
         double p_meas_noise, r_meas_noise, th_meas_noise;
-
-
-
-
-
-
     };
     PLUGINLIB_EXPORT_CLASS(BLUEROV2_STATES::ImuDoNodelet, nodelet::Nodelet)
 }
