@@ -12,12 +12,17 @@ static RosUtilities tool;
 static double max_static_accl_var;
 static double max_static_gyro_var;
 static std::string save_bias_path;
+static double time_of_collection;
+
 const static double g_constant = 9.81;
 
 void bias_calculate();
 bool try_init();
 void update_accl_buffer(const Eigen::Vector3d& g_vec);
-void save_bias();
+void save_bias(
+    const Eigen::Vector3d accl_bias_,
+    const Eigen::Vector3d accl_gyro_
+);
 
 void imu_callback(const sensor_msgs::Imu::ConstPtr& msg)
 {
@@ -67,6 +72,15 @@ int main(int argc, char** argv)
     nh.getParam("max_bias_accl_var", max_static_accl_var);
     nh.getParam("max_bias_gyro_var", max_static_gyro_var);
     nh.getParam("save_bias_path", save_bias_path);
+    nh.getParam("time_of_collection", time_of_collection);
+
+    std::cout<<max_static_accl_var<<std::endl;
+    std::cout<<max_static_gyro_var<<std::endl;
+    std::cout<<save_bias_path<<std::endl;
+    std::cout<<time_of_collection<<std::endl;
+
+
+    // ros::shutdown();
 
     
     ros::Subscriber imu_sub = nh.subscribe<sensor_msgs::Imu>
@@ -97,7 +111,7 @@ void bias_calculate()
     tool.ComputeMean(accl_buff, accl_mean_);
     tool.ComputeVariance(accl_buff, accl_cov_);
 
-    std::cout<<"ACCL BIAS: \n";
+    std::cout<<"\nACCL BIAS: \n";
     std::cout<<accl_mean_<<std::endl;
 
     Eigen::Vector3d gyro_mean_, gyro_cov_;
@@ -105,7 +119,21 @@ void bias_calculate()
     tool.ComputeMean(gyro_buff, gyro_cov_);
 
     std::cout<<"GYRO BIAS: \n";
-    std::cout<<gyro_mean_<<std::endl;
+    std::cout<<gyro_mean_<<std::endl<<std::endl;
+
+    if(
+        accl_cov_.norm() > max_static_accl_var
+        ||
+        gyro_cov_.norm() > max_static_gyro_var
+    )
+    {
+        std::cout<<""<<std::endl;
+        RED_STREAM("FAIL TO SAVE BIAS COS COVARIANCE TOO BIG!");
+        // ROS_RED_STREAM();
+        return;
+    }
+
+    save_bias(accl_mean_, gyro_mean_);
 }
 
 bool try_init()
@@ -129,7 +157,7 @@ bool try_init()
             starting_time
         )
         <
-        ros::Duration(10).toSec()
+        ros::Duration(time_of_collection).toSec()
     )
         return false;
     
@@ -145,15 +173,22 @@ void update_accl_buffer(
         what = what + g_vec_;
 }
 
-void save_bias()
+void save_bias(
+    const Eigen::Vector3d accl_bias_,
+    const Eigen::Vector3d gyro_bias_
+)
 {
-    YAML::Node yaml_config =  YAML::LoadFile(yaml_path);
-    std::ofstream yaml_file(yaml_path);
-    yaml_config["hover_thrust"] = hover_thrust;
-    yaml_config["tau_phi"] = tau_phi;
-    yaml_config["tau_theta"] = tau_theta;
-    yaml_config["tau_psi"] = tau_psi;
-    yaml_file << yaml_config;
-    yaml_file.close();
-    std::cout<<"Parameters saved!"<<std::endl;
+    tool.write_yaml(
+        accl_bias_,
+        save_bias_path,
+        "accl_bias"
+    );
+
+    tool.write_yaml(
+        gyro_bias_,
+        save_bias_path,
+        "gyro_bias"
+    );
+
+    GREEN_STREAM("SAVE BIAS TO YAML!");
 }
