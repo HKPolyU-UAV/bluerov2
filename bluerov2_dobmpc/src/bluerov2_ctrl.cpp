@@ -1,6 +1,4 @@
 #include "bluerov2_dobmpc/bluerov2_ctrl.h"
-#include <cmath>
-
 
 // Initialize MPC
 BLUEROV2_CTRL::BLUEROV2_CTRL(ros::NodeHandle& nh)
@@ -142,8 +140,6 @@ void BLUEROV2_CTRL::ref_cb(const airo_message::BlueRefPreview::ConstPtr& msg)
     }
 }
 
-
-
 void BLUEROV2_CTRL::mainspin_cb(const ros::TimerEvent& e)
 {
     if(!is_start)
@@ -181,7 +177,6 @@ void BLUEROV2_CTRL::mainspin_cb(const ros::TimerEvent& e)
     }
 }
 
-
 void BLUEROV2_CTRL::set_last_ref()
 {
     std_msgs::Header header_temp;
@@ -206,7 +201,6 @@ void BLUEROV2_CTRL::set_current_yaw_for_ctrl()
     {
         yaw_diff = psi - pre_yaw;
     }
-
 
     else if (pre_yaw >= 0 && psi <0)
     {

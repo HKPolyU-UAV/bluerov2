@@ -8,18 +8,15 @@
 
 void BLUEROV2_CTRL::pid_config(ros::NodeHandle& nh)
 {
-    // return;
-
     using namespace std;
+    control_input_pub = nh.advertise<geometry_msgs::Wrench>
+                ("/bluerov2/thruster_manager/input",1);
 
     XmlRpc::XmlRpcValue Kp_list, Ki_list, Kd_list;
 
     nh.getParam("/bluerov2_ctrl_node/Kp_list", Kp_list);
     nh.getParam("/bluerov2_ctrl_node/Ki_list", Ki_list);
     nh.getParam("/bluerov2_ctrl_node/Kd_list", Kd_list);
-
-    control_input_pub = nh.advertise<geometry_msgs::Wrench>
-                ("/bluerov2/thruster_manager/input",1);
 
     std::ostringstream ostr;
     std::istringstream istr;

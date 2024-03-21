@@ -1,49 +1,5 @@
 #include "bluerov2_states/ImuDo.h"
 
-void BLUEROV2_STATES::ImuDoNodelet::dynamics_parameter_config(
-    ros::NodeHandle& nh
-)
-{
-    K << 0.7071067811847433, 0.7071067811847433, -0.7071067811919605, -0.7071067811919605, 0.0, 0.0,
-       0.7071067811883519, -0.7071067811883519, 0.7071067811811348, -0.7071067811811348, 0.0, 0.0,
-       0, 0, 0, 0, 1, 1,
-       0.051265241636155506, -0.05126524163615552, 0.05126524163563227, -0.05126524163563227, -0.11050000000000001, 0.11050000000000003,
-       -0.05126524163589389, -0.051265241635893896, 0.05126524163641713, 0.05126524163641713, -0.002499999999974481, -0.002499999999974481,
-       0.16652364696949604, -0.16652364696949604, -0.17500892834341342, 0.17500892834341342, 0.0, 0.0;
-    
-    M_rb = (
-        Sophus::Vector6d()
-        <<
-        mass, mass, mass, Ix, Iy, Iz
-    ).finished().asDiagonal();
-    
-    M = M_values.asDiagonal();
-    M_rb(0,4) = mass * ZG;
-    M_rb(1,3) = - mass * ZG;
-    M_rb(3,1) = - mass * ZG;
-    M_rb(4,0) = mass * ZG;
-
-    M_a = (
-        Sophus::Vector6d()
-        <<
-        added_mass[0],
-        added_mass[1],
-        added_mass[2],
-        added_mass[3],
-        added_mass[4],
-        added_mass[5]
-    ).finished().asDiagonal();
-
-    M = M_rb + M_a;
-
-    invM = M.inverse();
-
-    std::cout<<M<<std::endl<<std::endl;
-    std::cout<<M_rb<<std::endl;
-
-    // patty::Debug("test");
-}
-
 void BLUEROV2_STATES::ImuDoNodelet::DistRawMeas()
 {
     
@@ -100,13 +56,54 @@ Sophus::Vector6d BLUEROV2_STATES::ImuDoNodelet::dynamics_C(
     const Sophus::Vector6d& twist_B
 )
 {
+    Eigen::Matrix<double,6,6> C_rb;
+
+    C_rb.setZero();
+    C_rb.block<3,3>(3,0) = Sophus::SO3d::hat(- mass * twist_B.head(3));
+    C_rb.block<3,3>(0,3) = Sophus::SO3d::hat(- mass * twist_B.head(3));
+    C_rb.block<3,3>(3,3) = Sophus::SO3d::hat(
+        (
+            Eigen::Vector3d()
+            <<
+            - Ix * twist_B(3),
+            - Ix * twist_B(4),
+            - Ix * twist_B(5)
+        ).finished()
+    );
+
+    Eigen::Matrix<double,6,6> C_a;
+    C_a.setZero();
+    C_a.block<3,3>(3,0) = Sophus::SO3d::hat(
+        (
+            Eigen::Vector3d()
+            <<
+            added_mass[0] * twist_B(0),
+            added_mass[1] * twist_B(1),
+            added_mass[2] * twist_B(2)
+        ).finished()
+    );
+    C_a.block<3,3>(0,3) = Sophus::SO3d::hat(
+        (
+            Eigen::Vector3d()
+            <<
+            added_mass[0] * twist_B(0),
+            added_mass[1] * twist_B(1),
+            added_mass[2] * twist_B(2)
+        ).finished()
+    );
+    C_a.block<3,3>(3,3) = Sophus::SO3d::hat(
+        (
+            Eigen::Vector3d()
+            <<
+            added_mass[3] * twist_B(3),
+            added_mass[3] * twist_B(4),
+            added_mass[3] * twist_B(5)
+        ).finished()
+    );
+
     Eigen::Matrix<double,6,6> C;
-    C<< 0, 0, 0, 0, mass * twist_B(2) + added_mass[2] * twist_B(2), - mass * twist_B(1) + added_mass[1] * twist_B(1),
-        0, 0, 0, - mass * twist_B(2) - added_mass[2] * twist_B(2), 0, mass * twist_B(0) - added_mass[0] * twist_B(0),
-        0, 0, 0,  mass * twist_B(1) - added_mass[1] * twist_B(1), - mass * twist_B(0) + added_mass[0] * twist_B(0), 0,
-        0, mass * twist_B(2) - added_mass[2] * twist_B(2), - mass * twist_B(1) + added_mass[1] * twist_B(1), 0, Iz * twist_B(5)-added_mass[5]*twist_B(5), -Iy*twist_B(4)+added_mass[4]*twist_B(4),
-        - mass * twist_B(2) + added_mass[2] * twist_B(2), 0, mass * twist_B(0) - added_mass[0] * twist_B(0), -Iz*twist_B(5)+added_mass[5]*twist_B(5), 0, Ix*twist_B(3)-added_mass[3]*twist_B(3),
-        mass * twist_B(1) - added_mass[1] * twist_B(1), - mass * twist_B(0) + added_mass[0] * twist_B(0), 0, Iy*twist_B(4)-added_mass[4]*twist_B(4), -Ix*twist_B(3)+added_mass[3]*twist_B(3), 0;
+    C.setZero();
+    C = C_rb + C_a;
 
     return C * twist_B;
 }
@@ -135,15 +132,10 @@ Sophus::Vector6d BLUEROV2_STATES::ImuDoNodelet::dynamics_Ma(
 )
 {
     Eigen::Vector3d g_W(0,0,-9.81);
-
     Eigen::Vector3d g_B = vehicle_SE3_world_gt.rotationMatrix().inverse() * g_W;
-
     Sophus::Vector6d v_dot_B = imu_B;
 
     v_dot_B.head(3) = v_dot_B.head(3) + g_B;
-
-    // std::cout<<"v_dot_B"<<std::endl;
-    // std::cout<<v_dot_B<<std::endl;
 
     return v_dot_B;
 

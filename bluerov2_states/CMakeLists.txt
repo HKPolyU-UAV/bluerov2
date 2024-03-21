@@ -67,6 +67,7 @@ include_directories(
 add_library(ImuDo
   src/ImuDo.cpp
   src/Eskf.cpp
+  src/Config.cpp
   src/Dynamics.cpp
 )
 

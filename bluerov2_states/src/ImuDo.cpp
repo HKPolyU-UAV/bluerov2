@@ -29,31 +29,40 @@ void BLUEROV2_STATES::ImuDoNodelet::imu_callback(
     const sensor_msgs::Imu::ConstPtr& msg
 )
 {
-    // std::cout<<"imu"<<std::endl;
-    imu_raw_B = imumsg_to_accl(*msg);
+    if(!got_imu)
+        got_imu = true;
 
-    // msg->orientation.w;
+    if(!filter_start)
+        return;
+
+    imu_raw_B = imumsg_to_accl(*msg);
 
     imu_buf_manage.lock();
     imu_buf.push(msg);
     imu_buf_manage.unlock();
-    // std::cout<<"imu"<<std::endl;
+
 }
 
 void BLUEROV2_STATES::ImuDoNodelet::gps_callback(
     const sensor_msgs::NavSatFix::ConstPtr& msg
 )
 {
-    // std::cout<<"gps"<<std::endl;
+    if(!got_gps)
+        got_gps = true;
+
+    if(!filter_start)
+        return;
+
     gps_buf_manage.lock();
     gps_buf.push(msg);
-    // msg->
     gps_buf_manage.unlock();
-    // std::cout<<"gps"<<std::endl;
 }
 
 void BLUEROV2_STATES::ImuDoNodelet::pose_gt_callback(const nav_msgs::Odometry::ConstPtr& odom)
 {
+    if(!got_gt)
+        got_gt = true;
+
     vehicle_SE3_world_gt = posemsg_to_SE3(odom->pose.pose);
     vehicle_twist_world_gt = twistmsg_to_velo(odom->twist.twist);
     
@@ -68,7 +77,11 @@ void BLUEROV2_STATES::ImuDoNodelet::pose_gt_callback(const nav_msgs::Odometry::C
 void BLUEROV2_STATES::ImuDoNodelet::main_spin_callback(const ros::TimerEvent& e)
 {   
     ROS_GREEN_STREAM("HERE");
+    
     DistRawMeas();
+
+    if(!filter_start)
+        return;
 
     // if(!tracking_start)
     // {
@@ -96,7 +109,9 @@ void BLUEROV2_STATES::ImuDoNodelet::main_spin_callback(const ros::TimerEvent& e)
 bool BLUEROV2_STATES::ImuDoNodelet::initialization()
 {
     if(
-        (ros::Time::now().toSec() - starting_time) > ros::Duration(init_time).toSec()
+        (ros::Time::now().toSec() - starting_time) 
+        > 
+        ros::Duration(init_time).toSec()
     )
         return true;
     
@@ -165,47 +180,12 @@ void BLUEROV2_STATES::ImuDoNodelet::onInit()
     ros::NodeHandle& nh = getMTNodeHandle();
     ROS_INFO("ImuDo Nodelet Initiated...");
 
-    gt_sub = nh.subscribe<nav_msgs::Odometry>
-                ("/bluerov2/pose_gt", 1, &ImuDoNodelet::pose_gt_callback, this);
-    
-    imu_sub = nh.subscribe<sensor_msgs::Imu>
-                ("/bluerov2/imu", 1, &ImuDoNodelet::imu_callback, this);
-    
-    gps_sub = nh.subscribe<sensor_msgs::NavSatFix>
-                ("/bluerov2/gps", 1, &ImuDoNodelet::gps_callback, this);
-
-    for (int i = 0; i < 6; i++)
-    {
-        std::string topic = "/bluerov2/thrusters/" + std::to_string(i) + "/thrust";
-        th_subs.emplace_back(
-            nh.subscribe<uuv_gazebo_ros_plugins_msgs::FloatStamped>(
-                topic, 
-                20, 
-                boost::bind(&ImuDoNodelet::thrusts_cb, this, _1, i)
-            )
-        );
-    }
-
-    main_spin_timer = nh.createTimer(
-        ros::Duration(0.02), 
-        &ImuDoNodelet::main_spin_callback, 
-        this
-    );
-
-    update_pub = nh.advertise<std_msgs::Bool>
-                ("/dummy_update", 1);
-    imu_pub = nh.advertise<std_msgs::Bool>
-                ("/dummy_imu", 1);
-
-    esti_dist_pub = nh.advertise<airo_message::Disturbance>
-                ("/disturbance", 1);
-
     starting_time = ros::Time::now().toSec();
 
-    std::cout<<"hi"<<std::endl;
-
     dynamics_parameter_config(nh);
-    eskf_config(nh);
+    // eskf_config(nh);
 
-    // ros::shutdown();
+    communi_config(nh);
+    
+    filter_start = true;
 }

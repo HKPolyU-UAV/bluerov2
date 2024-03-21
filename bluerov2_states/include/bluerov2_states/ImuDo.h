@@ -73,8 +73,6 @@ namespace BLUEROV2_STATES
         std::mutex imu_buf_manage;
         std::mutex gps_buf_manage;
 
-        synced_data SyncMeas();
-
         std_msgs::Bool pub_data;
 
         airo_message::Disturbance esti_dist;
@@ -98,6 +96,8 @@ namespace BLUEROV2_STATES
         void pose_gt_callback(const nav_msgs::Odometry::ConstPtr& msg);
         void main_spin_callback(const ros::TimerEvent& e);
         bool initialization();
+
+        synced_data SyncMeas();
 
         virtual void onInit();
 
@@ -141,10 +141,8 @@ namespace BLUEROV2_STATES
         Sophus::Vector6d dynamics_g(const Eigen::Vector3d& euler);
 
 //      ESKF.cpp
-        void eskf_config(ros::NodeHandle& nh);
-
-        bool filter_start = false;
-
+        double dt;
+        double t_prev;
         Sophus::SE3d SE3_est_I;
         Eigen::Vector3d v_est_I = Eigen::Vector3d::Zero();
         Eigen::Vector3d b_g_est_B = Eigen::Vector3d::Zero();
@@ -176,6 +174,7 @@ namespace BLUEROV2_STATES
         void predict(
             const Sophus::Vector6d& imu_B
         );
+        // void 
         void update(
             const Sophus::SE3d& gps_I,
             const Eigen::Vector3d& tau_data_B
@@ -184,10 +183,21 @@ namespace BLUEROV2_STATES
             const Eigen::Matrix<double, 21, 1>& dx_
         );
 
-        double dt;
-        double t_prev;
-
+//      Config.cpp
+        bool got_imu = false;
+        bool got_gps = false;
+        bool got_gt  = false;
+        bool filter_start = false;
+        double q_process_noise;
         double p_meas_noise, r_meas_noise, th_meas_noise;
+
+        void init_odom(ros::NodeHandle& nh);
+        void init_bias(ros::NodeHandle& nh);
+        void init_disturb(ros::NodeHandle& nh);
+        void init_noise(ros::NodeHandle& nh);
+        void eskf_config(ros::NodeHandle& nh);
+
+        void communi_config(ros::NodeHandle& nh);
     };
     PLUGINLIB_EXPORT_CLASS(BLUEROV2_STATES::ImuDoNodelet, nodelet::Nodelet)
 }
