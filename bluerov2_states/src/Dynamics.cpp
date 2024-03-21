@@ -1,36 +1,8 @@
 #include "bluerov2_states/ImuDo.h"
 
-void BLUEROV2_STATES::ImuDoNodelet::DistRawMeas()
-{
-    
-    Sophus::Vector6d sys_wrench_B = cal_system_wrench();
-
-    // M * imu_B = sys_wrench_B + delta_B
-    Sophus::Vector6d delta_raw_B = M_rb * imu_raw_B - sys_wrench_B;
-
-    std::cout<<"===================="<<std::endl;
-    // std::cout<<"FORCE RAW"<<std::endl;
-    // std::cout<<(M * imu_raw_B).head(3)<<std::endl;
-    std::cout<<"DELTA RAW"<<std::endl;
-    std::cout<<
-        q_rotate_vector(
-            vehicle_SE3_world_gt.unit_quaternion(),
-            delta_raw_B.head(3)
-        )
-    <<std::endl;
-    std::cout<<"===================="<<std::endl;
-
-    std::cout<<imu_raw_B - vehicle_twist_body_gt<<std::endl;
-
-    esti_dist.disturb.linear.x = delta_raw_B(0);
-    esti_dist.disturb.linear.y = delta_raw_B(1);
-    esti_dist.disturb.linear.z = delta_raw_B(2);
-
-    esti_dist_pub.publish(esti_dist);
-
-}
-
-void BLUEROV2_STATES::ImuDoNodelet::dynamics_parameter_config()
+void BLUEROV2_STATES::ImuDoNodelet::dynamics_parameter_config(
+    ros::NodeHandle& nh
+)
 {
     K << 0.7071067811847433, 0.7071067811847433, -0.7071067811919605, -0.7071067811919605, 0.0, 0.0,
        0.7071067811883519, -0.7071067811883519, 0.7071067811811348, -0.7071067811811348, 0.0, 0.0,
@@ -71,6 +43,37 @@ void BLUEROV2_STATES::ImuDoNodelet::dynamics_parameter_config()
 
     // patty::Debug("test");
 }
+
+void BLUEROV2_STATES::ImuDoNodelet::DistRawMeas()
+{
+    
+    Sophus::Vector6d sys_wrench_B = cal_system_wrench();
+
+    // M * imu_B = sys_wrench_B + delta_B
+    Sophus::Vector6d delta_raw_B = M_rb * imu_raw_B - sys_wrench_B;
+
+    std::cout<<"===================="<<std::endl;
+    // std::cout<<"FORCE RAW"<<std::endl;
+    // std::cout<<(M * imu_raw_B).head(3)<<std::endl;
+    std::cout<<"DELTA RAW"<<std::endl;
+    std::cout<<
+        q_rotate_vector(
+            vehicle_SE3_world_gt.unit_quaternion(),
+            delta_raw_B.head(3)
+        )
+    <<std::endl;
+    std::cout<<"===================="<<std::endl;
+
+    std::cout<<imu_raw_B - vehicle_twist_body_gt<<std::endl;
+
+    esti_dist.disturb.linear.x = delta_raw_B(0);
+    esti_dist.disturb.linear.y = delta_raw_B(1);
+    esti_dist.disturb.linear.z = delta_raw_B(2);
+
+    esti_dist_pub.publish(esti_dist);
+
+}
+
 
 Sophus::Vector6d BLUEROV2_STATES::ImuDoNodelet::cal_system_wrench()
 {

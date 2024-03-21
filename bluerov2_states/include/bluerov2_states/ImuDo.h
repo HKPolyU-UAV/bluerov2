@@ -130,7 +130,7 @@ namespace BLUEROV2_STATES
         std::vector<ros::Subscriber> th_subs;
 
         void DistRawMeas();
-        void dynamics_parameter_config();
+        void dynamics_parameter_config(ros::NodeHandle& nh);
         Sophus::Vector6d cal_system_wrench();
 
         Sophus::Vector6d dynamics_Mrb(const Sophus::Vector6d& imu_B);
@@ -141,7 +141,9 @@ namespace BLUEROV2_STATES
         Sophus::Vector6d dynamics_g(const Eigen::Vector3d& euler);
 
 //      ESKF.cpp
-        bool filter_start;
+        void eskf_config(ros::NodeHandle& nh);
+
+        bool filter_start = false;
 
         Sophus::SE3d SE3_est_I;
         Eigen::Vector3d v_est_I = Eigen::Vector3d::Zero();
@@ -171,7 +173,6 @@ namespace BLUEROV2_STATES
         Eigen::Matrix<double, 9, 9> R_meas = Eigen::Matrix<double, 9, 9>::Zero();
 
         void EskfProcess();
-        void EskfConfig();
         void predict(
             const Sophus::Vector6d& imu_B
         );

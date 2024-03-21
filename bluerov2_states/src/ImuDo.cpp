@@ -202,5 +202,10 @@ void BLUEROV2_STATES::ImuDoNodelet::onInit()
 
     starting_time = ros::Time::now().toSec();
 
-    dynamics_parameter_config();
+    std::cout<<"hi"<<std::endl;
+
+    dynamics_parameter_config(nh);
+    eskf_config(nh);
+
+    // ros::shutdown();
 }

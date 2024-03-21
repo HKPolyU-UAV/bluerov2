@@ -2,11 +2,12 @@
     <!-- ROS Nodelet manager -->
     <node pkg="nodelet" type="nodelet" name="BLUEROV2_STATES_master" args="manager" output="screen">
             <!-- <rosparam command="load" file="$(find bluerov2_states)/launch/configs/{}.yaml" /> -->
+            <rosparam command="load" file="$(find bluerov2_states)/launch/config/imudo.yaml" />
     </node> 
 
     <!-- IMUDO NODELET -->
     <node pkg="nodelet" type="nodelet" name="ImuDo" args="load BLUEROV2_STATES/ImuDoNodelet BLUEROV2_STATES_master" output="screen">
-        <rosparam command="load" file="$(find bluerov2_states)/launch/configs/imudo.yaml" />
+        <!-- <rosparam command="load" file="$(find bluerov2_states)/launch/config/imudo.yaml" /> -->
     </node>
 
 </launch>

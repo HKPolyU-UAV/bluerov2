@@ -1,7 +1,14 @@
 #include "bluerov2_states/ImuDo.h"
 
-void BLUEROV2_STATES::ImuDoNodelet::EskfConfig()
+void BLUEROV2_STATES::ImuDoNodelet::eskf_config(ros::NodeHandle& nh)
 {
+    std::cout<<"ESKF CONFIG"<<std::endl;
+    nh.getParam("/BLUEROV2_STATES_master/p_meas_noise", p_meas_noise);
+    nh.getParam("/BLUEROV2_STATES_master/r_meas_noise", r_meas_noise);
+    nh.getParam("/BLUEROV2_STATES_master/th_meas_noise", th_meas_noise);
+
+    std::cout<<"HERE!\n"<<p_meas_noise<<std::endl;
+
     R_meas = (
         Eigen::Matrix<double, 9, 1>() 
         << 
