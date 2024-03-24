@@ -8,42 +8,67 @@ void BLUEROV2_STATES::ImuDoNodelet::DistRawMeas()
     // M * imu_B = sys_wrench_B + delta_B
     Sophus::Vector6d delta_raw_B = M_rb * imu_raw_B - sys_wrench_B;
 
-    std::cout<<"===================="<<std::endl;
-    // std::cout<<"FORCE RAW"<<std::endl;
-    // std::cout<<(M * imu_raw_B).head(3)<<std::endl;
-    std::cout<<"DELTA RAW"<<std::endl;
-    std::cout<<
-        q_rotate_vector(
-            vehicle_SE3_world_gt.unit_quaternion(),
-            delta_raw_B.head(3)
-        )
-    <<std::endl;
-    std::cout<<"===================="<<std::endl;
+    // std::cout<<"===================="<<std::endl;
+    // // std::cout<<"FORCE RAW"<<std::endl;
+    // // std::cout<<(M * imu_raw_B).head(3)<<std::endl;
+    // std::cout<<"DELTA RAW"<<std::endl;
+    // std::cout<<
+    //     q_rotate_vector(
+    //         vehicle_SE3_world_gt.unit_quaternion(),
+    //         delta_raw_B.head(3)
+    //     )
+    // <<std::endl;
+    // std::cout<<"===================="<<std::endl;
 
-    std::cout<<imu_raw_B - vehicle_twist_body_gt<<std::endl;
 
-    esti_dist.disturb.linear.x = delta_raw_B(0);
-    esti_dist.disturb.linear.y = delta_raw_B(1);
-    esti_dist.disturb.linear.z = delta_raw_B(2);
+
+
+    
+    // std::cout<<delta_raw_B.head(3)<<std::endl;
+
+    // std::cout<<imu_raw_B - vehicle_twist_body_gt<<std::endl;
+
+    // esti_dist.disturb.linear.x = delta_raw_B(0);
+    // esti_dist.disturb.linear.y = delta_raw_B(1);
+    // esti_dist.disturb.linear.z = delta_raw_B(2);
+
+    Eigen::Vector3d delta_I = Eigen::Vector3d(10, 10, 10);
+    Eigen::Vector3d delta_B = vehicle_SE3_world_gt.rotationMatrix().inverse() * delta_I;
+
+    esti_dist.disturb.linear.x = delta_B.x();
+    esti_dist.disturb.linear.y = delta_B.y();
+    esti_dist.disturb.linear.z = delta_B.z();
 
     esti_dist_pub.publish(esti_dist);
 
 }
 
-
 Sophus::Vector6d BLUEROV2_STATES::ImuDoNodelet::cal_system_wrench()
 {
+    // std::cout<<"hihi"<<std::endl;
+    // std::cout<<dynamics_g(vehicle_Euler_gt)<<std::endl;
+
     return 
         dynamics_Tau(current_th)
-        -
-        dynamics_C(vehicle_twist_body_gt)
+        // -
+        // dynamics_C(vehicle_twist_body_gt)
+        // do not know why, but currently, it affects the result
         -
         dynamics_D(vehicle_twist_body_gt)
         -
         dynamics_Ma(imu_raw_B)
         -
-        dynamics_g(vehicle_Euler_gt);
+        dynamics_g(vehicle_Euler_gt)
+        ;
 }
+
+Sophus::Vector6d BLUEROV2_STATES::ImuDoNodelet::dynamics_Mrb(
+    const Sophus::Vector6d& twist_B
+)
+{
+    return M_rb * imu_raw_B;
+}
+
 
 Sophus::Vector6d BLUEROV2_STATES::ImuDoNodelet::dynamics_Tau(
     const Sophus::Vector6d& u
@@ -56,32 +81,26 @@ Sophus::Vector6d BLUEROV2_STATES::ImuDoNodelet::dynamics_C(
     const Sophus::Vector6d& twist_B
 )
 {
+    // std::cout<<twist_B<<std::endl<<std::endl;
     Eigen::Matrix<double,6,6> C_rb;
 
     C_rb.setZero();
-    C_rb.block<3,3>(3,0) = Sophus::SO3d::hat(- mass * twist_B.head(3));
-    C_rb.block<3,3>(0,3) = Sophus::SO3d::hat(- mass * twist_B.head(3));
-    C_rb.block<3,3>(3,3) = Sophus::SO3d::hat(
-        (
-            Eigen::Vector3d()
-            <<
-            - Ix * twist_B(3),
-            - Ix * twist_B(4),
-            - Ix * twist_B(5)
-        ).finished()
-    );
+    C_rb.block<3,3>(0,3) = Sophus::SO3d::hat(-mass * twist_B.head(3));
+    // C_rb.block<3,3>(0,3) = Sophus::SO3d::hat(- mass * twist_B.head(3));
+    // C_rb.block<3,3>(3,3) = Sophus::SO3d::hat(
+    //     (
+    //         Eigen::Vector3d()
+    //         <<
+    //         - Ix * twist_B(3),
+    //         - Ix * twist_B(4),
+    //         - Ix * twist_B(5)
+    //     ).finished()
+    // );
+
+    // std::cout<<C_rb<<std::endl<<std::endl;
 
     Eigen::Matrix<double,6,6> C_a;
     C_a.setZero();
-    C_a.block<3,3>(3,0) = Sophus::SO3d::hat(
-        (
-            Eigen::Vector3d()
-            <<
-            added_mass[0] * twist_B(0),
-            added_mass[1] * twist_B(1),
-            added_mass[2] * twist_B(2)
-        ).finished()
-    );
     C_a.block<3,3>(0,3) = Sophus::SO3d::hat(
         (
             Eigen::Vector3d()
@@ -91,21 +110,38 @@ Sophus::Vector6d BLUEROV2_STATES::ImuDoNodelet::dynamics_C(
             added_mass[2] * twist_B(2)
         ).finished()
     );
-    C_a.block<3,3>(3,3) = Sophus::SO3d::hat(
-        (
-            Eigen::Vector3d()
-            <<
-            added_mass[3] * twist_B(3),
-            added_mass[3] * twist_B(4),
-            added_mass[3] * twist_B(5)
-        ).finished()
-    );
+    // C_a.block<3,3>(0,3) = Sophus::SO3d::hat(
+    //     (
+    //         Eigen::Vector3d()
+    //         <<
+    //         added_mass[0] * twist_B(0),
+    //         added_mass[1] * twist_B(1),
+    //         added_mass[2] * twist_B(2)
+    //     ).finished()
+    // );
+    // C_a.block<3,3>(3,3) = Sophus::SO3d::hat(
+    //     (
+    //         Eigen::Vector3d()
+    //         <<
+    //         added_mass[3] * twist_B(3),
+    //         added_mass[3] * twist_B(4),
+    //         added_mass[3] * twist_B(5)
+    //     ).finished()
+    // );
+
+    // std::cout<<C_a<<std::endl<<std::endl;
+
+    // std::cout<<"===================="<<std::endl;
 
     Eigen::Matrix<double,6,6> C;
     C.setZero();
     C = C_rb + C_a;
 
-    return C * twist_B;
+    // std::cout<<C * twist_B<<std::endl;
+    // std::cout<<"===================="<<std::endl;
+
+
+    return C_rb * twist_B;
 }
 
 Sophus::Vector6d BLUEROV2_STATES::ImuDoNodelet::dynamics_D(
@@ -137,7 +173,15 @@ Sophus::Vector6d BLUEROV2_STATES::ImuDoNodelet::dynamics_Ma(
 
     v_dot_B.head(3) = v_dot_B.head(3) + g_B;
 
-    return v_dot_B;
+    // std::cout<<v_dot_B<<std::
+
+    // std::cout<<v_dot_B<<std::endl;
+    
+    // std::cout<<"ma here"<<std::endl;
+    // std::cout<<M_a * v_dot_B<<std::endl;
+    // std::cout<<"==================="<<std::endl;
+
+    return M_a * v_dot_B;
 
 }
 

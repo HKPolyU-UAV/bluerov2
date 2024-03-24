@@ -9,7 +9,7 @@ import math
 
 # Parameters
 sample_time = 0.05             # seconds
-duration = 240                   # seconds
+duration = 24000                 # seconds
 
 r = 2
 v = 1.5

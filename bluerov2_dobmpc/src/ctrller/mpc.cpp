@@ -44,6 +44,8 @@ void BLUEROV2_CTRL::mpc_solve()
 
     set_ref();
 
+    
+
     for (unsigned int i = 0; i <= BLUEROV2_N; i++)
     {
         // set_ref
@@ -67,7 +69,7 @@ void BLUEROV2_CTRL::mpc_solve()
         return;
     }
 
-    ROS_GREEN_STREAM("SUCCEED!");
+    ROS_GREEN_STREAM("SUCCEED!\n");
 
     acados_out.status = acados_status;
     acados_out.kkt_res = (double)mpc_capsule->nlp_out->inf_norm_res;
@@ -83,9 +85,7 @@ void BLUEROV2_CTRL::mpc_solve()
     thrust2_pub.publish(thrust2);
     thrust3_pub.publish(thrust3);
     thrust4_pub.publish(thrust4);
-    thrust5_pub.publish(thrust5);
-    
-    misc_pub();
+    thrust5_pub.publish(thrust5);    
 }
 
 void BLUEROV2_CTRL::set_mpc_initial_state()
@@ -151,11 +151,18 @@ void BLUEROV2_CTRL::set_mpc_constraints()
         else if(ctrller_type == DOMPC)
         {
             // std::cout<<"jhaha"<<std::endl;
-            std::cout<<esti_disturb.disturb.linear.x<<std::endl;
-            acados_param[i][0] = esti_disturb.disturb.linear.x / compensate_coef; //esti_x(12)/compensate_coef;
-            acados_param[i][1] = esti_disturb.disturb.linear.y / compensate_coef; //esti_x(13)/compensate_coef;
+            // std::cout<<esti_disturb.disturb.linear.x<<std::endl;
+            // std::cout<<esti_disturb.disturb.linear.x / compensate_coef<<std::endl;
+            if(i == 0)
+            {
+                std::cout<<esti_disturb.disturb.linear.x<<std::endl;
+                std::cout<<esti_disturb.disturb.linear.y<<std::endl;
+                std::cout<<esti_disturb.disturb.linear.z<<std::endl;
+            }
+            acados_param[i][0] = esti_disturb.disturb.linear.x / rotor_constant; //esti_x(12)/compensate_coef;
+            acados_param[i][1] = esti_disturb.disturb.linear.y / rotor_constant; //esti_x(13)/compensate_coef;
             acados_param[i][2] = esti_disturb.disturb.linear.z / rotor_constant; //esti_x(14)/rotor_constant;
-            acados_param[i][3] = esti_disturb.disturb.angular.z; //esti_x(17)/rotor_constant;  
+            acados_param[i][3] = 0; //esti_x(17)/rotor_constant;  
         }
 
 
@@ -209,6 +216,8 @@ void BLUEROV2_CTRL::set_ref()
         for(int i = 0; i <= BLUEROV2_N; i++)
             convert_refmsg_2_acados(i, last_ref);
 
+        current_ref = last_ref;
+
         return;
     }
 
@@ -219,7 +228,16 @@ void BLUEROV2_CTRL::set_ref()
         patty::Debug("SIZE WRONG!");
 
     for(int i = 0 ; i <= BLUEROV2_N; i++)
+    {
         convert_refmsg_2_acados(i, ref_traj.preview[i]);
+        // std::cout<<ref_traj.prev iew[i].ref_pos.x<<std::endl;
+
+    }
+        
+
+    current_ref.ref_pos.x = acados_in.yref[0][0];
+    current_ref.ref_pos.y = acados_in.yref[0][1];
+    current_ref.ref_pos.z = acados_in.yref[0][2];
 }
 
 
@@ -246,8 +264,7 @@ void BLUEROV2_CTRL::convert_refmsg_2_acados(
 }
 
 void BLUEROV2_CTRL::dist_cb(const airo_message::Disturbance::ConstPtr& msg)
-{
-    
+{   
     esti_disturb = *msg;
 }
 

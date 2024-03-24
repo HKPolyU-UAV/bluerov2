@@ -24,7 +24,7 @@ void BLUEROV2_STATES::ImuDoNodelet::communi_config(ros::NodeHandle& nh)
     }
 
     main_spin_timer = nh.createTimer(
-        ros::Duration(0.02), 
+        ros::Duration(0.01), 
         &ImuDoNodelet::main_spin_callback, 
         this
     );
@@ -42,18 +42,24 @@ void BLUEROV2_STATES::ImuDoNodelet::communi_config(ros::NodeHandle& nh)
 
 void BLUEROV2_STATES::ImuDoNodelet::eskf_config(ros::NodeHandle& nh)
 {
+    using namespace std;
+
     init_odom(nh);
     init_bias(nh);
     init_disturb(nh);
     init_noise(nh);
+    init_gps(nh);
+
+    t_prev = ros::Time::now().toSec();
     
     ROS_CYAN_STREAM("ESKF CONFIG SUCCEEDED!");
 }
 
 void BLUEROV2_STATES::ImuDoNodelet::init_odom(ros::NodeHandle& nh)
 {
+    std::cout<<"gan"<<std::endl;
     // initialize state values
-    while(true)
+    while(ros::ok())
     {
         if(
             got_gps && 
@@ -62,12 +68,24 @@ void BLUEROV2_STATES::ImuDoNodelet::init_odom(ros::NodeHandle& nh)
         )
             break;
 
+        std::cout<<"huh"<<std::endl;
+
         ros::spinOnce();
         ros::Rate(10).sleep();
     }
 
     SE3_est_I = vehicle_SE3_world_gt;
-    v_est_I.setZero();
+    v_est_I = vehicle_twist_world_gt.head(3);
+
+    inertial_start = SE3_est_I.translation();
+
+    g_vector_est_I.z() = - g_constant;
+
+    std::cout<<"======="<<std::endl;
+    std::cout<<SE3_est_I.translation()<<std::endl<<std::endl;
+    std::cout<<v_est_I<<std::endl;
+    // std::cout<<g_vector_est_I<<std::endl;
+    std::cout<<"init!!"<<std::endl;
 }
 
 void BLUEROV2_STATES::ImuDoNodelet::init_bias(ros::NodeHandle& nh)
@@ -86,8 +104,8 @@ void BLUEROV2_STATES::ImuDoNodelet::init_bias(ros::NodeHandle& nh)
         b_g_est_B(i) = static_cast<double>(gyro_bias_load_list[i]);
     }
 
-    std::cout<<b_a_est_B<<std::endl;
-    std::cout<<b_g_est_B<<std::endl;
+    // std::cout<<b_a_est_B<<std::endl;
+    // std::cout<<b_g_est_B<<std::endl;
 }
 
 void BLUEROV2_STATES::ImuDoNodelet::init_disturb(ros::NodeHandle& nh)
@@ -98,6 +116,7 @@ void BLUEROV2_STATES::ImuDoNodelet::init_disturb(ros::NodeHandle& nh)
 void BLUEROV2_STATES::ImuDoNodelet::init_noise(ros::NodeHandle& nh)
 {
     nh.getParam("/BLUEROV2_STATES_master/q_process_noise", q_process_noise);
+    
     Q_process = Eigen::Matrix<double, 21, 21>::Identity() * q_process_noise;
 
     nh.getParam("/BLUEROV2_STATES_master/p_meas_noise", p_meas_noise);
@@ -117,6 +136,16 @@ void BLUEROV2_STATES::ImuDoNodelet::init_noise(ros::NodeHandle& nh)
         th_meas_noise,
         th_meas_noise
     ).finished().asDiagonal();
+}
+
+void BLUEROV2_STATES::ImuDoNodelet::init_gps(ros::NodeHandle& nh)
+{
+    gps_start = Eigen::Vector3d(
+        gps_buf.back()->longitude,
+        gps_buf.back()->latitude,
+        gps_buf.back()->altitude
+    );
+    gps_buf.pop();
 }
 
 void BLUEROV2_STATES::ImuDoNodelet::dynamics_parameter_config(

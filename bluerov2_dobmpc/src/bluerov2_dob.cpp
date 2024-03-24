@@ -330,6 +330,7 @@ void BLUEROV2_DOB::solve(){
             acados_param[i][3] = 0;
         }
         else if(COMPENSATE_D == true){
+            
             acados_param[i][0] = esti_x(12)/compensate_coef;
             acados_param[i][1] = esti_x(13)/compensate_coef;
             acados_param[i][2] = esti_x(14)/rotor_constant;
@@ -673,7 +674,8 @@ MatrixXd BLUEROV2_DOB::f(MatrixXd x, MatrixXd u)
                 + bouyancy * cos(x(4)) *cos(x(3))
                 + x(14)
                 + Dl[2] * x(8)
-                + Dnl[2] * abs(x(8)) * x(8)),
+                + Dnl[2] * abs(x(8)) * x(8)
+            ),
             
             
             

@@ -44,7 +44,7 @@
 namespace BLUEROV2_STATES 
 {
     typedef struct synced_data{
-        bool empty;
+        bool update = false;
         std::pair<std::vector<sensor_msgs::Imu::ConstPtr>, sensor_msgs::NavSatFix::ConstPtr> meas_data;
     }synced_data;
 
@@ -83,9 +83,6 @@ namespace BLUEROV2_STATES
         Sophus::Vector6d vehicle_twist_body_gt;
         Eigen::Vector3d vehicle_Euler_gt;
 
-        Sophus::SE3d vehicle_SE3_world_est;
-        Sophus::Vector6d vehicle_twist_world_est;
-
         bool tracking_start = false;
         double starting_time = 0;
         double init_time = 0;
@@ -95,7 +92,6 @@ namespace BLUEROV2_STATES
         void gps_callback(const sensor_msgs::NavSatFix::ConstPtr& msg);
         void pose_gt_callback(const nav_msgs::Odometry::ConstPtr& msg);
         void main_spin_callback(const ros::TimerEvent& e);
-        bool initialization();
 
         synced_data SyncMeas();
 
@@ -141,6 +137,7 @@ namespace BLUEROV2_STATES
         Sophus::Vector6d dynamics_g(const Eigen::Vector3d& euler);
 
 //      ESKF.cpp
+        int index_lala = 0;
         double dt;
         double t_prev;
         Sophus::SE3d SE3_est_I;
@@ -149,6 +146,7 @@ namespace BLUEROV2_STATES
         Eigen::Vector3d b_a_est_B = Eigen::Vector3d::Zero();
         Eigen::Vector3d g_vector_est_I = Eigen::Vector3d::Zero();
         Eigen::Vector3d xi_est_I = Eigen::Vector3d::Zero();
+        Eigen::Vector3d gps_start, inertial_start;
         
         // error state p, R, v, b_a, b_g, g, xi
         Eigen::Matrix<double, 21, 1> dx = Eigen::Matrix<double, 21, 1>::Zero();
@@ -170,11 +168,14 @@ namespace BLUEROV2_STATES
         Eigen::Matrix<double, 21, 9> K_gain = Eigen::Matrix<double, 21, 9>::Zero();
         Eigen::Matrix<double, 9, 9> R_meas = Eigen::Matrix<double, 9, 9>::Zero();
 
-        void EskfProcess();
+        void EskfProcess(
+            const synced_data& data_to_be_fused
+        );
         void predict(
             const Sophus::Vector6d& imu_B
         );
         // void 
+        Sophus::SE3d get_processed_gps(const sensor_msgs::NavSatFix& gps_current);
         void update(
             const Sophus::SE3d& gps_I,
             const Eigen::Vector3d& tau_data_B
@@ -195,6 +196,7 @@ namespace BLUEROV2_STATES
         void init_bias(ros::NodeHandle& nh);
         void init_disturb(ros::NodeHandle& nh);
         void init_noise(ros::NodeHandle& nh);
+        void init_gps(ros::NodeHandle& nh);
         void eskf_config(ros::NodeHandle& nh);
 
         void communi_config(ros::NodeHandle& nh);

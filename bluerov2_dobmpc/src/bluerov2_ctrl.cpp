@@ -66,8 +66,11 @@ void BLUEROV2_CTRL::communi_config(ros::NodeHandle& nh)
     thrust5_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/5/input",20);
         
     // vis pub
-    ref_pose_pub = nh.advertise<nav_msgs::Odometry>("/bluerov2/mpc/reference",20);
-    error_pose_pub = nh.advertise<nav_msgs::Odometry>("/bluerov2/mpc/error",20);
+    ref_point_pub = nh.advertise<geometry_msgs::PointStamped>("/bluerov2/mpc/reference",20);
+    cur_point_pub = nh.advertise<geometry_msgs::PointStamped>("/bluerov2/mpc/state",20);
+    error_point_pub = nh.advertise<geometry_msgs::PointStamped>("/bluerov2/mpc/error",20);
+    error_abs_pub = nh.advertise<std_msgs::Float32>("/bluerov2/mpc/error_abs",20);
+
     control_input0_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/control_input/0",20);
     control_input1_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/control_input/1",20);
     control_input2_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/control_input/2",20);
@@ -147,10 +150,7 @@ void BLUEROV2_CTRL::mainspin_cb(const ros::TimerEvent& e)
 
     if(!got_path)
     {
-        ROS_WARN("NO PATH");
-        ref_single_pt.ref_pos.x = last_ref.ref_pos.x;
-        ref_single_pt.ref_pos.y = last_ref.ref_pos.y;
-        ref_single_pt.ref_pos.z = last_ref.ref_pos.z;
+        ref_single_pt = last_ref;
     }
     else
         set_last_ref();
@@ -175,6 +175,9 @@ void BLUEROV2_CTRL::mainspin_cb(const ros::TimerEvent& e)
     default:
         break;
     }
+
+    misc_pub();
+    got_path = false;
 }
 
 void BLUEROV2_CTRL::set_last_ref()
@@ -266,88 +269,41 @@ void BLUEROV2_CTRL::ctrl_allocate(const SolverOutput& u_out)
     // why thrust 4 and 5 (+-) are different when applying pid or mpc
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 void BLUEROV2_CTRL::misc_pub()
 {
-    // // change into form of (-pi, pi)
-    // if(sin(acados_in.yref[0][5]) >= 0)
-    //     yaw_ref = fmod(
-    //         acados_in.yref[0][5],
-    //         M_PI
-    //     );
-    
-    // else
-    //     yaw_ref = -M_PI + fmod(
-    //         acados_in.yref[0][5],
-    //         M_PI
-    //     );
+    std_msgs::Header stamp;
+    stamp.frame_id = "world";
+    stamp.stamp = ros::Time::now();
 
+    // ref point
+    geometry_msgs::PointStamped ref_point;
+    ref_point.header = stamp;
+    ref_point.point.x = current_ref.ref_pos.x;
+    ref_point.point.y = current_ref.ref_pos.y;
+    ref_point.point.z = current_ref.ref_pos.z;
 
-    // publish reference pose
-    tf2::Quaternion quat;
-    quat.setRPY(0, 0, yaw_ref);
-    geometry_msgs::Quaternion quat_msg;
-    tf2::convert(quat, quat_msg);
-    ref_pose.pose.pose.position.x = acados_in.yref[0][0];
-    ref_pose.pose.pose.position.y = acados_in.yref[0][1];
-    ref_pose.pose.pose.position.z = acados_in.yref[0][2];
-    ref_pose.pose.pose.orientation.x = quat_msg.x;
-    ref_pose.pose.pose.orientation.y = quat_msg.y;
-    ref_pose.pose.pose.orientation.z = quat_msg.z;
-    ref_pose.pose.pose.orientation.w = quat_msg.w;
-    ref_pose.header.stamp = ros::Time::now();
-    ref_pose.header.frame_id = "odom_frame";
-    ref_pose.child_frame_id = "base_link";
-    ref_pose_pub.publish(ref_pose);
+    // cur point
+    geometry_msgs::PointStamped current_point;
+    current_point.header = stamp;
+    current_point.point.x = acados_in.x0[0];
+    current_point.point.y = acados_in.x0[1];
+    current_point.point.z = acados_in.x0[2];
 
-    // publish error pose
-    tf2::Quaternion quat_error;
-    yaw_error = yaw_sum - acados_in.yref[0][5];
-    quat_error.setRPY(0, 0, yaw_error);
-    geometry_msgs::Quaternion quat_error_msg;
-    tf2::convert(quat_error, quat_error_msg);
-    error_pose.pose.pose.position.x = acados_in.x0[0] - acados_in.yref[0][0];
-    error_pose.pose.pose.position.y = acados_in.x0[1] - acados_in.yref[0][1];
-    error_pose.pose.pose.position.z = acados_in.x0[2] - acados_in.yref[0][2];
-    error_pose.pose.pose.orientation.x = quat_error_msg.x;
-    error_pose.pose.pose.orientation.y = quat_error_msg.y;
-    error_pose.pose.pose.orientation.z = quat_error_msg.z;
-    error_pose.pose.pose.orientation.w = quat_error_msg.w;
-    error_pose.header.stamp = ros::Time::now();
-    error_pose.header.frame_id = "odom_frame";
-    error_pose.child_frame_id = "base_link";
+    // error point
+    geometry_msgs::PointStamped error_point;
+    error_point.header = stamp;
+    error_point.point.x = current_point.point.x - ref_point.point.x;
+    error_point.point.y = current_point.point.y - ref_point.point.y;
+    error_point.point.z = current_point.point.z - ref_point.point.z;
 
-    error_pose_pub.publish(error_pose);
+    error_point_pub.publish(error_point);
 
-    // publish conrtrol input
-    control_input0.data = acados_out.u0[0];
-    control_input1.data = acados_out.u0[1];
-    control_input2.data = acados_out.u0[2];
-    control_input3.data = acados_out.u0[3];
+    std_msgs::Float32 error_abs;
+    error_abs.data = sqrt(
+        pow(error_point.point.x,2) + 
+        pow(error_point.point.y,2) +
+        pow(error_point.point.z,2) 
+    );
+    error_abs_pub.publish(error_abs);
 
-    control_input0_pub.publish(control_input0);
-    control_input1_pub.publish(control_input1);
-    control_input2_pub.publish(control_input2);
-    control_input3_pub.publish(control_input3);
 }

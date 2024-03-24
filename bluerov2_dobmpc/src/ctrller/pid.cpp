@@ -61,7 +61,7 @@ void BLUEROV2_CTRL::pid_solve()
 
     control_input_pub.publish(control_input_to_thrust);
 
-    misc_pub();
+    
 }
 
 void BLUEROV2_CTRL::pid_4D(

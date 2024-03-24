@@ -115,8 +115,10 @@ class BLUEROV2_CTRL : private RosUtilities
         ros::Publisher thrust4_pub;
         ros::Publisher thrust5_pub;
 
-        ros::Publisher ref_pose_pub;
-        ros::Publisher error_pose_pub;
+        ros::Publisher ref_point_pub;
+        ros::Publisher cur_point_pub;
+        ros::Publisher error_point_pub;
+        ros::Publisher error_abs_pub;
 
         ros::Publisher control_input0_pub;
         ros::Publisher control_input1_pub;
@@ -136,6 +138,8 @@ class BLUEROV2_CTRL : private RosUtilities
         airo_message::BlueRefPreview ref_traj;
         airo_message::BlueRef ref_single_pt;
         airo_message::BlueRef last_ref;
+        
+        airo_message::BlueRef current_ref;
         
         // config
         void ctrl_config(ros::NodeHandle& nh);
@@ -184,8 +188,8 @@ class BLUEROV2_CTRL : private RosUtilities
         double ZG = 0.02;
         double g = 9.81;
         double bouyancy = 0.661618;
-        double compensate_coef = 0.032546960744430276;
-        double rotor_constant = 0.026546960744430276;
+        double compensate_coef = 0.0266546960744430276;
+        double rotor_constant  = 0.026546960744430276;
         double added_mass[6] = {1.7182,0,5.468,0,1.2481,0.4006};
         double Dl[6] = {-11.7391, -20, -31.8678, -25, -44.9085, -5};
         double Dnl[6] = {-18.18,-21.66,-36.99,-1.55,-1.55,-1.55};
