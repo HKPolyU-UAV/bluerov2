@@ -9,7 +9,7 @@ import math
 
 # Parameters
 sample_time = 0.05             # seconds
-duration = 24000                 # seconds
+duration = 240       # seconds
 
 r = 2
 v = 1.5
@@ -29,8 +29,23 @@ traj[:,2] = z0                      # z
 traj[:,3] = 0                       # phi
 traj[:,4] = 0                       # theta
 traj[:,5] = t*v/r-0.5*np.pi         # psi
-traj[:,6] = v*np.sin(t*v/r)         # u
-traj[:,7] = -v*np.cos(t*v/r)        # v
+
+# Transform velocities from inertial frame to body frame
+psi = traj[:,5]
+u_inertial = v * np.cos(psi)
+v_inertial = v * np.sin(psi)
+rotation_matrix = np.array([[np.cos(psi), -np.sin(psi)],
+                            [np.sin(psi), np.cos(psi)]])
+velocity_inertial = np.vstack((u_inertial, v_inertial))
+velocity_body = np.dot(rotation_matrix.T, velocity_inertial)
+velocity_body_flat = velocity_body.flatten()
+
+# print(psi)
+# Assign velocities to traj array after reshaping
+traj[:,6] = velocity_body_flat[0]   # u
+traj[:,7] = velocity_body_flat[1]
+
+
 traj[:,8] = 0                       # w
 traj[:,9] = 0                       # p
 traj[:,10] = 0                      # q

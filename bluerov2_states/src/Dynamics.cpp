@@ -1,6 +1,6 @@
 #include "bluerov2_states/ImuDo.h"
 
-void BLUEROV2_STATES::ImuDoNodelet::DistRawMeas()
+Eigen::Vector3d BLUEROV2_STATES::ImuDoNodelet::DistRawMeas()
 {
     
     Sophus::Vector6d sys_wrench_B = cal_system_wrench();
@@ -8,22 +8,18 @@ void BLUEROV2_STATES::ImuDoNodelet::DistRawMeas()
     // M * imu_B = sys_wrench_B + delta_B
     Sophus::Vector6d delta_raw_B = M_rb * imu_raw_B - sys_wrench_B;
 
-    // std::cout<<"===================="<<std::endl;
-    // // std::cout<<"FORCE RAW"<<std::endl;
-    // // std::cout<<(M * imu_raw_B).head(3)<<std::endl;
-    // std::cout<<"DELTA RAW"<<std::endl;
-    // std::cout<<
-    //     q_rotate_vector(
-    //         vehicle_SE3_world_gt.unit_quaternion(),
-    //         delta_raw_B.head(3)
-    //     )
-    // <<std::endl;
-    // std::cout<<"===================="<<std::endl;
+    std::cout<<"===================="<<std::endl;
+    // std::cout<<"FORCE RAW"<<std::endl;
+    // std::cout<<(M * imu_raw_B).head(3)<<std::endl;
+    std::cout<<"DELTA RAW"<<std::endl;
+    std::cout<<
+        q_rotate_vector(
+            vehicle_SE3_world_gt.unit_quaternion(),
+            delta_raw_B.head(3)
+        )
+    <<std::endl;
+    std::cout<<"===================="<<std::endl;
 
-
-
-
-    
     // std::cout<<delta_raw_B.head(3)<<std::endl;
 
     // std::cout<<imu_raw_B - vehicle_twist_body_gt<<std::endl;
@@ -35,12 +31,25 @@ void BLUEROV2_STATES::ImuDoNodelet::DistRawMeas()
     Eigen::Vector3d delta_I = Eigen::Vector3d(10, 10, 10);
     Eigen::Vector3d delta_B = vehicle_SE3_world_gt.rotationMatrix().inverse() * delta_I;
 
-    esti_dist.disturb.linear.x = delta_B.x();
-    esti_dist.disturb.linear.y = delta_B.y();
-    esti_dist.disturb.linear.z = delta_B.z();
+    // esti_dist.disturb.linear.x = delta_B.x();
+    // esti_dist.disturb.linear.y = delta_B.y();
+    // esti_dist.disturb.linear.z = delta_B.z();
 
-    esti_dist_pub.publish(esti_dist);
+    // esti_dist_pub.publish(esti_dist);
 
+    geometry_msgs::Point wrench_data;
+    Eigen::Vector3d delta_raw_I = q_rotate_vector(
+        vehicle_SE3_world_gt.unit_quaternion(),
+        delta_raw_B.head(3)
+    );
+
+    wrench_data.x = delta_raw_I.x();
+    wrench_data.y = delta_raw_I.y();
+    wrench_data.z = delta_raw_I.z();
+
+    wrench_pub.publish(wrench_data);
+
+    return delta_raw_B.head(3);
 }
 
 Sophus::Vector6d BLUEROV2_STATES::ImuDoNodelet::cal_system_wrench()
@@ -66,7 +75,7 @@ Sophus::Vector6d BLUEROV2_STATES::ImuDoNodelet::dynamics_Mrb(
     const Sophus::Vector6d& twist_B
 )
 {
-    return M_rb * imu_raw_B;
+    return M_rb * twist_B;
 }
 
 
@@ -85,7 +94,7 @@ Sophus::Vector6d BLUEROV2_STATES::ImuDoNodelet::dynamics_C(
     Eigen::Matrix<double,6,6> C_rb;
 
     C_rb.setZero();
-    C_rb.block<3,3>(0,3) = Sophus::SO3d::hat(-mass * twist_B.head(3));
+    // C_rb.block<3,3>(0,3) = Sophus::SO3d::hat(-mass * twist_B.head(3));
     // C_rb.block<3,3>(0,3) = Sophus::SO3d::hat(- mass * twist_B.head(3));
     // C_rb.block<3,3>(3,3) = Sophus::SO3d::hat(
     //     (

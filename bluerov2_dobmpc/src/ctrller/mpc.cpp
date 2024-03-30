@@ -44,8 +44,6 @@ void BLUEROV2_CTRL::mpc_solve()
 
     set_ref();
 
-    
-
     for (unsigned int i = 0; i <= BLUEROV2_N; i++)
     {
         // set_ref
@@ -159,8 +157,10 @@ void BLUEROV2_CTRL::set_mpc_constraints()
                 std::cout<<esti_disturb.disturb.linear.y<<std::endl;
                 std::cout<<esti_disturb.disturb.linear.z<<std::endl;
             }
-            acados_param[i][0] = esti_disturb.disturb.linear.x / rotor_constant; //esti_x(12)/compensate_coef;
-            acados_param[i][1] = esti_disturb.disturb.linear.y / rotor_constant; //esti_x(13)/compensate_coef;
+
+            // double comp
+            acados_param[i][0] = esti_disturb.disturb.linear.x / 0.032546960744430276; //esti_x(12)/compensate_coef;
+            acados_param[i][1] = esti_disturb.disturb.linear.y / 0.032546960744430276; //esti_x(13)/compensate_coef;
             acados_param[i][2] = esti_disturb.disturb.linear.z / rotor_constant; //esti_x(14)/rotor_constant;
             acados_param[i][3] = 0; //esti_x(17)/rotor_constant;  
         }
@@ -231,9 +231,7 @@ void BLUEROV2_CTRL::set_ref()
     {
         convert_refmsg_2_acados(i, ref_traj.preview[i]);
         // std::cout<<ref_traj.prev iew[i].ref_pos.x<<std::endl;
-
     }
-        
 
     current_ref.ref_pos.x = acados_in.yref[0][0];
     current_ref.ref_pos.y = acados_in.yref[0][1];

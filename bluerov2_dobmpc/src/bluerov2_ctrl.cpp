@@ -282,6 +282,8 @@ void BLUEROV2_CTRL::misc_pub()
     ref_point.point.y = current_ref.ref_pos.y;
     ref_point.point.z = current_ref.ref_pos.z;
 
+    ref_point_pub.publish(ref_point);
+
     // cur point
     geometry_msgs::PointStamped current_point;
     current_point.header = stamp;

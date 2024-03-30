@@ -92,3 +92,14 @@ add_executable(ImuCalibrate
 target_link_libraries(ImuCalibrate
   ${catkin_LIBRARIES}
 )
+
+####################################
+####################################
+## ImuCalibrate
+add_executable(dataCollect
+  src/dataCollect.cpp)
+
+target_link_libraries(dataCollect
+  ${catkin_LIBRARIES}
+)
+

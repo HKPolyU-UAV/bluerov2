@@ -21,7 +21,7 @@ class BLUEROV2_PATH
 
         airo_message::BlueRefPreview ref_traj;
 
-        ros::Publisher ref_traj_pub;
+        ros::Publisher ref_traj_pub, path_start_pub;
         ros::Timer mainspin_timer;
 
         void mainspin_cb(const ros::TimerEvent& e);

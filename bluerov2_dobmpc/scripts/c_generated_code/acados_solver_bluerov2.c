@@ -421,14 +421,14 @@ void bluerov2_acados_create_5_set_nlp_in(bluerov2_solver_capsule* capsule, const
     free(yref_e);
    double* W_0 = calloc(NY0*NY0, sizeof(double));
     // change only the non-zero elements:
-    W_0[0+(NY0) * 0] = 380;
-    W_0[1+(NY0) * 1] = 450;
+    W_0[0+(NY0) * 0] = 300;
+    W_0[1+(NY0) * 1] = 480;
     W_0[2+(NY0) * 2] = 200;
     W_0[3+(NY0) * 3] = 10;
     W_0[4+(NY0) * 4] = 10;
     W_0[5+(NY0) * 5] = 200;
-    W_0[6+(NY0) * 6] = 10;
-    W_0[7+(NY0) * 7] = 10;
+    W_0[6+(NY0) * 6] = 40;
+    W_0[7+(NY0) * 7] = 40;
     W_0[8+(NY0) * 8] = 10;
     W_0[9+(NY0) * 9] = 10;
     W_0[10+(NY0) * 10] = 10;
@@ -441,14 +441,14 @@ void bluerov2_acados_create_5_set_nlp_in(bluerov2_solver_capsule* capsule, const
     free(W_0);
     double* W = calloc(NY*NY, sizeof(double));
     // change only the non-zero elements:
-    W[0+(NY) * 0] = 380;
-    W[1+(NY) * 1] = 450;
+    W[0+(NY) * 0] = 300;
+    W[1+(NY) * 1] = 480;
     W[2+(NY) * 2] = 200;
     W[3+(NY) * 3] = 10;
     W[4+(NY) * 4] = 10;
     W[5+(NY) * 5] = 200;
-    W[6+(NY) * 6] = 10;
-    W[7+(NY) * 7] = 10;
+    W[6+(NY) * 6] = 40;
+    W[7+(NY) * 7] = 40;
     W[8+(NY) * 8] = 10;
     W[9+(NY) * 9] = 10;
     W[10+(NY) * 10] = 10;
@@ -465,14 +465,14 @@ void bluerov2_acados_create_5_set_nlp_in(bluerov2_solver_capsule* capsule, const
     free(W);
     double* W_e = calloc(NYN*NYN, sizeof(double));
     // change only the non-zero elements:
-    W_e[0+(NYN) * 0] = 380;
-    W_e[1+(NYN) * 1] = 450;
+    W_e[0+(NYN) * 0] = 300;
+    W_e[1+(NYN) * 1] = 480;
     W_e[2+(NYN) * 2] = 200;
     W_e[3+(NYN) * 3] = 10;
     W_e[4+(NYN) * 4] = 10;
     W_e[5+(NYN) * 5] = 200;
-    W_e[6+(NYN) * 6] = 10;
-    W_e[7+(NYN) * 7] = 10;
+    W_e[6+(NYN) * 6] = 40;
+    W_e[7+(NYN) * 7] = 40;
     W_e[8+(NYN) * 8] = 10;
     W_e[9+(NYN) * 9] = 10;
     W_e[10+(NYN) * 10] = 10;

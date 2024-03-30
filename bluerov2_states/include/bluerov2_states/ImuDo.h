@@ -64,7 +64,7 @@ namespace BLUEROV2_STATES
 
         ros::Subscriber gt_sub, imu_sub, gps_sub;
 
-        ros::Publisher update_pub, imu_pub, esti_dist_pub;
+        ros::Publisher update_pub, imu_pub, esti_dist_pub, xi_pub, est_pub, wrench_pub;
         ros::Timer main_spin_timer;
 
         std::queue<sensor_msgs::Imu::ConstPtr> imu_buf, imu_calib_buf;
@@ -125,7 +125,7 @@ namespace BLUEROV2_STATES
         Sophus::Vector6d current_th;
         std::vector<ros::Subscriber> th_subs;
 
-        void DistRawMeas();
+        Eigen::Vector3d DistRawMeas();
         void dynamics_parameter_config(ros::NodeHandle& nh);
         Sophus::Vector6d cal_system_wrench();
 
@@ -147,6 +147,8 @@ namespace BLUEROV2_STATES
         Eigen::Vector3d g_vector_est_I = Eigen::Vector3d::Zero();
         Eigen::Vector3d xi_est_I = Eigen::Vector3d::Zero();
         Eigen::Vector3d gps_start, inertial_start;
+        Eigen::Vector3d prev_gps_trans_I, curr_gps_trans_I;
+        double gps_t_prev;
         
         // error state p, R, v, b_a, b_g, g, xi
         Eigen::Matrix<double, 21, 1> dx = Eigen::Matrix<double, 21, 1>::Zero();
@@ -160,13 +162,13 @@ namespace BLUEROV2_STATES
         );
         Eigen::Matrix<double, 21, 21> Q_process = Eigen::Matrix<double, 21, 21>::Zero();
         
-        Eigen::Matrix<double, 9,  1> y_innov = Eigen::Matrix<double, 9, 1>::Zero();
-        Eigen::Matrix<double, 9, 21> H_update = Eigen::Matrix<double, 9, 21>::Zero();
+        Eigen::Matrix<double, 12,  1> y_innov = Eigen::Matrix<double, 12, 1>::Zero();
+        Eigen::Matrix<double, 12, 21> H_update = Eigen::Matrix<double, 12, 21>::Zero();
         void set_H(
-            Eigen::Matrix<double, 9, 21>& H
+            Eigen::Matrix<double, 12, 21>& H
         );
-        Eigen::Matrix<double, 21, 9> K_gain = Eigen::Matrix<double, 21, 9>::Zero();
-        Eigen::Matrix<double, 9, 9> R_meas = Eigen::Matrix<double, 9, 9>::Zero();
+        Eigen::Matrix<double, 21, 12> K_gain = Eigen::Matrix<double, 21, 12>::Zero();
+        Eigen::Matrix<double, 12, 12> R_meas = Eigen::Matrix<double, 12, 12>::Zero();
 
         void EskfProcess(
             const synced_data& data_to_be_fused
@@ -175,9 +177,11 @@ namespace BLUEROV2_STATES
             const Sophus::Vector6d& imu_B
         );
         // void 
-        Sophus::SE3d get_processed_gps(const sensor_msgs::NavSatFix& gps_current);
+        Sophus::SE3d get_processed_gps_pose(const sensor_msgs::NavSatFix& gps_current);
+        Eigen::Vector3d get_processed_gps_velo();
         void update(
-            const Sophus::SE3d& gps_I,
+            const Sophus::SE3d& pose_gps_I,
+            const Eigen::Vector3d& velo_gps_I,
             const Eigen::Vector3d& tau_data_B
         );
         void inject(
@@ -189,8 +193,6 @@ namespace BLUEROV2_STATES
         bool got_gps = false;
         bool got_gt  = false;
         bool filter_start = false;
-        double q_process_noise;
-        double p_meas_noise, r_meas_noise, th_meas_noise;
 
         void init_odom(ros::NodeHandle& nh);
         void init_bias(ros::NodeHandle& nh);

@@ -7,6 +7,7 @@ BLUEROV2_PATH::BLUEROV2_PATH(ros::NodeHandle& nh)
     const char * c = REF_TRAJ.c_str();
 
     number_of_steps = readDataFromFile(c, trajectory);
+    std::cout<<number_of_steps<<std::endl;
 
     if (number_of_steps == 0)
 		ROS_WARN("Cannot load CasADi optimal trajectory!");
@@ -19,6 +20,9 @@ BLUEROV2_PATH::BLUEROV2_PATH(ros::NodeHandle& nh)
 
     ref_traj_pub = nh.advertise<airo_message::BlueRefPreview>
                 ("/ref_traj", 1);
+
+    path_start_pub = nh.advertise<std_msgs::Bool>
+                ("/path_start", 1);
 
     mainspin_timer = nh.createTimer(
         ros::Duration(1.0/20.0),
@@ -107,6 +111,10 @@ void BLUEROV2_PATH::read_N_pub(int line_to_read)
     std::cout<<"WHICH LINE: "<<line_to_read<<std::endl<<std::endl;;
 
     ref_traj_pub.publish(ref_traj);
+
+    std_msgs::Bool starto;
+    starto.data = true;
+    path_start_pub.publish(starto);
 }
 
 airo_message::BlueRef BLUEROV2_PATH::extract_ref_pt(const int no_of_line)

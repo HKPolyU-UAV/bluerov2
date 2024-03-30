@@ -34,7 +34,6 @@ void BLUEROV2_STATES::ImuDoNodelet::imu_callback(
         got_imu = true;
     }
         
-
     if(!filter_start)
         return;
 
@@ -91,8 +90,6 @@ void BLUEROV2_STATES::ImuDoNodelet::main_spin_callback(const ros::TimerEvent& e)
     if(!filter_start)
         return;
     
-    // DistRawMeas();
-
     EskfProcess(SyncMeas());
 }
 

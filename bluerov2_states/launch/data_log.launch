@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<launch>
+	<node pkg="bluerov2_states" type="dataCollect" name="dataCollect" output="screen">
+        <param name="log_file" type="string" value="$(find bluerov2_states)/scripts/csvs/"/>
+	</node>
+</launch>

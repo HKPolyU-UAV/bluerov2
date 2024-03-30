@@ -59,9 +59,10 @@
             Non-linear damping: see p.30 in Berg2012
           -->
           <quadratic_damping>
-            -18.18  -21.66 -36.99 -1.55 -1.55 -1.55
+          -18.18  -21.66 -36.99 -1.55 -1.55 -1.55
           </quadratic_damping>
-
+          <!-- -18.18  -21.66 -36.99 -1.55 -1.55 -1.55 -->
+          <!-- 0 0 0 0 0 0 -->
           <!--
             In case you want to model a simple surface vessel, you can use the
             implementation of linear (small angle) theory for boxed shaped vessels

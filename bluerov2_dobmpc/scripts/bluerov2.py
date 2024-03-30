@@ -116,10 +116,13 @@ def export_bluerov2_model() -> AcadosModel:
     
 
     # dynamics
+    # +m*r*v- m*q*w
+    # -m*r*u+ m*p*w
+    # +m*q*u- m*p*v
     
-    du = 1/(m+added_mass_x)*(Kt0+m*r*v-m*q*w-bouyancy*sin(theta)+disturbance_x+linear_d_x*u+nonlinear_d_x*fabs(u)*u)
-    dv = 1/(m+added_mass_y)*(Kt1-m*r*u+m*p*w+bouyancy*cos(theta)*sin(phi)+disturbance_y+linear_d_y*v+nonlinear_d_y*fabs(v)*v)
-    dw = 1/(m+added_mass_z)*(Kt2+m*q*u-m*p*v+bouyancy*cos(theta)*cos(phi)+disturbance_z+linear_d_z*w+nonlinear_d_z*fabs(w)*w)
+    du = 1/(m+added_mass_x)*(Kt0  -bouyancy*sin(theta)+disturbance_x+linear_d_x*u+nonlinear_d_x*fabs(u)*u)
+    dv = 1/(m+added_mass_y)*(Kt1  +bouyancy*cos(theta)*sin(phi)+disturbance_y+linear_d_y*v+nonlinear_d_y*fabs(v)*v)
+    dw = 1/(m+added_mass_z)*(Kt2  +bouyancy*cos(theta)*cos(phi)+disturbance_z+linear_d_z*w+nonlinear_d_z*fabs(w)*w)
     dp = 1/Ix*(Kt3+(Iy-Iz)*q*r-m*ZG*g*cos(theta)*sin(phi))
     dq = 1/Iy*(Kt4+(Iz-Ix)*p*r-m*ZG*g*sin(theta))
     dr = 1/(Iz+added_mass_n)*(Kt5-(Iy-Ix)*p*q+disturbance_psi+linear_d_n*r+nonlinear_d_n*fabs(r)*r)

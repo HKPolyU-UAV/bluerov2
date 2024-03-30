@@ -37,6 +37,14 @@ void BLUEROV2_STATES::ImuDoNodelet::communi_config(ros::NodeHandle& nh)
     esti_dist_pub = nh.advertise<airo_message::Disturbance>
                 ("/disturbance", 1);
 
+    xi_pub = nh.advertise<geometry_msgs::Point>
+                ("/xi", 1);
+
+    est_pub = nh.advertise<nav_msgs::Odometry>
+                ("/est_x", 1);
+
+    wrench_pub = nh.advertise<geometry_msgs::Point>("/current_wrench",1);
+
     ROS_CYAN_STREAM("COMMUNICATION CONFIG SUCCEEDED!");
 }
 
@@ -80,12 +88,6 @@ void BLUEROV2_STATES::ImuDoNodelet::init_odom(ros::NodeHandle& nh)
     inertial_start = SE3_est_I.translation();
 
     g_vector_est_I.z() = - g_constant;
-
-    std::cout<<"======="<<std::endl;
-    std::cout<<SE3_est_I.translation()<<std::endl<<std::endl;
-    std::cout<<v_est_I<<std::endl;
-    // std::cout<<g_vector_est_I<<std::endl;
-    std::cout<<"init!!"<<std::endl;
 }
 
 void BLUEROV2_STATES::ImuDoNodelet::init_bias(ros::NodeHandle& nh)
@@ -115,26 +117,40 @@ void BLUEROV2_STATES::ImuDoNodelet::init_disturb(ros::NodeHandle& nh)
 
 void BLUEROV2_STATES::ImuDoNodelet::init_noise(ros::NodeHandle& nh)
 {
-    nh.getParam("/BLUEROV2_STATES_master/q_process_noise", q_process_noise);
-    
-    Q_process = Eigen::Matrix<double, 21, 21>::Identity() * q_process_noise;
+    double p_proc_noise, v_proc_noise, r_proc_noise, xi_proc_noise, q_proc_noise;
 
+    nh.getParam("/BLUEROV2_STATES_master/p_proc_noise", p_proc_noise);
+    nh.getParam("/BLUEROV2_STATES_master/v_proc_noise", v_proc_noise);
+    nh.getParam("/BLUEROV2_STATES_master/r_proc_noise", r_proc_noise);
+    nh.getParam("/BLUEROV2_STATES_master/xi_proc_noise", xi_proc_noise);
+    nh.getParam("/BLUEROV2_STATES_master/q_proc_noise", q_proc_noise);
+    
+    Q_process = (
+        Eigen::Matrix<double, 21, 1>()
+        <<
+        Eigen::Vector3d::Ones() * p_proc_noise,
+        Eigen::Vector3d::Ones() * v_proc_noise,
+        Eigen::Vector3d::Ones() * r_proc_noise,
+        Eigen::Vector3d::Ones() * q_proc_noise,
+        Eigen::Vector3d::Ones() * q_proc_noise,
+        Eigen::Vector3d::Ones() * q_proc_noise,
+        Eigen::Vector3d::Ones() * xi_proc_noise
+    ).finished().asDiagonal();
+
+    double p_meas_noise, v_meas_noise, r_meas_noise, th_meas_noise;
+    
     nh.getParam("/BLUEROV2_STATES_master/p_meas_noise", p_meas_noise);
+    nh.getParam("/BLUEROV2_STATES_master/v_meas_noise", v_meas_noise);
     nh.getParam("/BLUEROV2_STATES_master/r_meas_noise", r_meas_noise);
     nh.getParam("/BLUEROV2_STATES_master/th_meas_noise", th_meas_noise);
 
     R_meas = (
-        Eigen::Matrix<double, 9, 1>() 
+        Eigen::Matrix<double, 12, 1>() 
         << 
-        p_meas_noise, 
-        p_meas_noise,
-        p_meas_noise,
-        r_meas_noise,
-        r_meas_noise,
-        r_meas_noise,
-        th_meas_noise,
-        th_meas_noise,
-        th_meas_noise
+        Eigen::Vector3d::Ones() * p_meas_noise, 
+        Eigen::Vector3d::Ones() * v_meas_noise, 
+        Eigen::Vector3d::Ones() * r_meas_noise, 
+        Eigen::Vector3d::Ones() * th_meas_noise
     ).finished().asDiagonal();
 }
 
@@ -146,6 +162,10 @@ void BLUEROV2_STATES::ImuDoNodelet::init_gps(ros::NodeHandle& nh)
         gps_buf.back()->altitude
     );
     gps_buf.pop();
+
+    curr_gps_trans_I.setZero();
+    prev_gps_trans_I.setZero();
+    gps_t_prev = ros::Time::now().toSec();
 }
 
 void BLUEROV2_STATES::ImuDoNodelet::dynamics_parameter_config(
