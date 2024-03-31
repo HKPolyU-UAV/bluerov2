@@ -60,8 +60,6 @@ void BLUEROV2_CTRL::pid_solve()
     control_input_to_thrust.torque.z = 0;
 
     control_input_pub.publish(control_input_to_thrust);
-
-    
 }
 
 void BLUEROV2_CTRL::pid_4D(
@@ -98,17 +96,19 @@ void BLUEROV2_CTRL::pid_4D(
     pid_out.u0[2] = U_B(2);
     pid_out.u0[3] = 0;//U(3);
 
-    cout<<"within PID"<<endl;
-    for(auto what:pid_out.u0)
-    {
-        cout<<what<<endl;
-    }
-    cout<<endl;
+    // cout<<"within PID"<<endl;
+    // for(auto what:pid_out.u0)
+    // {
+    //     cout<<what<<endl;
+    // }
+    // cout<<endl;
 
 };
 
 Sophus::Vector4d BLUEROV2_CTRL::get_pid_ref()
 {
+    current_ref.ref_pos = ref_single_pt.ref_pos;
+    
     return (
         Sophus::Vector4d() << 
         ref_single_pt.ref_pos.x,

@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-	<arg name="ctrller_type" value="1"/> 
+	<arg name="ctrller_type" value="2"/> 
 	<!-- mpc = 0; dompc = 1; pid = 2 -->
 
 	<arg name="uuv_name" value="bluerov2"/> 
