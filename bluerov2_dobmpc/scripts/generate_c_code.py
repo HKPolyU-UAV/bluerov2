@@ -30,8 +30,8 @@ def main():
     ocp.parameter_values = np.zeros((nparam, ))
     
     # set cost
-    W_x = np.diag([380, 450, 200, 10, 10, 200, 10, 10, 10, 10, 10, 10])    #Q_mat
-    W_u = np.diag([1, 1, 0.1, 0.05])                           #R_mat
+    W_x = np.diag([380, 420, 150, 10, 10, 150, 10, 10, 10, 10, 10, 10])    #Q_mat
+    W_u = np.diag([15, 15, 0.1, 0.05])                           #R_mat
     W = block_diag(W_x, W_u)
     ocp.cost.W_e = W_x
     ocp.cost.W = W

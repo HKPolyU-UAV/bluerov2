@@ -322,29 +322,25 @@ void BLUEROV2_DOB::solve(){
             acados_param[i][0] = solver_param.disturbance_x;
             acados_param[i][1] = solver_param.disturbance_y;
             acados_param[i][2] = solver_param.disturbance_z;
-            acados_param[i][3] = solver_param.disturbance_psi;
+            acados_param[i][3] = solver_param.disturbance_phi;
+            acados_param[i][4] = solver_param.disturbance_theta;
+            acados_param[i][5] = solver_param.disturbance_psi;
         }
         else if(COMPENSATE_D == true){
-            acados_param[i][0] = esti_x(12)/compensate_coef;
-            acados_param[i][1] = esti_x(13)/compensate_coef;
+            acados_param[i][0] = esti_x(12)/rotor_constant;
+            acados_param[i][1] = esti_x(13)/rotor_constant;
             acados_param[i][2] = esti_x(14)/rotor_constant;
-            acados_param[i][3] = esti_x(17)/rotor_constant;  
+            acados_param[i][3] = solver_param.disturbance_phi;
+            acados_param[i][4] = solver_param.disturbance_theta;
+            acados_param[i][5] = esti_x(17)/rotor_constant;
+            
+            // acados_param[i][0] = compensate_f_body[0]/rotor_constant;
+            // acados_param[i][1] = esti_x(13)/rotor_constant;
+            // acados_param[i][2] = esti_x(14)/rotor_constant;
+            // acados_param[i][3] = solver_param.disturbance_phi;
+            // acados_param[i][4] = solver_param.disturbance_theta;
+            // acados_param[i][5] = esti_x(17)/rotor_constant;
         }
-        // added mass
-        acados_param[i][4] = 1.7182;
-        acados_param[i][5] = 0;
-        acados_param[i][6] = 5.468;
-        acados_param[i][7] = 0.4006;
-        // linear d
-        acados_param[i][8] = -11.7391;
-        acados_param[i][9] = -20;
-        acados_param[i][10] = -31.8678;
-        acados_param[i][11] = -5;
-        // nonlinear d
-        acados_param[i][12] = -18.18;
-        acados_param[i][13] = -21.66;
-        acados_param[i][14] = -36.99;
-        acados_param[i][15] = -1.55;
         bluerov2_acados_update_params(mpc_capsule,i,acados_param[i],BLUEROV2_NP);
     }
 

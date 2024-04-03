@@ -1,5 +1,5 @@
 from acados_template import AcadosModel
-from casadi import SX, vertcat, sin, cos, fabs
+from casadi import SX, vertcat, sin, cos
 import numpy as np
 from scipy.linalg import block_diag
 import math
@@ -30,33 +30,14 @@ def export_bluerov2_model() -> AcadosModel:
     u4 = SX.sym('u4')               # control signal regard to yaw
     sym_u = vertcat(u1,u2,u3,u4)
 
-    # parameters
+    # parameters (new added)
     disturbance_x = SX.sym('disturbance_x')
     disturbance_y = SX.sym('disturbance_y')
     disturbance_z = SX.sym('disturbance_z')
-    # disturbance_phi = SX.sym('disturbance_phi')
-    # disturbance_theta = SX.sym('disturbance_theta')
+    disturbance_phi = SX.sym('disturbance_phi')
+    disturbance_theta = SX.sym('disturbance_theta')
     disturbance_psi = SX.sym('disturbance_psi')
-
-    added_mass_x = SX.sym('added_mass_x')
-    added_mass_y = SX.sym('added_mass_y')
-    added_mass_z = SX.sym('added_mass_z')
-    added_mass_n = SX.sym('added_mass_n')
-
-    linear_d_x = SX.sym('linear_d_x')
-    linear_d_y = SX.sym('linear_d_y')
-    linear_d_z = SX.sym('linear_d_z')
-    linear_d_n = SX.sym('linear_d_n')
-
-    nonlinear_d_x = SX.sym('nonlinear_d_x')
-    nonlinear_d_y = SX.sym('nonlinear_d_y')
-    nonlinear_d_z = SX.sym('nonlinear_d_z')
-    nonlinear_d_n = SX.sym('nonlinear_d_n')
-    
-    sym_p = vertcat(disturbance_x,disturbance_y,disturbance_z,disturbance_psi,
-                    added_mass_x,added_mass_y,added_mass_z,added_mass_n,
-                    linear_d_x,linear_d_y,linear_d_z,linear_d_n,
-                    nonlinear_d_x,nonlinear_d_y,nonlinear_d_z,nonlinear_d_n)
+    sym_p = vertcat(disturbance_x,disturbance_y,disturbance_z,disturbance_phi,disturbance_theta,disturbance_psi)
 
     # xdot for f_impl
     x_dot = SX.sym('x_dot')
@@ -83,14 +64,13 @@ def export_bluerov2_model() -> AcadosModel:
     bouyancy = 0.66                                # net bouyancy forcy
     rotor_constant = 0.026546960744430276
     
-    # added_mass = np.array([1.7182,0,5.468,0,0,0.4006])
-    # M = np.diag([m+added_mass[0], m+added_mass[1], m+added_mass[2], Ix, Iy, Iz+added_mass[5]]) # M_RB + M_A
-    # M = np.diag([m+added_mass_x, m+added_mass_y, m+added_mass_z, Ix, Iy, Iz+added_mass_n]) # M_RB + M_A
-    # M[0,4] = m*ZG
-    # M[1,3] = -m*ZG
-    # M[3,1] = -m*ZG
-    # M[4,0] = m*ZG
-    # M_inv = np.linalg.inv(M)
+    added_mass = np.array([1.7182,0,5.468,0,1.2481,0.4006])
+    M = np.diag([m+added_mass[0], m+added_mass[1], m+added_mass[2], Ix+added_mass[3], Iy+added_mass[4], Iz+added_mass[5]]) # M_RB + M_A
+    M[0,4] = m*ZG
+    M[1,3] = -m*ZG
+    M[3,1] = -m*ZG
+    M[4,0] = m*ZG
+    M_inv = np.linalg.inv(M)
     
     K = np.array([[0.707,0.707,-0.707,-0.707,0,0],
                   [0.707,-0.707,0.707,-0.707,0,0],
@@ -117,12 +97,12 @@ def export_bluerov2_model() -> AcadosModel:
 
     # dynamics
     
-    du = 1/(m+added_mass_x)*(Kt0+m*r*v-m*q*w-bouyancy*sin(theta)+disturbance_x+linear_d_x*u+nonlinear_d_x*fabs(u)*u)
-    dv = 1/(m+added_mass_y)*(Kt1-m*r*u+m*p*w+bouyancy*cos(theta)*sin(phi)+disturbance_y+linear_d_y*v+nonlinear_d_y*fabs(v)*v)
-    dw = 1/(m+added_mass_z)*(Kt2+m*q*u-m*p*v+bouyancy*cos(theta)*cos(phi)+disturbance_z+linear_d_z*w+nonlinear_d_z*fabs(w)*w)
-    dp = 1/Ix*(Kt3+(Iy-Iz)*q*r-m*ZG*g*cos(theta)*sin(phi))
-    dq = 1/Iy*(Kt4+(Iz-Ix)*p*r-m*ZG*g*sin(theta))
-    dr = 1/(Iz+added_mass_n)*(Kt5-(Iy-Ix)*p*q+disturbance_psi+linear_d_n*r+nonlinear_d_n*fabs(r)*r)
+    du = M_inv[0,0]*(Kt0+m*r*v-m*q*w-bouyancy*sin(theta)+disturbance_x)
+    dv = M_inv[1,1]*(Kt1-m*r*u+m*p*w+bouyancy*cos(theta)*sin(phi)+disturbance_y)
+    dw = M_inv[2,2]*(Kt2+m*q*u-m*p*v+bouyancy*cos(theta)*cos(phi)+disturbance_z)
+    dp = M_inv[3,3]*(Kt3+(Iy-Iz)*q*r-m*ZG*g*cos(theta)*sin(phi)+disturbance_phi)
+    dq = M_inv[4,4]*(Kt4+(Iz-Ix)*p*r-m*ZG*g*sin(theta)+disturbance_theta)
+    dr = M_inv[5,5]*(Kt5-(Iy-Ix)*p*q+disturbance_psi)
    
     dx = (cos(psi)*cos(theta))*u + (-sin(psi)*cos(phi)+cos(psi)*sin(theta)*sin(phi))*v + (sin(psi)*sin(phi)+cos(psi)*cos(phi)*sin(theta))*w
     dy = (sin(psi)*cos(theta))*u + (cos(psi)*cos(phi)+sin(phi)*sin(theta)*sin(psi))*v + (-cos(psi)*sin(phi)+sin(theta)*sin(psi)*cos(phi))*w

@@ -22,24 +22,15 @@
   </xacro:default_pressure>
 
   <!-- Mount a camera -->
-  <!-- <xacro:bluerov_camera namespace="" parent_link="${namespace}/base_link" suffix="_front">
+  <xacro:bluerov_camera namespace="" parent_link="${namespace}/base_link" suffix="_front">
     <origin xyz="0.2 0 0" rpy="0 0 0"/>
-  </xacro:bluerov_camera> -->
+  </xacro:bluerov_camera>
 
-  <!-- <xacro:bluerov_camera namespace="" parent_link="${namespace}/base_link" suffix="_down">
+  <xacro:bluerov_camera namespace="" parent_link="${namespace}/base_link" suffix="_down">
     <origin xyz="0 0 -0.2" rpy="0 ${pi/2} 0"/>
-  </xacro:bluerov_camera> -->
+  </xacro:bluerov_camera>
 
   <!-- Mount a GPS. -->
   <xacro:default_gps namespace="${namespace}" parent_link="${namespace}/base_link" />
-  
-  <!-- Mount a stereo camera -->
-  <!-- <xacro:include filename="$(find bluerov2_description)/urdf/_d435.urdf.xacro" />
-  <sensor_d435 parent="${namespace}/base_link">
-  </sensor_d435> -->
-  <xacro:include filename="$(find bluerov2_description)/urdf/_d435.urdf.xacro" />
-  <sensor_d435 parent="${namespace}/base_link">
-    <origin xyz="0.2 0 0" rpy="0 0 0"/>
-  </sensor_d435>
-</robot>
 
+</robot>
