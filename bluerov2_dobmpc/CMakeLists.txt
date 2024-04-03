@@ -119,4 +119,4 @@ target_link_libraries(bluerov2_ampc_node
   ${catkin_LIBRARIES}
 )
 
-add_dependencies(bluerov2_ampc_node uuv_gazebo_ros_plugins_msgs_generate_messages_cpp)
+add_dependencies(bluerov2_ampc_node uuv_gazebo_ros_plugins_msgs_generate_messages_cpp bluerov2_dobmpc_generate_messages_cpp)
