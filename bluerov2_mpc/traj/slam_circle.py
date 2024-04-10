@@ -11,12 +11,12 @@ import math
 sample_time = 0.05             # seconds
 duration = 240                   # seconds
 
-r = 50
+r = 20
 v = 1.5
 
 x0 = 0                       
 y0 = 0
-z0 = -20
+z0 = -95
 
 # trajectory
 traj = np.zeros((int(duration/sample_time+1),16)) # x y z phi theta psi u v w p q r u1 u2 u3 u4

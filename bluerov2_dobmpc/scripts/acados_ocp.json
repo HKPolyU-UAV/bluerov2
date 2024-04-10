@@ -1,7 +1,7 @@
 {
-    "acados_include_path": "/home/fyp/acados/include",
-    "acados_lib_path": "/home/fyp/acados/lib",
-    "code_export_directory": "/home/fyp/bluerov_ws/src/bluerov2/bluerov2_dobmpc/scripts/c_generated_code",
+    "acados_include_path": "/root/acados/include",
+    "acados_lib_path": "/root/acados/lib",
+    "code_export_directory": "/root/uuv_ws/src/dave_sim/bluerov2/bluerov2_dobmpc/scripts/c_generated_code",
     "constraints": {
         "C": [],
         "C_e": [],
@@ -1765,7 +1765,7 @@
         "zu_e": []
     },
     "cython_include_dirs": [
-        "/home/fyp/bluerov_ws/src/bluerov2/bluerov2_dobmpc/scripts/env/lib/python3.8/site-packages/numpy/core/include",
+        "/usr/lib/python3/dist-packages/numpy/core/include",
         "/usr/include/python3.8"
     ],
     "dims": {
