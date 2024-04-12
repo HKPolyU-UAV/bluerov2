@@ -11,7 +11,7 @@ import math
 sample_time = 0.05             # seconds
 duration = 240                   # seconds
 
-r = 20
+r = 12
 v = 1.5
 
 x0 = 0                       
