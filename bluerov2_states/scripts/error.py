@@ -9,7 +9,7 @@ df_pid = df_pid.iloc[0:600]
 
 
 # Create subplots
-fig, axs = plt.subplots(3, 1, figsize=(12, 12))
+fig, axs = plt.subplots(3, 1, figsize=(20, 11))
 
 # ampc_error_x = df_ampc['px_gt']-df_mpc['px_ref']
 # mpc_error_x = df_mpc['px_gt']-df_mpc['px_ref']

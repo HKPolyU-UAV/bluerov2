@@ -79,8 +79,15 @@ int main(int argc, char** argv)
     std::cout<<save_bias_path<<std::endl;
     std::cout<<time_of_collection<<std::endl;
 
+    Eigen::Matrix4d temp;
+    temp.setIdentity();
+    temp.block<3,1>(0,3) = Eigen::Vector3d::Ones();
+    std::cout<<temp<<std::endl<<std::endl;;
+    std::cout<< temp.inverse() << std::endl<<std::endl;
+    std::cout<< temp.transpose()<<std::endl<<std::endl;
 
-    // ros::shutdown();
+
+    ros::shutdown();
 
     
     ros::Subscriber imu_sub = nh.subscribe<sensor_msgs::Imu>

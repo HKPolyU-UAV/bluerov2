@@ -9,7 +9,7 @@ df_pid = df_pid.iloc[0:600]
 
 
 # Create subplots
-fig, axs = plt.subplots(3, 1, figsize=(12, 12))
+fig, axs = plt.subplots(3, 1, figsize=(20,11))
 
 # Plot x coordinates
 axs[0].plot(df_mpc['t'], df_ampc['px_gt'], label='ampc', color='blue', linewidth=2.0)
