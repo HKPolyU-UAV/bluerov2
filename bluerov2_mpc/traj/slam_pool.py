@@ -80,11 +80,13 @@ for i in range(1, len(t)):
     else:
         traj[i,0]=-5
         traj[i,1]=20
+        traj[i,5]=-3*np.pi/2
 
 # If the loop ended before t[i] >= 1750, set the remaining elements to (-5, 20)
 if i <= len(t) - 1:
     traj[i+1:,0] = -5
     traj[i+1:,1] = 20
+    traj[i,5]=-3*np.pi/2
 
 # Save the trajectory to a txt file
 np.savetxt('slam_pool.txt', traj, fmt='%f')
