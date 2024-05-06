@@ -15,6 +15,13 @@
 #include <gazebo_msgs/ApplyBodyWrench.h>
 #include <gazebo_msgs/LinkState.h>
 
+#include <sensor_msgs/PointCloud2.h>
+#include <pcl_conversions/pcl_conversions.h>
+#include <pcl/point_types.h>
+#include <pcl/PCLPointCloud2.h>
+#include <pcl/conversions.h>
+
+#include <sensor_msgs/FluidPressure.h>
 #include <iostream>
 #include <fstream>
 #include <cmath>
@@ -126,6 +133,13 @@ class BLUEROV2_DOB{
         double tz;
     };
 
+    struct orient{
+        double w;
+        double x;
+        double y;
+        double z;
+    };
+
     // ROS message variables
     uuv_gazebo_ros_plugins_msgs::FloatStamped thrust0;
     uuv_gazebo_ros_plugins_msgs::FloatStamped thrust1;
@@ -138,7 +152,9 @@ class BLUEROV2_DOB{
     // pos pre_pos;
     pos body_pos;
     pos pre_body_pos;
-    acc local_acc;
+    pos sensor_pos;         // position provided by sensors (imu, pressure sensor...)
+    acc imu_acc;            // acceleration feedback from imu
+    orient imu_q;           // orientaion feedback from imu
     acc body_acc;
     thrust current_t;
     wrench applied_wrench;
@@ -170,7 +186,7 @@ class BLUEROV2_DOB{
     double Iy = 0.63;
     double Iz = 0.58;
     double ZG = 0.02;
-    double g = 9.81;
+    double g = 9.80665;
     double bouyancy = 0.661618;
     double compensate_coef = 0.032546960744430276;
     double rotor_constant = 0.026546960744430276;
@@ -264,6 +280,11 @@ class BLUEROV2_DOB{
     std::vector<std::vector<double>> trajectory;
     int line_number = 0;
     int number_of_steps = 0;
+
+    // barometer parameters
+    double fluid_p;
+    double atomosphere_p = 101325;
+    double rho_salt = 1000;
     
     public:
 
@@ -292,6 +313,9 @@ class BLUEROV2_DOB{
     MatrixXd dynamics_C(MatrixXd v);                         // coriolis and centripetal forces C(v) = C_RB(v) + C_A(v)
     MatrixXd dynamics_D(MatrixXd v);                         // damping forces D(v) = D_L + D_NL(v)
     MatrixXd dynamics_g(MatrixXd euler);                     // gravitational and buoyancy forces g
+
+    void pressure_cb(const sensor_msgs::FluidPressure::ConstPtr &pressure);
+    void pcl_cb(const sensor_msgs::PointCloud2ConstPtr &cloud);
 };
 
 #endif

@@ -437,13 +437,68 @@ void BLUEROV2_DOB::solve(){
     
 }
 
+// IMU callback
 void BLUEROV2_DOB::imu_cb(const sensor_msgs::Imu::ConstPtr& msg)
 {
-    // get linear position x, y, z
-    local_acc.x = round(msg->linear_acceleration.x*10000)/10000;
-    local_acc.y = round(msg->linear_acceleration.y*10000)/10000;
-    local_acc.z = round(msg->linear_acceleration.z*10000)/10000-g;
+    // get linear acceleraton
+    imu_acc.x = round(msg->linear_acceleration.x*10000)/10000;
+    imu_acc.y = round(msg->linear_acceleration.y*10000)/10000;
+    imu_acc.z = round(msg->linear_acceleration.z*10000)/10000-g;
     
+    // get angular velocity
+    sensor_pos.p = msg->angular_velocity.x;
+    sensor_pos.q = msg->angular_velocity.y;
+    sensor_pos.r = msg->angular_velocity.z;
+
+    // get orientation
+    imu_q.w = msg->orientation.w;
+    imu_q.x = msg->orientation.x;
+    imu_q.y = msg->orientation.y;
+    imu_q.z = msg->orientation.z;
+}
+
+// pressure sensor callback
+void BLUEROV2_DOB::pressure_cb(const sensor_msgs::FluidPressure::ConstPtr &pressure)
+{
+    fluid_p = (pressure->fluid_pressure)*1000;
+    sensor_pos.z = -(fluid_p-atomosphere_p)/(rho_salt*g);
+        
+}
+
+// Pointcloud callback from Realsense d435
+void BLUEROV2_DOB::pcl_cb(const sensor_msgs::PointCloud2ConstPtr &cloud)
+{
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloudPtr(new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PCLPointCloud2 pcl_pc2;
+    pcl_conversions::toPCL(*cloud, pcl_pc2);
+    pcl::fromPCLPointCloud2(pcl_pc2, *cloudPtr);
+
+    // Calculate the center point coordinates
+    float centerX = cloudPtr->width / 2;
+    float centerY = cloudPtr->height / 2;
+
+    // Define the ROI size
+    int roiSize = 40;
+
+    // Calculate the ROI boundaries
+    int roiMinX = centerX - roiSize / 2;
+    int roiMaxX = centerX + roiSize / 2;
+    int roiMinY = centerY - roiSize / 2;
+    int roiMaxY = centerY + roiSize / 2;
+
+    // Create a new point cloud for the ROI
+    pcl::PointCloud<pcl::PointXYZ>::Ptr roiCloud(new pcl::PointCloud<pcl::PointXYZ>);
+
+    // Iterate over the points within the ROI boundaries
+    for (int y = roiMinY; y < roiMaxY; y++)
+    {
+        for (int x = roiMinX; x < roiMaxX; x++)
+        {
+            // Add the point to the ROI point cloud
+            roiCloud->push_back(cloudPtr->at(x, y));
+        }
+    }
+
 }
 
 void BLUEROV2_DOB::thrusts_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg, int index)
