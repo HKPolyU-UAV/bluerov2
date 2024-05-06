@@ -275,6 +275,8 @@ class BLUEROV2_DOB{
     ros::Publisher applied_disturbance_pub;
     ros::Subscriber imu_sub;
     ros::ServiceClient client;
+    ros::Subscriber pressure_sub;
+    ros::Subscriber pcl_sub;
 
     // Trajectory variables
     std::vector<std::vector<double>> trajectory;

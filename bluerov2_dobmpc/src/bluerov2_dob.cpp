@@ -97,7 +97,9 @@ BLUEROV2_DOB::BLUEROV2_DOB(ros::NodeHandle& nh)
     }
     client = nh.serviceClient<gazebo_msgs::ApplyBodyWrench>("/gazebo/apply_body_wrench");
     imu_sub = nh.subscribe<sensor_msgs::Imu>("/bluerov2/imu", 20, &BLUEROV2_DOB::imu_cb, this);
-    
+    pressure_sub = nh.subscribe<sensor_msgs::FluidPressure>("/bluerov2/pressure", 20, &BLUEROV2_DOB::pressure_cb, this);
+    pcl_sub = nh.subscribe("/camera/depth/color/points", 20, &BLUEROV2_DOB::pcl_cb, this);
+
     // initialize
     for(unsigned int i=0; i < BLUEROV2_NU; i++) acados_out.u0[i] = 0.0;
     for(unsigned int i=0; i < BLUEROV2_NX; i++) acados_in.x0[i] = 0.0;
