@@ -29,6 +29,9 @@
         <arg name="use_ned_frame" value="$(arg use_ned_frame)"/>
     </include>
 
+    <!-- Run the attach_light node --> <!-- Not work (cannot find parent link bluerov2/base_link) -->
+    <!-- <node name="attach_light" pkg="bluerov2_description" type="attach_light.py" output="screen"/> -->
+
     <!-- Start the PID controller with its default parameters for the bluerov2 vehicle  -->
     <!-- <include file="$(find bluerov2_control)/launch/rov_pid_controller.launch"> 
         <arg name="uuv_name" value="bluerov2"/> 
