@@ -1,7 +1,7 @@
 {
     "acados_include_path": "/root/acados/include",
     "acados_lib_path": "/root/acados/lib",
-    "code_export_directory": "/root/catkin_ws/src/bluerov2/bluerov2_mpc/scripts/c_generated_code",
+    "code_export_directory": "/root/uuv_ws/src/dave_sim/bluerov2/bluerov2_mpc/scripts/c_generated_code",
     "constraints": {
         "C": [],
         "C_e": [],

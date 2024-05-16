@@ -31,9 +31,13 @@
   </xacro:bluerov_camera> -->
 
   <!-- Mount a DVL -->
-  <xacro:default_dvl namespace="${namespace}" parent_link="${namespace}/base_link">
-    <origin xyz="0 0 -0.2" rpy="0 -1.5708 0"/>
-  </xacro:default_dvl>
+  <!-- <xacro:include filename="$(find teledyne_whn_uuvsim_description)/urdf/teledyne_whn.xacro"/>
+  <xacro:teledyne_whn_enu_macro namespace="${namespace}" parent_link="${namespace}/base_link">
+    <origin xyz="0 0 -0.2" rpy="0 ${0.5*pi} 0"/>
+  </xacro:teledyne_whn_enu_macro> -->
+  <!-- <xacro:default_dvl namespace="${namespace}" parent_link="${namespace}/base_link">
+    <origin xyz="0 0 -0.2" rpy="0 ${0.5*pi} 0"/>
+  </xacro:default_dvl> -->
 
   <!-- Mount a GPS. -->
   <xacro:default_gps namespace="${namespace}" parent_link="${namespace}/base_link" />
