@@ -89,16 +89,23 @@ BLUEROV2_DOB::BLUEROV2_DOB(ros::NodeHandle& nh)
     esti_pose_pub = nh.advertise<nav_msgs::Odometry>("/bluerov2/ekf/pose",20);
     esti_disturbance_pub = nh.advertise<nav_msgs::Odometry>("/bluerov2/ekf/disturbance",20);
     applied_disturbance_pub = nh.advertise<nav_msgs::Odometry>("/bluerov2/applied_disturbance",20);
-    subscribers.resize(6);
+    thrust_subs.resize(6);
     for (int i = 0; i < 6; i++)
     {
         std::string topic = "/bluerov2/thrusters/" + std::to_string(i) + "/thrust";
-        subscribers[i] = nh.subscribe<uuv_gazebo_ros_plugins_msgs::FloatStamped>(topic, 20, boost::bind(&BLUEROV2_DOB::thrusts_cb, this, _1, i));
+        thrust_subs[i] = nh.subscribe<uuv_gazebo_ros_plugins_msgs::FloatStamped>(topic, 20, boost::bind(&BLUEROV2_DOB::thrusts_cb, this, _1, i));
     }
     client = nh.serviceClient<gazebo_msgs::ApplyBodyWrench>("/gazebo/apply_body_wrench");
     imu_sub = nh.subscribe<sensor_msgs::Imu>("/bluerov2/imu", 20, &BLUEROV2_DOB::imu_cb, this);
     pressure_sub = nh.subscribe<sensor_msgs::FluidPressure>("/bluerov2/pressure", 20, &BLUEROV2_DOB::pressure_cb, this);
     pcl_sub = nh.subscribe("/camera/depth/color/points", 20, &BLUEROV2_DOB::pcl_cb, this);
+    dvl_sub = nh.subscribe("/bluerov2/dvl", 20, &BLUEROV2_DOB::dvl_cb, this);
+    dvlbeam_subs.resize(4);
+    for (int i = 0; i < 4; i++)
+    {
+        std::string topic = "/bluerov2/dvl_sonar" + std::to_string(i);
+        dvlbeam_subs[i] = nh.subscribe<sensor_msgs::Range>(topic, 20, boost::bind(&BLUEROV2_DOB::dvlbeam_cb, this, _1, i));
+    }
 
     // initialize
     for(unsigned int i=0; i < BLUEROV2_NU; i++) acados_out.u0[i] = 0.0;
@@ -467,6 +474,14 @@ void BLUEROV2_DOB::pressure_cb(const sensor_msgs::FluidPressure::ConstPtr &press
         
 }
 
+void BLUEROV2_DOB::dvl_cb(const uuv_sensor_ros_plugins_msgs::DVL::ConstPtr &dvl)
+{
+    sensor_pos.u = dvl->velocity.x;
+    sensor_pos.v = dvl->velocity.y;
+    sensor_pos.w = dvl->velocity.z;
+    dvl_altitude = dvl->altitude;
+}
+
 // Pointcloud callback from Realsense d435
 void BLUEROV2_DOB::pcl_cb(const sensor_msgs::PointCloud2ConstPtr &cloud)
 {
@@ -529,6 +544,30 @@ void BLUEROV2_DOB::thrusts_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::C
             break;
         default:
             ROS_WARN("Invalid thruster index: %d", index);
+            break;
+    }
+}
+
+void BLUEROV2_DOB::dvlbeam_cb(const sensor_msgs::Range::ConstPtr& msg, int index)
+{
+    double range = msg->range;
+    //ROS_INFO("Received input for thruster %d: %f", index, input);
+    switch (index)
+    {
+        case 0:
+            dvl_range.sonar0 = range;
+            break;
+        case 1:
+            dvl_range.sonar1 = range;
+            break;
+        case 2:
+            dvl_range.sonar2 = range;
+            break;
+        case 3:
+            dvl_range.sonar3 = range;
+            break;
+        default:
+            ROS_WARN("Invalid dvlbeam index: %d", index);
             break;
     }
 }
@@ -640,13 +679,21 @@ void BLUEROV2_DOB::EKF()
         std::cout << "pos_x: " << meas_y(0) << "  pos_y: " << meas_y(1) << "  pos_z: " << meas_y(2) << " phi: " << meas_y(3) << "  theta: " << meas_y(4) << "  psi: " << meas_y(5) <<std::endl;
         std::cout << "esti_x: " << esti_x(0) << "  esti_y: " << esti_x(1) << "  esti_z: " << esti_x(2) << " esti_phi: " << esti_x(3) << "  esti_theta: " << esti_x(4) << "  esti_psi: " << esti_x(5) <<std::endl;
         std::cout << "error_x:  " << error_pose.pose.pose.position.x << "  error_y:  " << error_pose.pose.pose.position.y << "  error_z:  " << error_pose.pose.pose.position.z << std::endl;
-        std::cout << "applied force x:  " << applied_wrench.fx << "\tforce y:  " << applied_wrench.fy << "\tforce_z:  " << applied_wrench.fz << std::endl;
-        std::cout << "applied torque x:  " << applied_wrench.tx << "\ttorque y:  " << applied_wrench.ty << "\ttorque_z:  " << applied_wrench.tz << std::endl;
-        std::cout << "(body frame) disturbance x: " << esti_x(12) << "    disturbance y: " << esti_x(13) << "    disturbance z: " << esti_x(14) << std::endl;
-        std::cout << "(world frame) disturbance x: " << wf_disturbance(0) << "    disturbance y: " << wf_disturbance(1) << "    disturbance z: " << wf_disturbance(2) << std::endl;
-        std::cout << "(world frame) disturbance phi: " << wf_disturbance(3) << "    disturbance theta: " << wf_disturbance(4) << "    disturbance psi: " << wf_disturbance(5) << std::endl;
+        // std::cout << "applied force x:  " << applied_wrench.fx << "\tforce y:  " << applied_wrench.fy << "\tforce_z:  " << applied_wrench.fz << std::endl;
+        // std::cout << "applied torque x:  " << applied_wrench.tx << "\ttorque y:  " << applied_wrench.ty << "\ttorque_z:  " << applied_wrench.tz << std::endl;
+        // std::cout << "(body frame) disturbance x: " << esti_x(12) << "    disturbance y: " << esti_x(13) << "    disturbance z: " << esti_x(14) << std::endl;
+        // std::cout << "(world frame) disturbance x: " << wf_disturbance(0) << "    disturbance y: " << wf_disturbance(1) << "    disturbance z: " << wf_disturbance(2) << std::endl;
+        // std::cout << "(world frame) disturbance phi: " << wf_disturbance(3) << "    disturbance theta: " << wf_disturbance(4) << "    disturbance psi: " << wf_disturbance(5) << std::endl;
         std::cout << "solve_time: "<< acados_out.cpu_time << "\tkkt_res: " << acados_out.kkt_res << "\tacados_status: " << acados_out.status << std::endl;
         std::cout << "ros_time:   " << std::fixed << ros::Time::now().toSec() << std::endl;
+        std::cout << "*********************************************************************************************************************" << std::endl;
+        // print sensors data
+        std::cout << "IMU - linear acceleraton x'': " << imu_acc.x << "  y'': " << imu_acc.y << "  z'':  " << imu_acc.z << std::endl;
+        std::cout << "IMU - angular velocity p: " << sensor_pos.p << "  q: " << sensor_pos.q << "  r:  " << sensor_pos.r << std::endl;
+        std::cout << "IMU - orientation w: " << imu_q.w << "  x: " << imu_q.x << "  y:  " << imu_q.y << "  z:  " << imu_q.z << std::endl;
+        std::cout << "Pressure Sensor - fluid pressure: " << fluid_p << "  position z: " << sensor_pos.z << std::endl;
+        std::cout << "DVL - linear velocity u: " << sensor_pos.u << "  v: " << sensor_pos.v << "  w:  " << sensor_pos.w << "  altitude:  " << dvl_altitude << std::endl;
+        std::cout << "DVL - sonar beam range 0: " << dvl_range.sonar0 << "  1: " << dvl_range.sonar1 << "  2:  " << dvl_range.sonar2 << "  3:  " << dvl_range.sonar3 << std::endl;
         std::cout << "---------------------------------------------------------------------------------------------------------------------" << std::endl;
         cout_counter = 0;
     }

@@ -29,6 +29,9 @@
 #include <iomanip>
 #include <random>
 
+#include <uuv_sensor_ros_plugins_msgs/DVL.h>
+#include <sensor_msgs/Range.h>
+
 #include "acados/utils/print.h"
 #include "acados_c/ocp_nlp_interface.h"
 #include "acados_c/external_function_interface.h"
@@ -152,7 +155,8 @@ class BLUEROV2_DOB{
     // pos pre_pos;
     pos body_pos;
     pos pre_body_pos;
-    pos sensor_pos;         // position provided by sensors (imu, pressure sensor...)
+    pos sensor_pos;         // position provided by sensors (angular velocities from imu; 
+                            // linear velocities from dvl; depth from pressure sensor)
     acc imu_acc;            // acceleration feedback from imu
     orient imu_q;           // orientaion feedback from imu
     acc body_acc;
@@ -163,7 +167,7 @@ class BLUEROV2_DOB{
     nav_msgs::Odometry esti_pose;
     nav_msgs::Odometry esti_disturbance;
     nav_msgs::Odometry applied_disturbance;
-    std::vector<ros::Subscriber> subscribers;
+    // std::vector<ros::Subscriber> subscribers;
     uuv_gazebo_ros_plugins_msgs::FloatStamped control_input0;
     uuv_gazebo_ros_plugins_msgs::FloatStamped control_input1;
     uuv_gazebo_ros_plugins_msgs::FloatStamped control_input2;
@@ -277,6 +281,9 @@ class BLUEROV2_DOB{
     ros::ServiceClient client;
     ros::Subscriber pressure_sub;
     ros::Subscriber pcl_sub;
+    ros::Subscriber dvl_sub;
+    std::vector<ros::Subscriber> thrust_subs;
+    std::vector<ros::Subscriber> dvlbeam_subs;
 
     // Trajectory variables
     std::vector<std::vector<double>> trajectory;
@@ -287,7 +294,17 @@ class BLUEROV2_DOB{
     double fluid_p;
     double atomosphere_p = 101325;
     double rho_salt = 1000;
-    
+
+    // dvl parameters
+    double dvl_altitude;
+    struct dvl_sonar_link{
+        double sonar0;
+        double sonar1;
+        double sonar2;
+        double sonar3;
+    };
+    dvl_sonar_link dvl_range;
+
     public:
 
     bool is_start;
@@ -318,6 +335,8 @@ class BLUEROV2_DOB{
 
     void pressure_cb(const sensor_msgs::FluidPressure::ConstPtr &pressure);
     void pcl_cb(const sensor_msgs::PointCloud2ConstPtr &cloud);
+    void dvl_cb(const uuv_sensor_ros_plugins_msgs::DVL::ConstPtr &dvl);
+    void dvlbeam_cb(const sensor_msgs::Range::ConstPtr& msg, int index);
 };
 
 #endif
