@@ -56,6 +56,13 @@ private:
     uuv_gazebo_ros_plugins_msgs::FloatStamped control_input2;
     uuv_gazebo_ros_plugins_msgs::FloatStamped control_input3;
 
+    // PID parameters
+    // double kp = 1;  
+    // double ki = 0;  
+    // double kd = 0; 
+    double prevError;
+    double integral;
+
     // System variables
     struct Euler{
         double phi;
@@ -103,13 +110,7 @@ private:
     double buffer = 0.5;
     double sway = -4;
     double initial_z  = -34.5;
-    double initial_yaw = 0.5*M_PI;
-
-    // barometer parameters
-    double fluid_p;
-    double atomosphere_p = 101325;
-    double g = 9.80665;
-    double rho_salt = 1000;    
+    double initial_yaw = 0.5*M_PI;    
 
     // Other variables
     tf::Quaternion tf_quaternion;
@@ -241,150 +242,7 @@ public:
             control_u.u2 = 0;
             control_u.u3 = PID(initial_z, pos.z, 5, 0, 0);
             control_u.u4 = PID(0.5*M_PI, yaw_sum, 7, 0.08, 0);
-        }
-        else
-        {
-            if (completed_mission == false)
-            {
-                // when UUV faces to one side of bridge pier: Keep safety distance to bridge pier, move laterally
-                if (pos.x >= safety_dis-buffer && pos.x <= safety_dis+buffer && completed_turn == true && completed_round == false)
-                {
-                    status = 0;
-                    ref.x = safety_dis;
-                    // ref.z = initial_z;
-                    // ref.yaw = initial_yaw;
-                    control_u.u1 = PID(ref.x, pos.x, 5, 0, 0);
-                    control_u.u3 = PID(ref.z, pos.z, 5, 0, 0);
-                    control_u.u4 = PID(ref.yaw, yaw_sum, 7, 0.08, 0);
-                    control_u.u2 = -4; 
-                    completed_turn = true;  
-                    turn = false;
-                    get_height = true;
-                }
-                // when UUV approaches to the edge: stop control in x direction, move slowly laterally
-                else if (pos.x > safety_dis+buffer && completed_turn == true)
-                {
-                    status = 1;
-                    control_u.u1 = 0;
-                    control_u.u3 = PID(ref.z, pos.z, 5, 0, 0);
-                    control_u.u4 = PID(ref.yaw, yaw_sum, 7, 0.08, 0);
-                    control_u.u2 = -2;  
-                }
-                // when UUV reaches to the edge of bridge pier: turn 90 degrees in yaw direction
-                else if (pos.x < 0.1 && turn == false)
-                {
-                    completed_turn = false;
-                    // std::cout << "turn 90 degrees !!" << std::endl;
-                    status = 2;
-                    // turn 90 degrees
-                    ref.yaw = ref.yaw + 0.5*M_PI;
-                    control_u.u1 = 0;
-                    control_u.u3 = PID(ref.z, pos.z, 5, 0, 0);
-                    control_u.u4 = PID(ref.yaw, yaw_sum, 7, 0.08, 0);
-                    control_u.u2 = 0;
-                    // if (fabs(ref.yaw - yaw_sum) < 0.1)
-                    // {
-                    //     completed_turn = true;
-                    // }
-                    turn = true;
-                }
-
-                // turning until get to desired orientation
-                else if (turn == true && completed_turn == false)
-                {
-                    status = 2;
-                    control_u.u1 = 0;
-                    control_u.u3 = PID(ref.z, pos.z, 5, 0, 0);
-                    control_u.u4 = PID(ref.yaw, yaw_sum, 7, 0.08, 0);
-                    control_u.u2 = 0;
-                    if (fabs(ref.yaw - yaw_sum) < 0.1)
-                    {
-                        completed_turn = true;
-                        if (fabs(pos.yaw - initial_yaw) < 0.2)
-                        {
-                            completed_round = true;
-                            cycle_counter ++;
-                            if (fabs(ref.z - desired_height) < 0.1)
-                            {
-                                completed_mission = true;
-                            }
-                        }
-                        else
-                        {
-                            completed_round = false;
-                        }
-                    }
-                }
-                // when UUV completes turning: finding the next bridge pier
-                else if (pos.x < 0.1 && completed_turn == true)
-                {
-                    // turn = false;
-                    status = 3;
-                    control_u.u1 = 1;
-                    control_u.u2 = -4;
-                    control_u.u3 = PID(ref.z, pos.z, 5, 0, 0);
-                    control_u.u4 = PID(ref.yaw, yaw_sum, 7, 0.08, 0);
-                }
-                // when UUV finds the next bridge pier and go back to initial position: completed one round, move vertically
-                else if (pos.x >= safety_dis-buffer && pos.x <= safety_dis+buffer && completed_turn == true && completed_round == true)
-                {
-                    status = 4;
-                    if (get_height == true)
-                    {
-                        ref.z = ref.z + safety_dis*tan(32*M_PI/180)*2;
-                        ref.x = safety_dis;
-                        control_u.u1 = 0;
-                        control_u.u2 = 0;
-                        control_u.u3 = PID(ref.z, pos.z, 5, 0, 0);
-                        control_u.u4 = PID(ref.yaw, yaw_sum, 7, 0.08, 0);
-                        get_height = false;
-                    }
-                    else
-                    {
-                        ref.x = safety_dis;
-                        control_u.u1 = 0;
-                        control_u.u2 = 0;
-                        control_u.u3 = PID(ref.z, pos.z, 5, 0, 0);
-                        control_u.u4 = PID(ref.yaw, yaw_sum, 7, 0.08, 0);
-                        if (fabs(ref.z - pos.z) < 0.25)
-                        {
-                            completed_round = false;
-                        }
-                    }
-                    // status = 4;
-                    // ref.z = ref.z + safety_dis*tan(32*M_PI/180)*2;
-                    // control_u.u1 = PID(ref.x, pos.x, 5, 0, 0);
-                    // control_u.u2 = 0;
-                    // control_u.u3 = PID(ref.z, pos.z, 5, 0, 0);
-                    // control_u.u4 = PID(ref.yaw, yaw_sum, 7, 0.08, 0);
-                    // completed_round = false;
-                }
-                else
-                {
-                    std::cout << "state machine failed!" << std::endl;
-                    status = 2;
-                    // ref.x = pos.x;
-                    // ref.z = pos.z;
-                    // ref.yaw = pos.yaw;
-                    control_u.u1 = 0;
-                    control_u.u3 = PID(ref.z, pos.z, 5, 0, 0);
-                    control_u.u4 = PID(ref.yaw, yaw_sum, 7, 0.08, 0);
-                    control_u.u2 = 0;
-                    if (fabs(ref.yaw - yaw_sum) < 0.1)
-                    {
-                        completed_turn = true;
-                    }
-                }
-            }
-            else
-            {
-                status = 5;
-                control_u.u1 = 0;
-                control_u.u3 = PID(ref.z, pos.z, 5, 0, 0);
-                control_u.u4 = PID(ref.yaw, yaw_sum, 7, 0.08, 0);
-                control_u.u2 = 0;
-            }
-        }
+        }        
 
 
         // Control allocation
@@ -465,34 +323,6 @@ public:
 
         std::string message;
 
-        if (status == 0) 
-        {
-            message = "Keep safety distance to bridge pier, move laterally";
-        } 
-        else if (status == 1) 
-        {
-            message = "Stop control in x direction, move slowly laterally";
-        } 
-        else if (status == 2) 
-        {
-            message = "Turn 90 degrees in yaw direction";
-        } 
-        else if (status == 3) 
-        {
-            message = "Completed turning, finding the next bridge pier";
-        } 
-        else if (status == 4)
-        {
-            message = "Completed one cycle, move vertically";
-        }
-        else if (status == 5)
-        {
-            message = "Mission completed!";
-        }
-        else 
-        {
-        message = "Stay with previous command";
-        }
         // Mission information cout
         if(cout_counter > 2){ //reduce cout rate
                 std::cout << "------------------------------------------------------------------------------------------------" << std::endl;
