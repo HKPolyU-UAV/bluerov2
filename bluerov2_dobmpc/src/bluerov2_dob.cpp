@@ -308,6 +308,9 @@ void BLUEROV2_DOB::solve(){
     yaw_sum = yaw_sum + yaw_diff;
     pre_yaw = local_euler.psi;
 
+
+    //****************************************************************
+    // replace reference states here !!
     // set initial states
     acados_in.x0[x] = local_pos.x;
     acados_in.x0[y] = local_pos.y;
@@ -321,6 +324,20 @@ void BLUEROV2_DOB::solve(){
     acados_in.x0[p] = v_angular_body[0];
     acados_in.x0[q] = v_angular_body[1];
     acados_in.x0[r] = v_angular_body[2];
+    
+    // acados_in.x0[x] = dr_pos.x;
+    // acados_in.x0[y] = dr_pos.y;
+    // acados_in.x0[z] = dr_pos.z;
+    // acados_in.x0[phi] = dr_euler.phi;
+    // acados_in.x0[theta] = dr_euler.theta;
+    // acados_in.x0[psi] = yaw_sum;
+    // acados_in.x0[u] = dr_pos.u;
+    // acados_in.x0[v] = dr_pos.v;
+    // acados_in.x0[w] = dr_pos.w;
+    // acados_in.x0[p] = dr_pos.p;
+    // acados_in.x0[q] = dr_pos.q;
+    // acados_in.x0[r] = dr_pos.r;
+    //*****************************************************************
     ocp_nlp_constraints_model_set(mpc_capsule->nlp_config,mpc_capsule->nlp_dims,mpc_capsule->nlp_in, 0, "lbx", acados_in.x0);
     ocp_nlp_constraints_model_set(mpc_capsule->nlp_config,mpc_capsule->nlp_dims,mpc_capsule->nlp_in, 0, "ubx", acados_in.x0);
 
@@ -985,4 +1002,14 @@ MatrixXd BLUEROV2_DOB::dynamics_g(MatrixXd euler)
         0;
 
     return g;
+}
+
+//********************************************************
+// Positioning with sensors data
+void BLUEROV2_DOB::dead_reckoning()
+{
+    
+
+    // publish estimated states
+
 }

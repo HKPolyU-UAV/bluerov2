@@ -92,12 +92,12 @@ class BLUEROV2_DOB{
             double x;
             double y;
             double z;
-            double u;
-            double v;
-            double w;
-            double p;
-            double q;
-            double r;
+            double u;       // linear velocity x
+            double v;       // linear velocity y
+            double w;       // linear velocity z
+            double p;       // angular velocity phi
+            double q;       // angular velocity theta
+            double r;       // angular velocity psi
         };
 
     struct acc{
@@ -155,10 +155,22 @@ class BLUEROV2_DOB{
     // pos pre_pos;
     pos body_pos;
     pos pre_body_pos;
+
+    //***************************************************************************
+    // sensor raw data
     pos sensor_pos;         // position provided by sensors (angular velocities from imu; 
                             // linear velocities from dvl; depth from pressure sensor)
     acc imu_acc;            // acceleration feedback from imu
     orient imu_q;           // orientaion feedback from imu
+
+    // After sensor fusion, fill in variables here:
+    pos dr_pos;             // position estimated by dead reckoning
+                            // position in world frame: dr_pos.x, dr_pos.y, dr_pos.z
+                            // linear velocity in body frame: dr_pos.u, dr_pos.v, dr_pos.w
+                            // angular velocity in body frame: dr_pos.p, dr_pos.q, dr_pos.r
+    Euler dr_euler;         // euler angle in world frame: dr_euler.phi, dr_euler.theta, dr_euler.psi
+
+    //****************************************************************************
     acc body_acc;
     thrust current_t;
     wrench applied_wrench;
@@ -337,6 +349,8 @@ class BLUEROV2_DOB{
     void pcl_cb(const sensor_msgs::PointCloud2ConstPtr &cloud);
     void dvl_cb(const uuv_sensor_ros_plugins_msgs::DVL::ConstPtr &dvl);
     void dvlbeam_cb(const sensor_msgs::Range::ConstPtr& msg, int index);
+    // **********************************************************************
+    void dead_reckoning();                                    // position feedback by dead reckoning
 };
 
 #endif
