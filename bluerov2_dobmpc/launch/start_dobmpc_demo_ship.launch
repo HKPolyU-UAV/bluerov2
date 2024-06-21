@@ -2,8 +2,8 @@
     <!-- Flag to start recoding a rosbag  -->
     <arg name="record" default="false"/>
     <!-- Initial position and heading of the vehicle (wrt Gazebo's inertial frame)  -->
-    <arg name="x" default="10"/>
-    <arg name="y" default="20"/>
+    <arg name="x" default="-12"/>
+    <arg name="y" default="0"/>
     <arg name="z" default="-95"/>
     <arg name="yaw" default="0"/>
 
@@ -18,7 +18,7 @@
     <arg name="mu_vel" default="0.0"/> -->
 
     <!-- Initialize the Gazebo world  -->
-    <include file="$(find bluerov2_description)/launch/ocean_waves_pool.launch"/>
+    <include file="$(find bluerov2_description)/launch/ocean_waves_ship.launch"/>
 
     <!-- Add the BlueROV2 vehicle to the world  -->
     <include file="$(find bluerov2_description)/launch/upload.launch">
@@ -29,8 +29,8 @@
         <arg name="use_ned_frame" value="$(arg use_ned_frame)"/>
     </include>
 
-    <!-- Run the attach_light node --> <!-- Not work (cannot find parent link bluerov2/base_link) -->
-    <!-- <node name="attach_light" pkg="bluerov2_description" type="attach_light.py" output="screen"/> -->
+    <!-- Add the slam file to localize the uuv -->
+    <!-- <include file="$(find okvis_ros)/launch/svin_stereorig_v2_bluerov.launch"/> -->
 
     <!-- Start the PID controller with its default parameters for the bluerov2 vehicle  -->
     <!-- <include file="$(find bluerov2_control)/launch/rov_pid_controller.launch"> 
@@ -40,14 +40,9 @@
     </include>  -->
 
     <!-- Start the MPC controller with its default parameters for the bluerov2 vehicle -->
-    <include file="$(find bluerov2_dobmpc)/launch/dob_pool.launch"/> 
+    <include file="$(find bluerov2_dobmpc)/launch/dob_ship.launch"/> 
     
-    <!-- Detect AprilTag and use it to localize -->
-    <include file="$(find apriltag_ros)/launch/continuous_detection.launch"/>
-    <!-- <include file="$(find uuv_control_utils)/launch/pose_to_tf.launch">
-        <arg name="pose_topic" value="/tag_detections"/>
-        <arg name="tf_prefix" value="apriltag"/>
-    </include> -->
+
     
     <!-- <include file="$(find uuv_control_utils)/launch/start_circular_trajectory.launch">
         <arg name="uuv_name" value="bluerov2"/>

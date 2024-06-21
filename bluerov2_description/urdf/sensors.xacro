@@ -35,9 +35,14 @@
   <xacro:teledyne_whn_enu_macro namespace="${namespace}" parent_link="${namespace}/base_link">
     <origin xyz="0 0 -0.2" rpy="0 ${0.5*pi} 0"/>
   </xacro:teledyne_whn_enu_macro> -->
-  <!-- <xacro:default_dvl namespace="${namespace}" parent_link="${namespace}/base_link">
+  <xacro:default_dvl namespace="${namespace}" parent_link="${namespace}/base_link">
     <origin xyz="0 0 -0.2" rpy="0 ${0.5*pi} 0"/>
-  </xacro:default_dvl> -->
+  </xacro:default_dvl>
+
+  <!-- Mount a sonar -->
+  <xacro:forward_multibeam_p900 namespace="${namespace}" parent_link="${namespace}/base_link">
+    <origin xyz="0 0 -0.2" rpy="0 0 0"/>
+  </xacro:forward_multibeam_p900>
 
   <!-- Mount a GPS. -->
   <xacro:default_gps namespace="${namespace}" parent_link="${namespace}/base_link" />

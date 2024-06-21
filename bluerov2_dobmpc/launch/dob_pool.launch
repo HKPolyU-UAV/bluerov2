@@ -3,7 +3,7 @@
 	<!-- <env name="ROSCONSOLE_FORMAT" value="[ERROR] [${time}] [${node}]: ${message}"/> -->
 	<!-- <env name="ROS_LOG_LEVEL" value="WARN"/> -->
 	<node pkg="bluerov2_dobmpc" type="bluerov2_dob_node" name="bluerov2_dob_node" output="screen">
-        <rosparam command="load" file="$(find bluerov2_dobmpc)/config/gazebo_param.yaml" />
+        <rosparam command="load" file="$(find bluerov2_dobmpc)/config/gazebo_param_pool.yaml" />
 		<!-- <param name="/bluerov2_dob_node/rosout/logging_level" value="warn"/> -->
 		<!--<param name="ref_traj" type = "string" value="$(find bluerov2_mpc)/traj/circle.txt" />-->
 	</node>
