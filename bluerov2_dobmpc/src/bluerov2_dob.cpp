@@ -308,6 +308,9 @@ void BLUEROV2_DOB::solve(){
     yaw_sum = yaw_sum + yaw_diff;
     pre_yaw = local_euler.psi;
 
+
+    //****************************************************************
+    // replace reference states here !!
     // set initial states
     acados_in.x0[x] = local_pos.x;
     acados_in.x0[y] = local_pos.y;
@@ -321,6 +324,20 @@ void BLUEROV2_DOB::solve(){
     acados_in.x0[p] = v_angular_body[0];
     acados_in.x0[q] = v_angular_body[1];
     acados_in.x0[r] = v_angular_body[2];
+    
+    // acados_in.x0[x] = dr_pos.x;
+    // acados_in.x0[y] = dr_pos.y;
+    // acados_in.x0[z] = dr_pos.z;
+    // acados_in.x0[phi] = dr_euler.phi;
+    // acados_in.x0[theta] = dr_euler.theta;
+    // acados_in.x0[psi] = yaw_sum;
+    // acados_in.x0[u] = dr_pos.u;
+    // acados_in.x0[v] = dr_pos.v;
+    // acados_in.x0[w] = dr_pos.w;
+    // acados_in.x0[p] = dr_pos.p;
+    // acados_in.x0[q] = dr_pos.q;
+    // acados_in.x0[r] = dr_pos.r;
+    //*****************************************************************
     ocp_nlp_constraints_model_set(mpc_capsule->nlp_config,mpc_capsule->nlp_dims,mpc_capsule->nlp_in, 0, "lbx", acados_in.x0);
     ocp_nlp_constraints_model_set(mpc_capsule->nlp_config,mpc_capsule->nlp_dims,mpc_capsule->nlp_in, 0, "ubx", acados_in.x0);
 
@@ -985,4 +1002,113 @@ MatrixXd BLUEROV2_DOB::dynamics_g(MatrixXd euler)
         0;
 
     return g;
+}
+
+//********************************************************
+// Positioning with sensors data
+void BLUEROV2_DOB::dead_reckoning(Eigen::Vector3d& position,Eigen::Quaterniond& orientation)
+// void BLUEROV2_DOB::dead_reckoning()
+{
+    
+    double imu_q_w = imu_q.w;
+    double imu_q_x = imu_q.x;
+    double imu_q_y = imu_q.y;
+    double imu_q_z = imu_q.z;
+    // Update orientation using quaternion values
+
+
+    // Step 2: Update velocity using DVL and IMU data
+    double imu_acc_x = imu_acc.x;
+    double imu_acc_y = imu_acc.y;
+    double imu_acc_z = imu_acc.z;
+    // Angular velocity from IMU
+    double imu_ang_p = sensor_pos.p;
+    double imu_ang_q = sensor_pos.q;
+    double imu_ang_r = sensor_pos.r;
+    // Linear velocity from IMU
+    double imu_vel_x = 0.0;
+    double imu_vel_y = 0.0;
+    double imu_vel_z = 0.0;
+    // double dt = 0.01; // Time step for example
+    static double last_timestamp = ros::Time::now().toSec();
+    double current_timestamp = ros::Time::now().toSec();
+    double dt = current_timestamp - last_timestamp;
+    last_timestamp = current_timestamp;
+    // Perform integration to update velocity
+    imu_vel_x += (imu_acc_x * dt);
+    imu_vel_y += (imu_acc_y * dt);
+    imu_vel_z += (imu_acc_z * dt);
+
+    // Convert quaternion to rotation matrix
+    Eigen::Quaterniond q(imu_q_w, imu_q_x, imu_q_y, imu_q_z);
+    Eigen::Matrix3d R = q.toRotationMatrix();
+
+    // Rotate velocity to global frame
+    Eigen::Vector3d imu_vel_body(imu_vel_x, imu_vel_y, imu_vel_z);
+    Eigen::Vector3d imu_vel_global = R * imu_vel_body;
+
+    // Linear velocity from DVL
+    double dvl_velocity_u = sensor_pos.u;
+    double dvl_velocity_v = sensor_pos.v;
+    double dvl_velocity_w = sensor_pos.w;
+    Eigen::Vector3d dvl_velocity(dvl_velocity_u, dvl_velocity_v, dvl_velocity_w);
+    // Perform least square optimization to update velocity based on IMU data and DVL data
+    // Create a least square optimization problem
+    Eigen::MatrixXd A(6, 3);
+    Eigen::VectorXd b(6);
+    A << imu_vel_global -dvl_velocity;
+    b << Eigen::Vector3d::Zero();
+    // Solve for x using least squares
+    Eigen::VectorXd x = A.bdcSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(b);
+    // The optimized velocity is the first three elements of x
+    Eigen::Vector3d optimized_velocity = x.head<3>();
+
+
+    // Step 3: Integrate velocity and depth to update position
+    // Perform integration
+    // position.x += (optimized_velocity.x() * dt);
+    // position.y += (optimized_velocity.y() * dt);
+    // position.z += (optimized_velocity.z() * dt);
+    position += optimized_velocity * dt;
+
+
+    // Step 4: Optimize depth using pressure sensor data
+    // Extract depth from pressure sensor data
+    double pressure_depth = sensor_pos.z;
+    // Perform optimization using pressure sensor data
+    // Create a least square optimization problem
+    Eigen::MatrixXd C(1, 1);
+    Eigen::VectorXd d(1);
+    C << pressure_depth - position.z();
+    d << 0.0;
+    // Solve for x using least squares Cy = d
+    Eigen::VectorXd y = C.bdcSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(d);
+    // The optimized depth is the first element of y
+    double optimized_depth = y(0);
+    // Update position
+    position.z() = optimized_depth;
+
+    // Step 5: Fuse updated position, orientation, and depth
+    // Perform fusion
+
+    // Update position and orientation
+    dr_pos.x = position.x();
+    dr_pos.y = position.y();
+    dr_pos.z = position.z();
+    dr_pos.u = optimized_velocity.x();
+    dr_pos.v = optimized_velocity.y();
+    dr_pos.w = optimized_velocity.z();
+    dr_pos.p = imu_ang_p;
+    dr_pos.q = imu_ang_q;
+    dr_pos.r = imu_ang_r;
+    
+    orientation = Eigen::Quaterniond(imu_q_w, imu_q_x, imu_q_y, imu_q_z);
+    dr_euler.phi = orientation.toRotationMatrix().eulerAngles(0, 1, 2)[0];
+    dr_euler.theta = orientation.toRotationMatrix().eulerAngles(0, 1, 2)[1];
+    dr_euler.psi = orientation.toRotationMatrix().eulerAngles(0, 1, 2)[2];
+    
+    // publish estimated states
+
+
+
 }
