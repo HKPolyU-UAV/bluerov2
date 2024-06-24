@@ -311,6 +311,9 @@ void BLUEROV2_DOB::solve(){
 
     //****************************************************************
     // replace reference states here !!
+
+    //****************************************************************
+    // replace reference states here !!
     // set initial states
     acados_in.x0[x] = local_pos.x;
     acados_in.x0[y] = local_pos.y;
@@ -324,6 +327,20 @@ void BLUEROV2_DOB::solve(){
     acados_in.x0[p] = v_angular_body[0];
     acados_in.x0[q] = v_angular_body[1];
     acados_in.x0[r] = v_angular_body[2];
+    
+    // acados_in.x0[x] = dr_pos.x;
+    // acados_in.x0[y] = dr_pos.y;
+    // acados_in.x0[z] = dr_pos.z;
+    // acados_in.x0[phi] = dr_euler.phi;
+    // acados_in.x0[theta] = dr_euler.theta;
+    // acados_in.x0[psi] = yaw_sum;
+    // acados_in.x0[u] = dr_pos.u;
+    // acados_in.x0[v] = dr_pos.v;
+    // acados_in.x0[w] = dr_pos.w;
+    // acados_in.x0[p] = dr_pos.p;
+    // acados_in.x0[q] = dr_pos.q;
+    // acados_in.x0[r] = dr_pos.r;
+    //*****************************************************************
     
     // acados_in.x0[x] = dr_pos.x;
     // acados_in.x0[y] = dr_pos.y;
