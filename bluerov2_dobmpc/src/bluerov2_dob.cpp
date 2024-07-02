@@ -96,6 +96,8 @@ BLUEROV2_DOB::BLUEROV2_DOB(ros::NodeHandle& nh)
         thrust_subs[i] = nh.subscribe<uuv_gazebo_ros_plugins_msgs::FloatStamped>(topic, 20, boost::bind(&BLUEROV2_DOB::thrusts_cb, this, _1, i));
     }
     client = nh.serviceClient<gazebo_msgs::ApplyBodyWrench>("/gazebo/apply_body_wrench");
+    //******************************************************************************************************************
+    // read from sensors, and publish dead reckoning results
     imu_sub = nh.subscribe<sensor_msgs::Imu>("/bluerov2/imu", 20, &BLUEROV2_DOB::imu_cb, this);
     pressure_sub = nh.subscribe<sensor_msgs::FluidPressure>("/bluerov2/pressure", 20, &BLUEROV2_DOB::pressure_cb, this);
     pcl_sub = nh.subscribe("/camera/depth/color/points", 20, &BLUEROV2_DOB::pcl_cb, this);
@@ -106,6 +108,8 @@ BLUEROV2_DOB::BLUEROV2_DOB(ros::NodeHandle& nh)
         std::string topic = "/bluerov2/dvl_sonar" + std::to_string(i);
         dvlbeam_subs[i] = nh.subscribe<sensor_msgs::Range>(topic, 20, boost::bind(&BLUEROV2_DOB::dvlbeam_cb, this, _1, i));
     }
+    dr_pose_pub = nh.advertise<nav_msgs::Odometry>("/bluerov2/dr_pose",20);
+    //******************************************************************************************************************
 
     // initialize
     for(unsigned int i=0; i < BLUEROV2_NU; i++) acados_out.u0[i] = 0.0;
@@ -311,9 +315,6 @@ void BLUEROV2_DOB::solve(){
 
     //****************************************************************
     // replace reference states here !!
-
-    //****************************************************************
-    // replace reference states here !!
     // set initial states
     acados_in.x0[x] = local_pos.x;
     acados_in.x0[y] = local_pos.y;
@@ -327,21 +328,7 @@ void BLUEROV2_DOB::solve(){
     acados_in.x0[p] = v_angular_body[0];
     acados_in.x0[q] = v_angular_body[1];
     acados_in.x0[r] = v_angular_body[2];
-    
-    // acados_in.x0[x] = dr_pos.x;
-    // acados_in.x0[y] = dr_pos.y;
-    // acados_in.x0[z] = dr_pos.z;
-    // acados_in.x0[phi] = dr_euler.phi;
-    // acados_in.x0[theta] = dr_euler.theta;
-    // acados_in.x0[psi] = yaw_sum;
-    // acados_in.x0[u] = dr_pos.u;
-    // acados_in.x0[v] = dr_pos.v;
-    // acados_in.x0[w] = dr_pos.w;
-    // acados_in.x0[p] = dr_pos.p;
-    // acados_in.x0[q] = dr_pos.q;
-    // acados_in.x0[r] = dr_pos.r;
-    //*****************************************************************
-    
+
     // acados_in.x0[x] = dr_pos.x;
     // acados_in.x0[y] = dr_pos.y;
     // acados_in.x0[z] = dr_pos.z;
@@ -1125,7 +1112,27 @@ void BLUEROV2_DOB::dead_reckoning(Eigen::Vector3d& position,Eigen::Quaterniond& 
     dr_euler.psi = orientation.toRotationMatrix().eulerAngles(0, 1, 2)[2];
     
     // publish estimated states
-
+    tf2::Quaternion quat;
+    quat.setRPY(0, 0, yaw_ref);
+    geometry_msgs::Quaternion quat_msg;
+    tf2::convert(quat, quat_msg);
+    dr_pose.pose.pose.position.x = dr_pos.x;
+    dr_pose.pose.pose.position.y = dr_pos.y;
+    dr_pose.pose.pose.position.z = dr_pos.z;
+    dr_pose.pose.pose.orientation.x = imu_q_x;
+    dr_pose.pose.pose.orientation.y = imu_q_y;
+    dr_pose.pose.pose.orientation.z = imu_q_z;
+    dr_pose.pose.pose.orientation.w = imu_q_w;
+    dr_pose.twist.twist.linear.x = optimized_velocity.x();
+    dr_pose.twist.twist.linear.y = optimized_velocity.y();
+    dr_pose.twist.twist.linear.z = optimized_velocity.z();
+    dr_pose.twist.twist.angular.x = imu_ang_p;
+    dr_pose.twist.twist.angular.y = imu_ang_q;
+    dr_pose.twist.twist.angular.z = imu_ang_r;
+    dr_pose.header.stamp = ros::Time::now();
+    dr_pose.header.frame_id = "odom_frame";
+    dr_pose.child_frame_id = "base_link";
+    dr_pose_pub.publish(dr_pose);
 
 
 }
