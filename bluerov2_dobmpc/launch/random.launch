@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<launch>
+	<node pkg="bluerov2_dobmpc" type="bluerov2_random_node" name="bluerov2_random_node" output="screen">
+	</node>
+
+</launch>
