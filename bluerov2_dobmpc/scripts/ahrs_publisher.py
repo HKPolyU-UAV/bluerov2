@@ -22,7 +22,7 @@ def ahrs_publisher():
     rospy.init_node('ahrs_publisher_node', anonymous=True)
 
     # Create a publisher for IMU data
-    imu_pub = rospy.Publisher('/ahrs_data', String, queue_size=10)
+    imu_pub = rospy.Publisher('/ahrs_data', Imu, queue_size=10)
 
     # Create an Imu message object
     imu_msg = Imu()
