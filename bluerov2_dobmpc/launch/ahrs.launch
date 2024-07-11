@@ -1,0 +1,8 @@
+<launch>
+    <!-- Start the ROS master node -->
+    <node name="roscore" pkg="ros" type="roscore" output="screen" required="true" />
+
+    <!-- Launch the imu_publisher.py node -->
+    <node name="ahrs_publisher_node" pkg="bluerov2_dobmpc" type="ahrs_publisher.py" output="screen">
+    </node>
+</launch>

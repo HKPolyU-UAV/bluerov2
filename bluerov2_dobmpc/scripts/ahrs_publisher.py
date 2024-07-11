@@ -8,18 +8,18 @@ from sensor_msgs.msg import Imu
 from geometry_msgs.msg import Quaternion
 from tf.transformations import quaternion_from_euler
 
-# Configure the serial connection
-ser = serial.Serial('/dev/ttyUSB0',115200)
-state=0
-buffer=b''
-lasttime=0
-accList=[]
-angList=[]
-angVelList=[]
+def ahrs_publisher():
+    # Configure the serial connection
+    ser = serial.Serial('/dev/ttyUSB0',115200)
+    state=0
+    buffer=b''
+    lasttime=0
+    accList=[]
+    angList=[]
+    angVelList=[]
 
-def imu_publisher():
     # Initialize ROS node
-    rospy.init_node('ahrs_publisher', anonymous=True)
+    rospy.init_node('ahrs_publisher_node', anonymous=True)
 
     # Create a publisher for IMU data
     imu_pub = rospy.Publisher('/ahrs_data', String, queue_size=10)
@@ -64,6 +64,6 @@ def imu_publisher():
 
 if __name__ == '__main__':
     try:
-        imu_publisher()
+        ahrs_publisher()
     except rospy.ROSInterruptException:
         pass

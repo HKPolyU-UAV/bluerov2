@@ -127,3 +127,7 @@ add_executable(bluerov2_random_node src/bluerov2_random_node.cpp)
 target_link_libraries(bluerov2_random_node
   ${catkin_LIBRARIES}
 )
+
+catkin_install_python(PROGRAMS scripts/ahrs_publisher.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
