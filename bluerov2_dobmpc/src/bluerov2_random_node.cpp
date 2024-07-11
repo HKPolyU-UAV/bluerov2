@@ -155,6 +155,10 @@ public:
         }
         else if(dof == 3)
         {
+            if(local_pos.z > -5 && random_input > 0)
+            {
+                random_input = -random_input;
+            }
             control_u.u1 = 0;
             control_u.u2 = 0;
             control_u.u3 = random_input;
