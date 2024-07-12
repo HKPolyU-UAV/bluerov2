@@ -119,7 +119,7 @@ BLUEROV2_STATES::synced_data BLUEROV2_STATES::ImuDoNodelet::SyncMeas()
     {
         // if not, throw away the 
         gps_buf.pop();
-//jjj
+
         return meas_return;
     }
     
