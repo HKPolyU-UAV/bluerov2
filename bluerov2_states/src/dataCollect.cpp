@@ -8,6 +8,7 @@ static geometry_msgs::PointStamped ref_x_data;
 
 static geometry_msgs::Point ref_pt;
 // static geometry_msgs::Point ref_pt;
+// test
 
 static double starting_time = 0;
 static std::string log_file_wrench;
