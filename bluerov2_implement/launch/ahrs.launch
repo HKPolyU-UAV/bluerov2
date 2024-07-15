@@ -1,0 +1,5 @@
+<launch>
+    <!-- Launch the ahrs_publisher.py node -->
+    <node name="ahrs_publisher_node" pkg="bluerov2_dobmpc" type="ahrs_publisher.py" output="screen">
+    </node>
+</launch>
