@@ -71,6 +71,8 @@
     <build_export_depend>uuv_gazebo_plugins_msgs</build_export_depend>
     <exec_depend>uuv_gazebo_plugins_msgs</exec_depend>
 
+  <build_depend>bluerov2_dobmpc</build_depend>
+  <exec_depend>bluerov2_dobmpc</exec_depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
