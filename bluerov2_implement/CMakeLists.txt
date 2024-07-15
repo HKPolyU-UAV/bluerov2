@@ -100,7 +100,7 @@ generate_messages(
 ###################################
 
 catkin_package(
-  INCLUDE_DIRS include
+  # INCLUDE_DIRS include
   LIBRARIES bluerov2_implement
 #  CATKIN_DEPENDS uuv_gazebo_plugins_msgs
 #  DEPENDS system_lib
