@@ -1,8 +1,5 @@
 /*
- * Copyright 2019 Gianluca Frison, Dimitris Kouzoupis, Robin Verschueren,
- * Andrea Zanelli, Niels van Duijkeren, Jonathan Frey, Tommaso Sartor,
- * Branimir Novoselnik, Rien Quirynen, Rezart Qelibari, Dang Doan,
- * Jonas Koenemann, Yutao Chen, Tobias Schöls, Jonas Schlagenhauf, Moritz Diehl
+ * Copyright (c) The acados authors.
  *
  * This file is part of acados.
  *
@@ -46,34 +43,9 @@
 #include "blasfeo/include/blasfeo_d_aux_ext_dep.h"
 
 #define NX     BLUEROV2_NX
-#define NZ     BLUEROV2_NZ
-#define NU     BLUEROV2_NU
 #define NP     BLUEROV2_NP
-#define NBX    BLUEROV2_NBX
+#define NU     BLUEROV2_NU
 #define NBX0   BLUEROV2_NBX0
-#define NBU    BLUEROV2_NBU
-#define NSBX   BLUEROV2_NSBX
-#define NSBU   BLUEROV2_NSBU
-#define NSH    BLUEROV2_NSH
-#define NSG    BLUEROV2_NSG
-#define NSPHI  BLUEROV2_NSPHI
-#define NSHN   BLUEROV2_NSHN
-#define NSGN   BLUEROV2_NSGN
-#define NSPHIN BLUEROV2_NSPHIN
-#define NSBXN  BLUEROV2_NSBXN
-#define NS     BLUEROV2_NS
-#define NSN    BLUEROV2_NSN
-#define NG     BLUEROV2_NG
-#define NBXN   BLUEROV2_NBXN
-#define NGN    BLUEROV2_NGN
-#define NY0    BLUEROV2_NY0
-#define NY     BLUEROV2_NY
-#define NYN    BLUEROV2_NYN
-#define NH     BLUEROV2_NH
-#define NPHI   BLUEROV2_NPHI
-#define NHN    BLUEROV2_NHN
-#define NPHIN  BLUEROV2_NPHIN
-#define NR     BLUEROV2_NR
 
 
 int main()
@@ -100,20 +72,6 @@ int main()
     void *nlp_opts = bluerov2_acados_get_nlp_opts(acados_ocp_capsule);
 
     // initial condition
-    int idxbx0[NBX0];
-    idxbx0[0] = 0;
-    idxbx0[1] = 1;
-    idxbx0[2] = 2;
-    idxbx0[3] = 3;
-    idxbx0[4] = 4;
-    idxbx0[5] = 5;
-    idxbx0[6] = 6;
-    idxbx0[7] = 7;
-    idxbx0[8] = 8;
-    idxbx0[9] = 9;
-    idxbx0[10] = 10;
-    idxbx0[11] = 11;
-
     double lbx0[NBX0];
     double ubx0[NBX0];
     lbx0[0] = 0;
@@ -141,7 +99,6 @@ int main()
     lbx0[11] = 0;
     ubx0[11] = 0;
 
-    ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "idxbx", idxbx0);
     ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "lbx", lbx0);
     ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "ubx", ubx0);
 
@@ -177,10 +134,7 @@ int main()
     double xtraj[NX * (N+1)];
     double utraj[NU * N];
 
-
     // solve ocp in loop
-    int rti_phase = 0;
-
     for (int ii = 0; ii < NTIMINGS; ii++)
     {
         // initialize solution
@@ -190,7 +144,6 @@ int main()
             ocp_nlp_out_set(nlp_config, nlp_dims, nlp_out, i, "u", u0);
         }
         ocp_nlp_out_set(nlp_config, nlp_dims, nlp_out, N, "x", x_init);
-        ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "rti_phase", &rti_phase);
         status = bluerov2_acados_solve(acados_ocp_capsule);
         ocp_nlp_get(nlp_config, nlp_solver, "time_tot", &elapsed_time);
         min_time = MIN(elapsed_time, min_time);

@@ -2,10 +2,10 @@
     <!-- Flag to start recoding a rosbag  -->
     <arg name="record" default="false"/>
     <!-- Initial position and heading of the vehicle (wrt Gazebo's inertial frame)  -->
-    <arg name="x" default="-50"/>
+    <arg name="x" default="-2"/>
     <arg name="y" default="0"/>
     <arg name="z" default="-20"/>
-    <arg name="yaw" default="0"/>
+    <arg name="yaw" default="-1.570796"/>
 
     <arg name="use_ned_frame" default="false"/>
 

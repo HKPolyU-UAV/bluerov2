@@ -36,7 +36,7 @@ find_package(PCL 1.8.1 REQUIRED)
 find_package(OpenCV REQUIRED)
 
 set(acados_include "/home/yang/acados/include")
-set(acados_lib "~/acados/lib")
+set(acados_lib "/home/yang/acados/lib")
 set(bluerov2_model ${PROJECT_SOURCE_DIR}/scripts/c_generated_code)
 
 add_message_files(

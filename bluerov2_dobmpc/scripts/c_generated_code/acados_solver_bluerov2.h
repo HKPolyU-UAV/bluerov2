@@ -1,8 +1,5 @@
 /*
- * Copyright 2019 Gianluca Frison, Dimitris Kouzoupis, Robin Verschueren,
- * Andrea Zanelli, Niels van Duijkeren, Jonathan Frey, Tommaso Sartor,
- * Branimir Novoselnik, Rien Quirynen, Rezart Qelibari, Dang Doan,
- * Jonas Koenemann, Yutao Chen, Tobias Schöls, Jonas Schlagenhauf, Moritz Diehl
+ * Copyright (c) The acados authors.
  *
  * This file is part of acados.
  *
@@ -43,19 +40,23 @@
 #define BLUEROV2_NZ     0
 #define BLUEROV2_NU     4
 #define BLUEROV2_NP     6
+#define BLUEROV2_NP_GLOBAL     0
 #define BLUEROV2_NBX    0
 #define BLUEROV2_NBX0   12
 #define BLUEROV2_NBU    4
 #define BLUEROV2_NSBX   0
 #define BLUEROV2_NSBU   0
 #define BLUEROV2_NSH    0
+#define BLUEROV2_NSH0   0
 #define BLUEROV2_NSG    0
 #define BLUEROV2_NSPHI  0
 #define BLUEROV2_NSHN   0
 #define BLUEROV2_NSGN   0
 #define BLUEROV2_NSPHIN 0
+#define BLUEROV2_NSPHI0 0
 #define BLUEROV2_NSBXN  0
 #define BLUEROV2_NS     0
+#define BLUEROV2_NS0    0
 #define BLUEROV2_NSN    0
 #define BLUEROV2_NG     0
 #define BLUEROV2_NBXN   0
@@ -65,8 +66,10 @@
 #define BLUEROV2_NYN    12
 #define BLUEROV2_N      80
 #define BLUEROV2_NH     0
-#define BLUEROV2_NPHI   0
 #define BLUEROV2_NHN    0
+#define BLUEROV2_NH0    0
+#define BLUEROV2_NPHI0  0
+#define BLUEROV2_NPHI   0
 #define BLUEROV2_NPHIN  0
 #define BLUEROV2_NR     0
 
@@ -92,34 +95,36 @@ typedef struct bluerov2_solver_capsule
     unsigned int nlp_np;
 
     /* external functions */
+
     // dynamics
 
-    external_function_param_casadi *forw_vde_casadi;
-    external_function_param_casadi *expl_ode_fun;
+    external_function_external_param_casadi *expl_vde_forw;
+    external_function_external_param_casadi *expl_ode_fun;
+    external_function_external_param_casadi *expl_vde_adj;
 
 
 
 
     // cost
 
-    external_function_param_casadi *cost_y_fun;
-    external_function_param_casadi *cost_y_fun_jac_ut_xt;
-    external_function_param_casadi *cost_y_hess;
+    external_function_external_param_casadi *cost_y_fun;
+    external_function_external_param_casadi *cost_y_fun_jac_ut_xt;
 
 
 
-    external_function_param_casadi cost_y_0_fun;
-    external_function_param_casadi cost_y_0_fun_jac_ut_xt;
-    external_function_param_casadi cost_y_0_hess;
+    external_function_external_param_casadi cost_y_0_fun;
+    external_function_external_param_casadi cost_y_0_fun_jac_ut_xt;
 
 
 
-    external_function_param_casadi cost_y_e_fun;
-    external_function_param_casadi cost_y_e_fun_jac_ut_xt;
-    external_function_param_casadi cost_y_e_hess;
+    external_function_external_param_casadi cost_y_e_fun;
+    external_function_external_param_casadi cost_y_e_fun_jac_ut_xt;
 
 
     // constraints
+
+
+
 
 
 
@@ -150,8 +155,10 @@ ACADOS_SYMBOL_EXPORT int bluerov2_acados_update_time_steps(bluerov2_solver_capsu
 ACADOS_SYMBOL_EXPORT int bluerov2_acados_update_qp_solver_cond_N(bluerov2_solver_capsule * capsule, int qp_solver_cond_N);
 ACADOS_SYMBOL_EXPORT int bluerov2_acados_update_params(bluerov2_solver_capsule * capsule, int stage, double *value, int np);
 ACADOS_SYMBOL_EXPORT int bluerov2_acados_update_params_sparse(bluerov2_solver_capsule * capsule, int stage, int *idx, double *p, int n_update);
+ACADOS_SYMBOL_EXPORT int bluerov2_acados_set_p_global_and_precompute_dependencies(bluerov2_solver_capsule* capsule, double* data, int data_len);
 
 ACADOS_SYMBOL_EXPORT int bluerov2_acados_solve(bluerov2_solver_capsule * capsule);
+ACADOS_SYMBOL_EXPORT void bluerov2_acados_batch_solve(bluerov2_solver_capsule ** capsules, int N_batch);
 ACADOS_SYMBOL_EXPORT int bluerov2_acados_free(bluerov2_solver_capsule * capsule);
 ACADOS_SYMBOL_EXPORT void bluerov2_acados_print_stats(bluerov2_solver_capsule * capsule);
 ACADOS_SYMBOL_EXPORT int bluerov2_acados_custom_update(bluerov2_solver_capsule* capsule, double* data, int data_len);
