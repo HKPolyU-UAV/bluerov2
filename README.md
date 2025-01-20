@@ -4,7 +4,7 @@ This work implements a NMPC controller for BlueROV2 with ROS.
 This repository contains the robot description and necessary launch files to
 simulate the BlueROV2 (unmanned underwater vehicle) on [Unmanned Underwater Vehicle Simulator (UUV Simulator)](https://github.com/uuvsimulator/uuv_simulator). Additional it's possible run BlueROV2 in SITL using [mavros](http://wiki.ros.org/mavros), joystick interaction and video streaming capture with opencv based on [bluerov_ros_playground](https://github.com/patrickelectric/bluerov_ros_playground) package from BlueRobotics.
 
-This work is developed based on [Ingeniarius, Lda.](http://ingeniarius.pt/) and [Instituite of Systems and Robotics University of Coimbra](https://www.isr.uc.pt/) within the scope of MS thesis "Localization of an unmanned underwater vehicle using multiple water surface robots, multilateration, and sensor data fusion".
+This work consolidates the contributions from [Ingeniarius, Lda.](http://ingeniarius.pt/) and [Instituite of Systems and Robotics University of Coimbra](https://www.isr.uc.pt/) within the scope of MS thesis "Localization of an unmanned underwater vehicle using multiple water surface robots, multilateration, and sensor data fusion".
 
 
 ## Prerequisites
@@ -57,7 +57,7 @@ We also provide its [docker image](https://github.com/HKPolyU-UAV/airo_docker_li
 4. Install then compile this package
     ```
     cd ~/catkin_ws/src && \
-    git clone https://github.com/HKPolyU-UAV/bluerov2.git
+    git clone --branch https://github.com/HKPolyU-UAV/bluerov2.git
     ```
     Please edit CMakelists.txt [here](/bluerov2_dobmpc/CMakeLists.txt) and [here](/bluerov2_mpc/CMakeLists.txt) if you put your acados in otherwise directory. Modify the line ```set(acados_include "~/acados/include")``` and ```set(acados_lib "~/acados/lib")```
     
@@ -90,25 +90,6 @@ Or start with thruster manager
 roslaunch bluerov2_gazebo start_with_thruster_manager.launch
 ```
 With thruster manager, forces and moments can be published to topic /bluerov2/thruster_manager/input.
-
-## Start simulation with PID controller
-Start PID controller with teleop (using joystick)
-```
-roslaunch bluerov2_gazebo start_pid_demo_with_teleop.launch
-```
-Or start PID Controller without teleop
-```
-roslaunch bluerov2_gazebo start_pid_demo.launch
-```
-
-Further trajectory tracking tasks can be done with uuv_control_utils package, such as following linear trajectory
-```
-roslaunch uuv_control_utils send_waypoints_file.launch uuv_name:=bluerov2 interpolator:=linear
-```
-Or following helical trajectory
-```
-roslaunch uuv_control_utils start_helical_trajectory.launch uuv_name:=bluerov2 n_turns:=2
-```
 
 ## Start simulation with MPC controller
 A demonstration of starting MPC controler to follow circular trajectory can be launched by
