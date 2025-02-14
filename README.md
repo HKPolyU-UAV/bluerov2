@@ -1,5 +1,5 @@
 # UNDER MAINTENANCE!!!
-# If you wish to use this repo, please first go to branch ''huyang-back'' [link](https://github.com/HKPolyU-UAV/bluerov2/tree/huyang-backup); we will soon finish the housekeeping tasks! 
+# If you wish to use this repo, please first go to branch ''huyang-back'' [link](https://github.com/HKPolyU-UAV/bluerov2/tree/huyang-backup); we will soon finish the housekeeping! 
 
 
 # BlueROV2 MPC
