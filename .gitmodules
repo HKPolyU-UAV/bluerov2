@@ -1,3 +1,7 @@
 [submodule "realsense-ros-gazebo"]
 	path = realsense-ros-gazebo
 	url = https://github.com/rickstaa/realsense-ros-gazebo.git
+[submodule "uuv_simulator"]
+	path = uuv_simulator
+	url = https://github.com/arturmiller/uuv_simulator.git
+	branch = noetic

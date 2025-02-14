@@ -127,3 +127,5 @@ add_executable(bluerov2_random_node src/bluerov2_random_node.cpp)
 target_link_libraries(bluerov2_random_node
   ${catkin_LIBRARIES}
 )
+
+add_dependencies(bluerov2_random_node uuv_gazebo_ros_plugins_msgs_generate_messages_cpp)
