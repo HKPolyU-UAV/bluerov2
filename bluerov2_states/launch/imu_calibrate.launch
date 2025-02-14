@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<launch>
+	<node pkg="bluerov2_states" type="ImuCalibrate" name="ImuCalibrate" output="screen">
+        <param name="max_bias_accl_var" type="double" value="0.2"/>
+        <param name="max_bias_gyro_var" type="double" value="0.05"/>
+        <param name="time_of_collection" type="double" value="10.0"/>
+        <param name="save_bias_path" type="string" value="$(find bluerov2_states)/launch/config/imudo.yaml"/>
+	</node>
+</launch>

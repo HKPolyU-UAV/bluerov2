@@ -1,0 +1,13 @@
+accl_bias: [-4.342596682195816e-07, -3.581072716118436e-18, -0.009999999990570729] #-0.009999999990570729
+gyro_bias: [-2.66013609366142e-20, -1.933924486945935e-19, -3.870624673211354e-16]
+
+p_proc_noise: 0.001
+v_proc_noise: 0.001
+r_proc_noise: 0.001
+xi_proc_noise: 0.001
+q_proc_noise: 0.001
+
+p_meas_noise: 0.01
+v_meas_noise: 0.02
+r_meas_noise: 0.0006
+th_meas_noise: 0.012

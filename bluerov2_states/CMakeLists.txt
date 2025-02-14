@@ -21,6 +21,7 @@ find_package(catkin COMPONENTS
   genmsg
   visualization_msgs
   tf
+  ros_utilities
 )
 
 find_package(OpenCV REQUIRED)
@@ -31,6 +32,7 @@ roslaunch_add_file_check(launch)
 
 add_message_files(
   FILES
+  blank.msg
 )
 
 
@@ -45,19 +47,29 @@ catkin_package(
     roscpp
     std_msgs
     message_generation
+    # ros_utilities
 )
 
 set(Sophus_LIBRARIES libSophus.so)
 
 include_directories(
+  include
   ${catkin_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
   ${Sophus_INCLUDE_DIRS}
+  ros_utilities
 )
 
+
+####################################
+####################################
+## ImuDo nodelet
 add_library(ImuDo
   src/ImuDo.cpp
-  )
+  src/Eskf.cpp
+  src/Config.cpp
+  src/Dynamics.cpp
+)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(ImuDo 
@@ -65,3 +77,29 @@ target_link_libraries(ImuDo
     ${OpenCV_INCLUDE_DIRS}
     ${Sophus_INCLUDE_DIRS}
 )
+
+add_dependencies(ImuDo 
+    airo_message_generate_messages_cpp
+)
+
+
+####################################
+####################################
+## ImuCalibrate
+add_executable(ImuCalibrate
+  src/ImuCalibrate.cpp)
+
+target_link_libraries(ImuCalibrate
+  ${catkin_LIBRARIES}
+)
+
+####################################
+####################################
+## ImuCalibrate
+add_executable(dataCollect
+  src/dataCollect.cpp)
+
+target_link_libraries(dataCollect
+  ${catkin_LIBRARIES}
+)
+

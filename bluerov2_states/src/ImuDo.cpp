@@ -23,87 +23,83 @@
  * \brief source file for imu_based OD
  */
 
-#include "../include/ImuDo.h"
+#include "bluerov2_states/ImuDo.h"
 
-void bluerov2_states::ImuDoNodelet::ground_truth_callback(
-    const nav_msgs::Odometry::ConstPtr& msg
-)
-{
-    return;
-}
-
-void bluerov2_states::ImuDoNodelet::imu_callback(
+void BLUEROV2_STATES::ImuDoNodelet::imu_callback(
     const sensor_msgs::Imu::ConstPtr& msg
 )
 {
-    std::cout<<"imu"<<std::endl;
+    if(!got_imu)
+    {
+        got_imu = true;
+    }
+        
+    if(!filter_start)
+        return;
+
+    imu_raw_B = imumsg_to_accl(*msg);
+
     imu_buf_manage.lock();
     imu_buf.push(msg);
     imu_buf_manage.unlock();
-    std::cout<<"imu"<<std::endl;
+
 }
 
-void bluerov2_states::ImuDoNodelet::gps_callback(
+void BLUEROV2_STATES::ImuDoNodelet::gps_callback(
     const sensor_msgs::NavSatFix::ConstPtr& msg
 )
 {
-    std::cout<<"gps"<<std::endl;
+    if(!got_gps)
+    {
+        gps_buf_manage.lock();
+        gps_buf.push(msg);
+        gps_buf_manage.unlock();
+        got_gps = true;
+    }
+        
+    if(!filter_start)
+        return;
+
     gps_buf_manage.lock();
     gps_buf.push(msg);
-    // msg->
     gps_buf_manage.unlock();
-    std::cout<<"gps"<<std::endl;
 }
 
-void bluerov2_states::ImuDoNodelet::main_spin_callback(const ros::TimerEvent& e)
+void BLUEROV2_STATES::ImuDoNodelet::pose_gt_callback(const nav_msgs::Odometry::ConstPtr& odom)
+{
+    if(!got_gt)
+    {
+        got_gt = true;
+    }
+        
+
+    vehicle_SE3_world_gt = posemsg_to_SE3(odom->pose.pose);
+    vehicle_twist_world_gt = twistmsg_to_velo(odom->twist.twist);
+    
+    vehicle_twist_body_gt.head(3) = 
+        vehicle_SE3_world_gt.rotationMatrix().inverse() * vehicle_twist_world_gt.head(3);
+    vehicle_twist_body_gt.tail(3) = 
+        Jacobi3dR(vehicle_SE3_world_gt).inverse() * vehicle_twist_world_gt.tail(3);
+
+    vehicle_Euler_gt = q2rpy(vehicle_SE3_world_gt.unit_quaternion());
+}
+
+void BLUEROV2_STATES::ImuDoNodelet::main_spin_callback(const ros::TimerEvent& e)
 {   
-    if(!tracking_start)
-    {
-        // tracking_start = initialization();
-        tracking_start = true;
-
+    // ROS_GREEN_STREAM("HERE");
+    if(!filter_start)
         return;
-    }
     
-    synced_data temp = SyncMeas();
-
-    if(!temp.empty)
-    {
-        ROS_RED_STREAM("DO IMU PREDICT/PUB");
-        ImuPredict();
-
-        return;
-    }
-
-    ROS_GREEN_STREAM("DO ESKF UPDATE");
-    EskfProcess();    
+    EskfProcess(SyncMeas());
 }
 
 
-bool bluerov2_states::ImuDoNodelet::initialization()
-{
-    if(
-        (ros::Time::now().toSec() - starting_time) > ros::Duration(init_time).toSec()
-    )
-        return true;
-    
-    return false;
-}
-
-void bluerov2_states::ImuDoNodelet::EskfProcess()
-{
-    update_pub.publish(pub_data);
-
-}
-
-bluerov2_states::synced_data bluerov2_states::ImuDoNodelet::SyncMeas()
+BLUEROV2_STATES::synced_data BLUEROV2_STATES::ImuDoNodelet::SyncMeas()
 // reference: VINS-Mono
 {
     using namespace std;
 
-    std::cout<<"sync"<<std::endl;
     synced_data meas_return;
-    meas_return.empty = true;
 
     if (imu_buf.empty() || gps_buf.empty())
         // if not, we return null vector
@@ -117,8 +113,6 @@ bluerov2_states::synced_data bluerov2_states::ImuDoNodelet::SyncMeas()
         return meas_return;
     }
 
-    cout<<1<<endl;
-
     if (
         !(imu_buf.front()->header.stamp.toSec() < gps_buf.front()->header.stamp.toSec())
     ) // we want the first_imu_time always < gps_first_time
@@ -126,15 +120,14 @@ bluerov2_states::synced_data bluerov2_states::ImuDoNodelet::SyncMeas()
         // if not, throw away the 
         gps_buf.pop();
 
-        // return meas_;
+        return meas_return;
     }
-
-    cout<<2<<endl;
     
     sensor_msgs::NavSatFix::ConstPtr gps_msg_temp = gps_buf.front();
     gps_buf.pop();
     
     std::vector<sensor_msgs::Imu::ConstPtr> Imu_buff_temp;
+
     while (imu_buf.front()->header.stamp.toSec() < gps_msg_temp->header.stamp.toSec())
     // collect all the imu data before the updated GPS signal!
     {
@@ -145,14 +138,66 @@ bluerov2_states::synced_data bluerov2_states::ImuDoNodelet::SyncMeas()
     if (Imu_buff_temp.empty())
         ROS_WARN("NO IMU DATA BETWEEN 2 UPDATES!");
 
-    meas_return.empty = false;
+    meas_return.update = true;
     meas_return.meas_data = std::make_pair(Imu_buff_temp,gps_msg_temp);
     
-    std::cout<<"sync"<<std::endl;
     return meas_return;
 }
 
-void bluerov2_states::ImuDoNodelet::ImuPredict()
+void BLUEROV2_STATES::ImuDoNodelet::onInit()
 {
-    imu_pub.publish(pub_data);
+    ros::NodeHandle& nh = getMTNodeHandle();
+    ROS_INFO("ImuDo Nodelet Initiated...");
+
+    starting_time = ros::Time::now().toSec();
+
+    Sophus::Vector6d velo;
+    velo(0) = 1.38;
+    velo(1) = 0.17;
+    velo(2) = -0.12;
+
+    velo(3) = 0.064;
+    velo(4) = 0.0088;
+    velo(5) = 0.655;
+
+    std::cout<<Sophus::SO3d::hat(-mass * velo.head(3))<<std::endl<<std::endl;
+    std::cout<<Sophus::SO3d::hat(
+            mass * velo.head(3)
+        ) * velo.tail(3) 
+        + 
+        Eigen::Vector3d(
+            0,
+            mass * velo(5) * velo(0) - mass * velo(3) * velo(2),
+            0
+        )<<std::endl;
+
+    std::cout<<Sophus::SO3d::hat(
+        (
+            Eigen::Vector3d()
+            <<
+            added_mass[0] * velo(0),
+            added_mass[1] * velo(1),
+            added_mass[2] * velo(2)
+        ).finished()
+    )<<std::endl;
+
+    std::cout<<Sophus::SO3d::hat(
+        (
+            Eigen::Vector3d()
+            <<
+            added_mass[0] * velo(0),
+            added_mass[1] * velo(1),
+            added_mass[2] * velo(2)
+        ).finished()
+    ) * velo.tail(3)<<std::endl;
+
+    // ros::shutdown();
+    communi_config(nh);
+
+    dynamics_parameter_config(nh);
+    eskf_config(nh);
+
+    filter_start = true;
+
+    ROS_GREEN_STREAM("FILTER START!");
 }
