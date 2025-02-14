@@ -7,7 +7,7 @@ static std::deque<nav_msgs::Odometry::ConstPtr> gt_buff;
 static bool calibrate_start = false, got_imu = false, got_gt = false;
 static double starting_time = INFINITY;
 
-static RosUtilities tool;
+static ros_utilities tool;
 
 static double max_static_accl_var;
 static double max_static_gyro_var;
@@ -109,21 +109,21 @@ int main(int argc, char** argv)
 void bias_calculate()
 {
     Eigen::Vector3d accl_mean_, accl_cov_;
-    tool.ComputeMean(accl_buff, accl_mean_);
+    // tool.ComputeMean(accl_buff, accl_mean_);
     tool.ComputeVariance(accl_buff, accl_cov_);
 
     Eigen::Vector3d g_vector_ = - accl_mean_ / accl_mean_.norm() * g_constant;
     update_accl_buffer(g_vector_);
 
-    tool.ComputeMean(accl_buff, accl_mean_);
+    // tool.ComputeMean(accl_buff, accl_mean_);
     tool.ComputeVariance(accl_buff, accl_cov_);
 
     std::cout<<"\nACCL BIAS: \n";
     std::cout<<accl_mean_<<std::endl;
 
     Eigen::Vector3d gyro_mean_, gyro_cov_;
-    tool.ComputeMean(gyro_buff, gyro_mean_);
-    tool.ComputeMean(gyro_buff, gyro_cov_);
+    // tool.ComputeMean(gyro_buff, gyro_mean_);
+    // tool.ComputeMean(gyro_buff, gyro_cov_);
 
     std::cout<<"GYRO BIAS: \n";
     std::cout<<gyro_mean_<<std::endl<<std::endl;

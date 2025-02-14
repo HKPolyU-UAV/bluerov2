@@ -18,7 +18,7 @@ static bool log_start = false;
 static bool path_start = false;
 static double path_starting_time = 0;
 
-static RosUtilities tool;
+static ros_utilities tool;
 
 void wrench_callback(const geometry_msgs::Point::ConstPtr& msg)
 {

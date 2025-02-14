@@ -57,7 +57,7 @@ namespace BLUEROV2_STATES
         double t5;
     };
 
-    class ImuDoNodelet : public nodelet::Nodelet, private RosUtilities
+    class ImuDoNodelet : public nodelet::Nodelet, private ros_utilities
     {
     private:
         nav_msgs::Odometry pose_gt;   
