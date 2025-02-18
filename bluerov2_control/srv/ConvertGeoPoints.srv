@@ -1,3 +1,0 @@
-geographic_msgs/GeoPoint[] geopoints
----
-geometry_msgs/Point[] utmpoints

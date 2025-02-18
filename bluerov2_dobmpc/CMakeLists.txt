@@ -27,6 +27,7 @@ find_package(catkin REQUIRED COMPONENTS
   genmsg
   sensor_msgs
   pcl_ros
+  ros_utilities
 )
 
 find_package(Eigen3 REQUIRED)
@@ -61,6 +62,7 @@ catkin_package(
   CATKIN_DEPENDS gazebo_msgs
   message_generation
   message_runtime
+  ros_utilities
 
 )
 # include_directories(/usr/include/pcl-1.12/)
@@ -76,12 +78,14 @@ include_directories(
   ${PCL_CONVERSIONS_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
+  ros_utilities
 )
 
 link_directories(${bluerov2_model})
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
+################################################################################################
 # bluerov2_dob_node
 add_executable(bluerov2_dob_node 
   src/bluerov2_dob_node.cpp
@@ -95,7 +99,45 @@ target_link_libraries(bluerov2_dob_node
 
 add_dependencies(bluerov2_dob_node uuv_gazebo_ros_plugins_msgs_generate_messages_cpp)
 
+################################################################################################
+# bluerov2_dob_node_patty
+add_executable(bluerov2_dob_node_patty 
+  src/bluerov2_dob_node_patty.cpp
+  src/bluerov2_dob_patty.cpp)
 
+target_link_libraries(bluerov2_dob_node_patty
+  ${bluerov2_model}/libacados_ocp_solver_bluerov2.so
+  ${acados_lib}/libacados.so
+  ${catkin_LIBRARIES}
+)
+
+add_dependencies(bluerov2_dob_node_patty 
+  uuv_gazebo_ros_plugins_msgs_generate_messages_cpp
+  airo_message_generate_messages_cpp
+)
+
+################################################################################################
+# bluerov2_ctrl_node
+add_executable(bluerov2_ctrl_node 
+  src/bluerov2_ctrl_node.cpp
+  src/bluerov2_ctrl.cpp
+  src/ctrller/mpc.cpp
+  src/ctrller/pid.cpp
+)
+
+target_link_libraries(bluerov2_ctrl_node
+  ${bluerov2_model}/libacados_ocp_solver_bluerov2.so
+  ${acados_lib}/libacados.so
+  ${catkin_LIBRARIES}
+)
+
+add_dependencies(bluerov2_ctrl_node 
+  uuv_gazebo_ros_plugins_msgs_generate_messages_cpp
+  airo_message_generate_messages_cpp
+  ros_utilities
+)
+
+################################################################################################
 # bluerov2_inspection_node
 add_executable(bluerov2_inspection_node src/bluerov2_inspection_node.cpp)  
 
@@ -107,7 +149,7 @@ target_link_libraries(bluerov2_inspection_node
 
 add_dependencies(bluerov2_inspection_node uuv_gazebo_ros_plugins_msgs_generate_messages_cpp)
 
-
+################################################################################################
 # bluerov2_ampc_node
 add_executable(bluerov2_ampc_node 
   src/bluerov2_ampc_node.cpp
@@ -119,13 +161,4 @@ target_link_libraries(bluerov2_ampc_node
   ${catkin_LIBRARIES}
 )
 
-add_dependencies(bluerov2_ampc_node uuv_gazebo_ros_plugins_msgs_generate_messages_cpp bluerov2_dobmpc_generate_messages_cpp)
-
-# bluerov2_random_node
-add_executable(bluerov2_random_node src/bluerov2_random_node.cpp)
-
-target_link_libraries(bluerov2_random_node
-  ${catkin_LIBRARIES}
-)
-
-add_dependencies(bluerov2_random_node uuv_gazebo_ros_plugins_msgs_generate_messages_cpp)
+add_dependencies(bluerov2_ampc_node uuv_gazebo_ros_plugins_msgs_generate_messages_cpp)

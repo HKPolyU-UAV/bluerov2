@@ -34,6 +34,10 @@
 #include "bluerov2_model/bluerov2_model.h"
 #include "acados_solver_bluerov2.h"
 
+#include "airo_message/Disturbance.h"
+
+#include "std_msgs/Float32.h"
+
 using namespace Eigen;
 
 class BLUEROV2_DOB{
@@ -54,12 +58,12 @@ class BLUEROV2_DOB{
         r = 11,
     };
 
-    enum ControlInputs{
-        u1 = 0,
-        u2 = 1,
-        u3 = 2,
-        u4 = 3,
-    };
+    // enum ControlInputs{
+    //     u1 = 0,
+    //     u2 = 1,
+    //     u3 = 2,
+    //     u4 = 3,
+    // };
 
     struct SolverInput{
         double x0[BLUEROV2_NX];
@@ -88,7 +92,7 @@ class BLUEROV2_DOB{
             double p;
             double q;
             double r;
-        };
+    };
 
     struct acc{
         double x;
@@ -248,6 +252,7 @@ class BLUEROV2_DOB{
 
     ros::Publisher ref_pose_pub;
     ros::Publisher error_pose_pub;
+    ros::Publisher error_abs_pub;
 
     ros::Publisher control_input0_pub;
     ros::Publisher control_input1_pub;
@@ -259,6 +264,14 @@ class BLUEROV2_DOB{
     ros::Publisher applied_disturbance_pub;
     ros::Subscriber imu_sub;
     ros::ServiceClient client;
+
+////////////////////////////////////////////////////////////
+    ros::Subscriber dist_sub;
+    airo_message::Disturbance dist;
+    void dist_cb(const airo_message::Disturbance::ConstPtr& msg);
+
+
+////////////////////////////////////////////////////////////
 
     // Trajectory variables
     std::vector<std::vector<double>> trajectory;
@@ -277,6 +290,8 @@ class BLUEROV2_DOB{
     // void ref_cb(const);
     void pose_cb(const nav_msgs::Odometry::ConstPtr& msg);  // get current position
     void solve();                                           // solve MPC
+
+
 
     // disturbance observer functions
     void thrusts_cb(const uuv_gazebo_ros_plugins_msgs::FloatStamped::ConstPtr& msg, int index); // read current thrusts
