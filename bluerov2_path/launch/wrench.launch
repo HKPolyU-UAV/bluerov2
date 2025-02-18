@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<launch>
+	<node pkg="bluerov2_path" type="bluerov2_wrench" name="bluerov2_wrench" output="screen">
+        <param name="wrench_x" type="double" value="40.0"/>
+        <param name="wrench_y" type="double" value="40.0"/>
+        <param name="wrench_z" type="double" value="10.0"/>
+	</node>
+        <!-- <include file="$(find uuv_control_utils)/launch/apply_body_wrench.launch">
+                <arg name="uuv_name" value="bluerov2"/>
+                <arg name="starting_time" default="0"/>
+                <arg name="duration" default="100000000.0"/>
+                <arg name="force_x" default="10"/>
+                <arg name="force_y" default="10"/>
+                <arg name="force_z" default="10"/>
+                <arg name="torque_z" default="0"/>
+        </include> -->
+</launch>
