@@ -1,6 +1,11 @@
 # UNDER MAINTENANCE!!!
 # If you wish to use this repo, please first go to branch ''huyang-back'' [link](https://github.com/HKPolyU-UAV/bluerov2/tree/huyang-backup); we will soon finish the housekeeping! 
 
+## todo-list
+- bridge inspection
+- mpc consolidation
+- PID consolidation
+- attitude control
 
 # BlueROV2 MPC
 This work implements a NMPC controller for BlueROV2 with ROS.
