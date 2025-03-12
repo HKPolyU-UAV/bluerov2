@@ -11,3 +11,6 @@
 [submodule "ros_utilities"]
 	path = ros_utilities
 	url = https://github.com/pattylo/ros_utilities.git
+[submodule "bluerov2_exp"]
+	path = bluerov2_exp
+	url = https://github.com/HKPolyU-UAV/bluerov2_exp.git
