@@ -77,16 +77,28 @@ for i in range(1, len(t)):
         traj[i,0]=x0-15
         traj[i,1]=y0-40+1*(t[i]-135)
         traj[i,5]=-3*np.pi/2              # Face the positive y direction
+    # else:
+    #     traj[i,0]=-5
+    #     traj[i,1]=20
+    #     traj[i,5]=-3*np.pi/2
+    elif t[i] < 180:
+        traj[i,0]=x0-15-1*(t[i]-175)
+        traj[i,1]=y0
+        traj[i,5]=-np.pi              # Face the negative x direction
+    elif t[i] < 220:
+        traj[i,0]=x0-20
+        traj[i,1]=y0-1*(t[i]-180)
+        traj[i,5]=-np.pi/2              # Face the negative y direction
     else:
-        traj[i,0]=-5
-        traj[i,1]=20
-        traj[i,5]=-3*np.pi/2
+        traj[i,0]=-10
+        traj[i,1]=-20
+        traj[i,5]=-np.pi/2
 
 # If the loop ended before t[i] >= 1750, set the remaining elements to (-5, 20)
 if i <= len(t) - 1:
-    traj[i+1:,0] = -5
+    traj[i+1:,0] = 10
     traj[i+1:,1] = 20
-    traj[i,5]=-3*np.pi/2
+    traj[i,5]=-np.pi/2
 
 # Save the trajectory to a txt file
 np.savetxt('slam_pool.txt', traj, fmt='%f')
