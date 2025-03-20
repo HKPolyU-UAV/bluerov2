@@ -111,6 +111,8 @@ BLUEROV2_DOB::BLUEROV2_DOB(ros::NodeHandle& nh)
     // fused_pose_sub = nh.subscribe<nav_msgs::Odometry>("/bluerov2/fused_odom",20, &BLUEROV2_DOB::dr_cb, this);
 
     client = nh.serviceClient<gazebo_msgs::ApplyBodyWrench>("/gazebo/apply_body_wrench");
+    //******************************************************************************************************************
+    // read from sensors, and publish dead reckoning results
     imu_sub = nh.subscribe<sensor_msgs::Imu>("/bluerov2/imu", 20, &BLUEROV2_DOB::imu_cb, this);
     pressure_sub = nh.subscribe<sensor_msgs::FluidPressure>("/bluerov2/pressure", 20, &BLUEROV2_DOB::pressure_cb, this);
     pcl_sub = nh.subscribe("/camera/depth/color/points", 20, &BLUEROV2_DOB::pcl_cb, this);
@@ -121,6 +123,8 @@ BLUEROV2_DOB::BLUEROV2_DOB(ros::NodeHandle& nh)
         std::string topic = "/bluerov2/dvl_sonar" + std::to_string(i);
         dvlbeam_subs[i] = nh.subscribe<sensor_msgs::Range>(topic, 20, boost::bind(&BLUEROV2_DOB::dvlbeam_cb, this, _1, i));
     }
+    dr_pose_pub = nh.advertise<nav_msgs::Odometry>("/bluerov2/dr_pose",20);
+    //******************************************************************************************************************
 
     // initialize
     for(unsigned int i=0; i < BLUEROV2_NU; i++) acados_out.u0[i] = 0.0;

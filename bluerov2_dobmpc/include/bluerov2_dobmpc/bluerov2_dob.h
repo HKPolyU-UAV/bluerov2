@@ -171,6 +171,14 @@ class BLUEROV2_DOB{
     Euler dr_euler;         // euler angle in world frame: dr_euler.phi, dr_euler.theta, dr_euler.psi
 
     //****************************************************************************
+    // After sensor fusion, fill in variables here:
+    pos dr_pos;             // position estimated by dead reckoning
+                            // position in world frame: dr_pos.x, dr_pos.y, dr_pos.z
+                            // linear velocity in body frame: dr_pos.u, dr_pos.v, dr_pos.w
+                            // angular velocity in body frame: dr_pos.p, dr_pos.q, dr_pos.r
+    Euler dr_euler;         // euler angle in world frame: dr_euler.phi, dr_euler.theta, dr_euler.psi
+    nav_msgs::Odometry dr_pose;
+    //****************************************************************************
     acc body_acc;
     thrust current_t;
     wrench applied_wrench;
@@ -301,7 +309,12 @@ class BLUEROV2_DOB{
     ros::Subscriber dvl_sub;
     std::vector<ros::Subscriber> thrust_subs;
     std::vector<ros::Subscriber> dvlbeam_subs;
+    //****************************************************************************
+    // publish dead reckoning results
+    ros::Publisher dr_pose_pub;
 
+    //****************************************************************************
+    
     // Trajectory variables
     std::vector<std::vector<double>> trajectory;
     int line_number = 0;

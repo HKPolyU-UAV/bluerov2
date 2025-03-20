@@ -1,0 +1,1 @@
+rosbag record -O dr_data /bluerov2/pose_gt /bluerov2/dr_pose
