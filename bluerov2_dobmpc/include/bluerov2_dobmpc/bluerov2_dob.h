@@ -98,12 +98,6 @@ class BLUEROV2_DOB{
             double p;       // angular velocity phi
             double q;       // angular velocity theta
             double r;       // angular velocity psi
-            double u;       // linear velocity x
-            double v;       // linear velocity y
-            double w;       // linear velocity z
-            double p;       // angular velocity phi
-            double q;       // angular velocity theta
-            double r;       // angular velocity psi
         };
 
     struct acc{
@@ -164,22 +158,10 @@ class BLUEROV2_DOB{
 
     //***************************************************************************
     // sensor raw data
-
-    //***************************************************************************
-    // sensor raw data
     pos sensor_pos;         // position provided by sensors (angular velocities from imu; 
                             // linear velocities from dvl; depth from pressure sensor)
     acc imu_acc;            // acceleration feedback from imu
     orient imu_q;           // orientaion feedback from imu
-
-    // After sensor fusion, fill in variables here:
-    pos dr_pos;             // position estimated by dead reckoning
-                            // position in world frame: dr_pos.x, dr_pos.y, dr_pos.z
-                            // linear velocity in body frame: dr_pos.u, dr_pos.v, dr_pos.w
-                            // angular velocity in body frame: dr_pos.p, dr_pos.q, dr_pos.r
-    Euler dr_euler;         // euler angle in world frame: dr_euler.phi, dr_euler.theta, dr_euler.psi
-
-    //****************************************************************************
 
     // After sensor fusion, fill in variables here:
     pos dr_pos;             // position estimated by dead reckoning
@@ -286,9 +268,13 @@ class BLUEROV2_DOB{
 
     // Time
     ros::Time current_time;
+    // ros::Time last_time;
 
     // ros subscriber & publisher
     ros::Subscriber pose_sub;
+
+    // ros::Subscriber fused_pose_sub;
+
     ros::Publisher thrust0_pub;
     ros::Publisher thrust1_pub;
     ros::Publisher thrust2_pub;
@@ -307,6 +293,7 @@ class BLUEROV2_DOB{
     ros::Publisher esti_pose_pub;
     ros::Publisher esti_disturbance_pub;
     ros::Publisher applied_disturbance_pub;
+    // ros::Publisher fused_pose_pub; // fused pose from sensor fusion
     ros::Subscriber imu_sub;
     ros::ServiceClient client;
     ros::Subscriber pressure_sub;
@@ -368,7 +355,8 @@ class BLUEROV2_DOB{
     void dvl_cb(const uuv_sensor_ros_plugins_msgs::DVL::ConstPtr &dvl);
     void dvlbeam_cb(const sensor_msgs::Range::ConstPtr& msg, int index);
     // **********************************************************************
-    void dead_reckoning(Eigen::Vector3d& position, Eigen::Quaterniond& orientation);                                    // position feedback by dead reckoning
+    // void dead_reckoning();                                    // position feedback by dead reckoning
+    // void dr_cb(const nav_msgs::Odometry::ConstPtr& pose);    // position feedback by dead reckoning
 };
 
 #endif

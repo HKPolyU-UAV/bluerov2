@@ -23,8 +23,15 @@ class SensorFusionNode:
         self.path = Path()
         # self.path.header.frame_id = "odom"
         self.path.header.frame_id = "world"
-        self.position_x = 10.0
-        self.position_y = 20.0
+
+        # Different initial positions for different cases
+        # 1) Swimming pool
+        # self.position_x = 10.0
+        # self.position_y = 20.0
+
+        # 2) Ship
+        self.position_x = -12.0
+        self.position_y = 0.0
 
         self.gt_path = Path()
         self.gt_path.header.frame_id = "world"

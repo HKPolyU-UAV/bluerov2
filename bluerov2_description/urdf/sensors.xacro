@@ -12,9 +12,12 @@
   <xacro:default_pose_3d namespace="${namespace}" parent_link="${namespace}/base_link" />
 
   <!-- IMU Sensor -->
-  <xacro:default_imu namespace="${namespace}" parent_link="${namespace}/base_link">
+  <!-- <xacro:default_imu namespace="${namespace}" parent_link="${namespace}/base_link">
     <origin xyz="0 0 0" rpy="0 0 0"/>
-  </xacro:default_imu>
+  </xacro:default_imu> -->
+    <xacro:default_imu_svin namespace="${namespace}" parent_link="${namespace}/base_link">
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </xacro:default_imu_svin>
 
   <!-- Pressure Sensor  -->
   <xacro:default_pressure namespace="${namespace}" parent_link="${namespace}/base_link">
@@ -36,7 +39,8 @@
     <origin xyz="0 0 -0.2" rpy="0 ${0.5*pi} 0"/>
   </xacro:teledyne_whn_enu_macro> -->
   <xacro:default_dvl namespace="${namespace}" parent_link="${namespace}/base_link">
-    <origin xyz="0 0 -0.2" rpy="0 ${0.5*pi} 0"/>
+    <!-- <origin xyz="0 0 -0.2" rpy="0 ${0.5*pi} 0"/> -->
+    <origin xyz="0 0 -0.2" rpy="0 0 0"/>
   </xacro:default_dvl>
 
   <!-- Mount a sonar -->
@@ -46,6 +50,12 @@
 
   <!-- Mount a GPS. -->
   <xacro:default_gps namespace="${namespace}" parent_link="${namespace}/base_link" />
+
+  <!-- Mount a stereo camera -->
+  <xacro:include filename="$(find uuv_sensor_ros_plugins)/urdf/stereo_snippets.xacro"/>
+  <xacro:duo3d_camera namespace="${namespace}" parent_link="${namespace}/base_link">
+    <origin xyz="0.2 0 0" rpy="0 0 0"/>
+  </xacro:duo3d_camera>
 
   <!-- Mount a light -->
   <!-- <xacro:include filename="$(find uuv_sensor_ros_plugins)/urdf/light.xacro"/>

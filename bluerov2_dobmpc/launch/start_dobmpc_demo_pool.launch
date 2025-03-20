@@ -87,6 +87,6 @@
     </include>
 
     <!-- Start RViz --> 
-    <node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find bluerov2_control)/rviz/bluerov2_control.rviz"/>
+    <!-- <node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find bluerov2_control)/rviz/bluerov2_control.rviz"/> -->
     
 </launch>

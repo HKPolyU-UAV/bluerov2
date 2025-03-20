@@ -73,7 +73,19 @@ BLUEROV2_DOB::BLUEROV2_DOB(ros::NodeHandle& nh)
     applied_wrench.tz = 0.0;
 
     // ros subsriber & publisher
-    pose_sub = nh.subscribe<nav_msgs::Odometry>("/bluerov2/pose_gt", 20, &BLUEROV2_DOB::pose_cb, this);
+    // pose_sub = nh.subscribe<nav_msgs::Odometry>("/bluerov2/pose_gt", 20, &BLUEROV2_DOB::pose_cb, this);
+    
+    //**********************************************
+    // Use the sensor fusion pose instead of the ground truth pose
+    pose_sub = nh.subscribe<nav_msgs::Odometry>("/bluerov2/fused_odom", 20, &BLUEROV2_DOB::pose_cb, this);
+    //**********************************************
+
+    // 在构造函数中添加超时检测
+    // if (!ros::topic::waitForMessage<nav_msgs::Odometry>("/bluerov2/fused_pose", ros::Duration(5.0))) {
+    //     ROS_ERROR("等待/bluerov2/fused_pose超时！");
+    //     exit(1);
+    // }
+
     thrust0_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/0/input",20);
     thrust1_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/1/input",20);
     thrust2_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/2/input",20);
@@ -95,6 +107,9 @@ BLUEROV2_DOB::BLUEROV2_DOB(ros::NodeHandle& nh)
         std::string topic = "/bluerov2/thrusters/" + std::to_string(i) + "/thrust";
         thrust_subs[i] = nh.subscribe<uuv_gazebo_ros_plugins_msgs::FloatStamped>(topic, 20, boost::bind(&BLUEROV2_DOB::thrusts_cb, this, _1, i));
     }
+
+    // fused_pose_sub = nh.subscribe<nav_msgs::Odometry>("/bluerov2/fused_odom",20, &BLUEROV2_DOB::dr_cb, this);
+
     client = nh.serviceClient<gazebo_msgs::ApplyBodyWrench>("/gazebo/apply_body_wrench");
     imu_sub = nh.subscribe<sensor_msgs::Imu>("/bluerov2/imu", 20, &BLUEROV2_DOB::imu_cb, this);
     pressure_sub = nh.subscribe<sensor_msgs::FluidPressure>("/bluerov2/pressure", 20, &BLUEROV2_DOB::pressure_cb, this);
@@ -172,6 +187,29 @@ void BLUEROV2_DOB::pose_cb(const nav_msgs::Odometry::ConstPtr& pose)
 
 
     }
+
+// void BLUEROV2_DOB::dr_cb(const nav_msgs::Odometry::ConstPtr& pose)
+// {
+//     // get linear position x, y, z
+//     dr_pos.x = pose->pose.pose.position.x;
+//     dr_pos.y = pose->pose.pose.position.y;
+//     dr_pos.z = pose->pose.pose.position.z;
+
+//     // get angle phi, theta, psi
+//     tf::quaternionMsgToTF(pose->pose.pose.orientation,tf_quaternion);
+//     tf::Matrix3x3(tf_quaternion).getRPY(dr_euler.phi, dr_euler.theta, dr_euler.psi);
+
+//     // get linear velocity u, v, w
+//     dr_pos.u = pose->twist.twist.linear.x;
+//     dr_pos.v = pose->twist.twist.linear.y;
+//     dr_pos.w = pose->twist.twist.linear.z;
+
+//     // get angular velocity p, q, r
+//     dr_pos.p = pose->twist.twist.angular.x;
+//     dr_pos.q = pose->twist.twist.angular.y;
+//     dr_pos.r = pose->twist.twist.angular.z;
+
+// }
 
 // quaternion to euler angle
 BLUEROV2_DOB::Euler BLUEROV2_DOB::q2rpy(const geometry_msgs::Quaternion& quaternion){
@@ -311,9 +349,6 @@ void BLUEROV2_DOB::solve(){
 
     //****************************************************************
     // replace reference states here !!
-
-    //****************************************************************
-    // replace reference states here !!
     // set initial states
     acados_in.x0[x] = local_pos.x;
     acados_in.x0[y] = local_pos.y;
@@ -333,21 +368,7 @@ void BLUEROV2_DOB::solve(){
     // acados_in.x0[z] = dr_pos.z;
     // acados_in.x0[phi] = dr_euler.phi;
     // acados_in.x0[theta] = dr_euler.theta;
-    // acados_in.x0[psi] = yaw_sum;
-    // acados_in.x0[u] = dr_pos.u;
-    // acados_in.x0[v] = dr_pos.v;
-    // acados_in.x0[w] = dr_pos.w;
-    // acados_in.x0[p] = dr_pos.p;
-    // acados_in.x0[q] = dr_pos.q;
-    // acados_in.x0[r] = dr_pos.r;
-    //*****************************************************************
-    
-    // acados_in.x0[x] = dr_pos.x;
-    // acados_in.x0[y] = dr_pos.y;
-    // acados_in.x0[z] = dr_pos.z;
-    // acados_in.x0[phi] = dr_euler.phi;
-    // acados_in.x0[theta] = dr_euler.theta;
-    // acados_in.x0[psi] = yaw_sum;
+    // acados_in.x0[psi] = dr_euler.psi;
     // acados_in.x0[u] = dr_pos.u;
     // acados_in.x0[v] = dr_pos.v;
     // acados_in.x0[w] = dr_pos.w;
@@ -1023,109 +1044,93 @@ MatrixXd BLUEROV2_DOB::dynamics_g(MatrixXd euler)
 
 //********************************************************
 // Positioning with sensors data
-void BLUEROV2_DOB::dead_reckoning(Eigen::Vector3d& position,Eigen::Quaterniond& orientation)
+
+// void BLUEROV2_DOB::dead_reckoning(const nav_msgs::Path
+
+// void BLUEROV2_DOB::dead_reckoning() 
+// {
+//     // 1. 使用IMU积分姿态
+//     tf2::Quaternion imu_quat(imu_q.x, imu_q.y, imu_q.z, imu_q.w);
+//     tf2::Matrix3x3(imu_quat).getRPY(dr_euler.phi, dr_euler.theta, dr_euler.psi);
+
+//     // 2. 使用DVL速度积分位置（需转换到世界坐标系）
+//     Matrix3d R_wb; // 从body到world的旋转矩阵
+//     R_wb = AngleAxisd(dr_euler.psi, Vector3d::UnitZ()) 
+//            * AngleAxisd(dr_euler.theta, Vector3d::UnitY()) 
+//            * AngleAxisd(dr_euler.phi, Vector3d::UnitX());
+
+//     // 积分速度到位置
+//     dr_pos.x += (R_wb(0,0)*sensor_pos.u + R_wb(0,1)*sensor_pos.v + R_wb(0,2)*sensor_pos.w) * dt;
+//     dr_pos.y += (R_wb(1,0)*sensor_pos.u + R_wb(1,1)*sensor_pos.v + R_wb(1,2)*sensor_pos.w) * dt;
+//     // dr_pos.z = sensor_pos.z; // 直接使用压力计深度
+//     dr_pos.z += (R_wb(2,0)*sensor_pos.u + R_wb(2,1)*sensor_pos.v + R_wb(2,2)*sensor_pos.w) * dt;
+
+//     // 直接使用DVL测量速度
+//     dr_pos.u = sensor_pos.u;
+//     dr_pos.v = sensor_pos.v;
+//     dr_pos.w = sensor_pos.w;
+
+//     // angle velocity estimated from IMU
+//     dr_pos.p = sensor_pos.p;
+//     dr_pos.q = sensor_pos.q;
+//     dr_pos.r = sensor_pos.r;
+
+//     // 3. 发布融合后的位姿
+//     nav_msgs::Odometry fused_pose;
+//     fused_pose.header.stamp = ros::Time::now();
+//     fused_pose.pose.pose.position.x = dr_pos.x;
+//     fused_pose.pose.pose.position.y = dr_pos.y;
+//     fused_pose.pose.pose.position.z = dr_pos.z;
+//     fused_pose.twist.twist.linear.x = sensor_pos.u;
+//     fused_pose.twist.twist.linear.y = sensor_pos.v;
+//     fused_pose.twist.twist.linear.z = sensor_pos.w;
+//     fused_pose_pub.publish(fused_pose);
+// }
+
 // void BLUEROV2_DOB::dead_reckoning()
-{
-    
-    double imu_q_w = imu_q.w;
-    double imu_q_x = imu_q.x;
-    double imu_q_y = imu_q.y;
-    double imu_q_z = imu_q.z;
-    // Update orientation using quaternion values
+// {
+//     // Get the current time
+//     ros::Time current_time = ros::Time::now();
+//     double dt = (current_time - last_time).toSec();
+//     last_time = current_time;
 
+//     // Convert the current orientation from quaternion to a rotation matrix
+//     tf::Quaternion quat(imu_q.x, imu_q.y, imu_q.z, imu_q.w);
+//     tf::Matrix3x3 rotation_matrix(quat);
 
-    // Step 2: Update velocity using DVL and IMU data
-    double imu_acc_x = imu_acc.x;
-    double imu_acc_y = imu_acc.y;
-    double imu_acc_z = imu_acc.z;
-    // Angular velocity from IMU
-    double imu_ang_p = sensor_pos.p;
-    double imu_ang_q = sensor_pos.q;
-    double imu_ang_r = sensor_pos.r;
-    // Linear velocity from IMU
-    double imu_vel_x = 0.0;
-    double imu_vel_y = 0.0;
-    double imu_vel_z = 0.0;
-    // double dt = 0.01; // Time step for example
-    static double last_timestamp = ros::Time::now().toSec();
-    double current_timestamp = ros::Time::now().toSec();
-    double dt = current_timestamp - last_timestamp;
-    last_timestamp = current_timestamp;
-    // Perform integration to update velocity
-    imu_vel_x += (imu_acc_x * dt);
-    imu_vel_y += (imu_acc_y * dt);
-    imu_vel_z += (imu_acc_z * dt);
+//     // Transform the velocity from the body frame to the world frame
+//     tf::Vector3 velocity_body(sensor_pos.u, sensor_pos.v, sensor_pos.w);
+//     tf::Vector3 velocity_world = rotation_matrix * velocity_body;
 
-    // Convert quaternion to rotation matrix
-    Eigen::Quaterniond q(imu_q_w, imu_q_x, imu_q_y, imu_q_z);
-    Eigen::Matrix3d R = q.toRotationMatrix();
+//     // Update the position using the transformed velocity
+//     local_pos.x += velocity_world.x() * dt;
+//     local_pos.y += velocity_world.y() * dt;
+//     local_pos.z += velocity_world.z() * dt;
 
-    // Rotate velocity to global frame
-    Eigen::Vector3d imu_vel_body(imu_vel_x, imu_vel_y, imu_vel_z);
-    Eigen::Vector3d imu_vel_global = R * imu_vel_body;
+//     // Update the orientation using the angular velocity
+//     local_euler.phi += sensor_pos.p * dt;
+//     local_euler.theta += sensor_pos.q * dt;
+//     local_euler.psi += sensor_pos.r * dt;
 
-    // Linear velocity from DVL
-    double dvl_velocity_u = sensor_pos.u;
-    double dvl_velocity_v = sensor_pos.v;
-    double dvl_velocity_w = sensor_pos.w;
-    Eigen::Vector3d dvl_velocity(dvl_velocity_u, dvl_velocity_v, dvl_velocity_w);
-    // Perform least square optimization to update velocity based on IMU data and DVL data
-    // Create a least square optimization problem
-    Eigen::MatrixXd A(6, 3);
-    Eigen::VectorXd b(6);
-    A << imu_vel_global -dvl_velocity;
-    b << Eigen::Vector3d::Zero();
-    // Solve for x using least squares
-    Eigen::VectorXd x = A.bdcSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(b);
-    // The optimized velocity is the first three elements of x
-    Eigen::Vector3d optimized_velocity = x.head<3>();
+//     // Normalize the yaw angle to be within [-pi, pi]
+//     local_euler.psi = atan2(sin(local_euler.psi), cos(local_euler.psi));
 
+//     // Publish the estimated pose
+//     nav_msgs::Odometry estimated_pose;
+//     estimated_pose.header.stamp = current_time;
+//     estimated_pose.header.frame_id = "odom_frame";
+//     estimated_pose.child_frame_id = "base_link";
 
-    // Step 3: Integrate velocity and depth to update position
-    // Perform integration
-    // position.x += (optimized_velocity.x() * dt);
-    // position.y += (optimized_velocity.y() * dt);
-    // position.z += (optimized_velocity.z() * dt);
-    position += optimized_velocity * dt;
+//     estimated_pose.pose.pose.position.x = local_pos.x;
+//     estimated_pose.pose.pose.position.y = local_pos.y;
+//     estimated_pose.pose.pose.position.z = local_pos.z;
 
+//     tf::Quaternion estimated_quat;
+//     estimated_quat.setRPY(local_euler.phi, local_euler.theta, local_euler.psi);
+//     estimated_pose.pose.pose.orientation.x = estimated_quat.x();
+//     estimated_pose.pose.pose.orientation.y = estimated_quat.y();
+//     estimated_pose.pose.pose.orientation.z = estimated_quat.z();
+//     estimated_pose.pose.pose.orientation.w = estimated_quat.w();
 
-    // Step 4: Optimize depth using pressure sensor data
-    // Extract depth from pressure sensor data
-    double pressure_depth = sensor_pos.z;
-    // Perform optimization using pressure sensor data
-    // Create a least square optimization problem
-    Eigen::MatrixXd C(1, 1);
-    Eigen::VectorXd d(1);
-    C << pressure_depth - position.z();
-    d << 0.0;
-    // Solve for x using least squares Cy = d
-    Eigen::VectorXd y = C.bdcSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(d);
-    // The optimized depth is the first element of y
-    double optimized_depth = y(0);
-    // Update position
-    position.z() = optimized_depth;
-
-    // Step 5: Fuse updated position, orientation, and depth
-    // Perform fusion
-
-    // Update position and orientation
-    dr_pos.x = position.x();
-    dr_pos.y = position.y();
-    dr_pos.z = position.z();
-    dr_pos.u = optimized_velocity.x();
-    dr_pos.v = optimized_velocity.y();
-    dr_pos.w = optimized_velocity.z();
-    dr_pos.p = imu_ang_p;
-    dr_pos.q = imu_ang_q;
-    dr_pos.r = imu_ang_r;
-    
-    orientation = Eigen::Quaterniond(imu_q_w, imu_q_x, imu_q_y, imu_q_z);
-    dr_euler.phi = orientation.toRotationMatrix().eulerAngles(0, 1, 2)[0];
-    dr_euler.theta = orientation.toRotationMatrix().eulerAngles(0, 1, 2)[1];
-    dr_euler.psi = orientation.toRotationMatrix().eulerAngles(0, 1, 2)[2];
-    
-    // publish estimated states
-
-
-
-}
+//     esti_pose_pub.publish(estimated_pose);
+// }
