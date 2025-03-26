@@ -163,13 +163,6 @@ class BLUEROV2_DOB{
     acc imu_acc;            // acceleration feedback from imu
     orient imu_q;           // orientaion feedback from imu
 
-    // After sensor fusion, fill in variables here:
-    pos dr_pos;             // position estimated by dead reckoning
-                            // position in world frame: dr_pos.x, dr_pos.y, dr_pos.z
-                            // linear velocity in body frame: dr_pos.u, dr_pos.v, dr_pos.w
-                            // angular velocity in body frame: dr_pos.p, dr_pos.q, dr_pos.r
-    Euler dr_euler;         // euler angle in world frame: dr_euler.phi, dr_euler.theta, dr_euler.psi
-
     //****************************************************************************
     // After sensor fusion, fill in variables here:
     pos dr_pos;             // position estimated by dead reckoning

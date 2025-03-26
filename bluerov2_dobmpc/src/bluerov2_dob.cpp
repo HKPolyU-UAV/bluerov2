@@ -80,12 +80,6 @@ BLUEROV2_DOB::BLUEROV2_DOB(ros::NodeHandle& nh)
     pose_sub = nh.subscribe<nav_msgs::Odometry>("/bluerov2/fused_odom", 20, &BLUEROV2_DOB::pose_cb, this);
     //**********************************************
 
-    // 在构造函数中添加超时检测
-    // if (!ros::topic::waitForMessage<nav_msgs::Odometry>("/bluerov2/fused_pose", ros::Duration(5.0))) {
-    //     ROS_ERROR("等待/bluerov2/fused_pose超时！");
-    //     exit(1);
-    // }
-
     thrust0_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/0/input",20);
     thrust1_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/1/input",20);
     thrust2_pub = nh.advertise<uuv_gazebo_ros_plugins_msgs::FloatStamped>("/bluerov2/thrusters/2/input",20);
@@ -752,7 +746,7 @@ void BLUEROV2_DOB::EKF()
         std::cout << "IMU - orientation w: " << imu_q.w << "  x: " << imu_q.x << "  y:  " << imu_q.y << "  z:  " << imu_q.z << std::endl;
         std::cout << "Pressure Sensor - fluid pressure: " << fluid_p << "  position z: " << sensor_pos.z << std::endl;
         std::cout << "DVL - linear velocity u: " << sensor_pos.u << "  v: " << sensor_pos.v << "  w:  " << sensor_pos.w << "  altitude:  " << dvl_altitude << std::endl;
-        std::cout << "DVL - sonar beam range 0: " << dvl_range.sonar0 << "  1: " << dvl_range.sonar1 << "  2:  " << dvl_range.sonar2 << "  3:  " << dvl_range.sonar3 << std::endl;
+        // std::cout << "DVL - sonar beam range 0: " << dvl_range.sonar0 << "  1: " << dvl_range.sonar1 << "  2:  " << dvl_range.sonar2 << "  3:  " << dvl_range.sonar3 << std::endl;
         std::cout << "---------------------------------------------------------------------------------------------------------------------" << std::endl;
         cout_counter = 0;
     }
