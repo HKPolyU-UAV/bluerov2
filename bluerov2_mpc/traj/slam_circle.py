@@ -11,10 +11,10 @@ import math
 sample_time = 0.05             # seconds
 duration = 240                   # seconds
 
-r = 12
+r = 5
 v = 1.5
 
-x0 = 0                       
+x0 = 5                       
 y0 = 0
 z0 = -95
 
@@ -54,4 +54,4 @@ sta[:,5] = -1.570796
 traj2 = np.concatenate((sta,traj))
 
 # write to txt
-np.savetxt('slam_circle.txt',traj,fmt='%f')
+np.savetxt('slam_circle_pool.txt',traj,fmt='%f')

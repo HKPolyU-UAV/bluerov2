@@ -22,12 +22,19 @@ class KalmanFilterNode:
         # Initialize path and position
         self.path = Path()
         self.path.header.frame_id = "map"
-        self.position_x = -12.0
-        self.position_y = 0.0
+
+        # Different initial positions for different cases
+        # 1) Swimming pool
+        self.position_x = 10.0
+        self.position_y = 20.0
+        # 2) Ship
+        # self.position_x = -12.0
+        # self.position_y = 0.0
         self.position_z = -95.0
 
         # Kalman Filter variables
-        self.state = np.array([-12.0, 0.0, -95.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])  # [x, y, z, roll, pitch, yaw, vx, vy, vz]
+        # self.state = np.array([-12.0, 0.0, -95.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])  # [x, y, z, roll, pitch, yaw, vx, vy, vz]
+        self.state = np.array([self.position_x, self.position_y, self.position_z, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])  # [x, y, z, roll, pitch, yaw, vx, vy, vz]
         self.P = np.eye(9) * 0.1  # State covariance matrix
         self.F = np.eye(9)  # State transition matrix
         self.H = np.eye(9)  # Measurement matrix

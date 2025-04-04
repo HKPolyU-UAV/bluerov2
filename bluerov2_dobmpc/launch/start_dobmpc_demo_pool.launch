@@ -5,6 +5,9 @@
     <arg name="x" default="10"/>
     <arg name="y" default="20"/>
     <arg name="z" default="-95"/>
+    <!-- <arg name="x" default="0"/>
+    <arg name="y" default="0"/>
+    <arg name="z" default="-95"/> -->
     <arg name="yaw" default="0"/>
 
     <arg name="use_ned_frame" default="false"/>

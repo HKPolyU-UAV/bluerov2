@@ -1,7 +1,9 @@
 auto_yaw: false
 read_wrench: 0
 compensate_d: false
-ref_traj: /root/uuv_ws/src/dave_sim/bluerov2/bluerov2_mpc/traj/slam_pool.txt
+# ref_traj: /root/uuv_ws/src/dave_sim/bluerov2/bluerov2_mpc/traj/slam_pool.txt
+ref_traj: /root/uuv_ws/src/dave_sim/bluerov2/bluerov2_mpc/traj/slam_pool_mix.txt
+# ref_traj: /root/uuv_ws/src/dave_sim/bluerov2/bluerov2_mpc/traj/slam_pool_eight_v2.txt
 # ref_traj: /root/uuv_ws/src/dave_sim/bluerov2/bluerov2_mpc/traj/slam_pool_shrinktrian.txt
 applied_forcex: /root/uuv_ws/src/dave_sim/bluerov2/bluerov2_dobmpc/config/forcex.txt
 applied_forcey: /root/uuv_ws/src/dave_sim/bluerov2/bluerov2_dobmpc/config/forcey.txt

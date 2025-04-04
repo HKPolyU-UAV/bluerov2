@@ -26,12 +26,15 @@ class SensorFusionNode:
 
         # Different initial positions for different cases
         # 1) Swimming pool
-        # self.position_x = 10.0
-        # self.position_y = 20.0
+        self.position_x = 10.0
+        self.position_y = 20.0
+
+        # self.position_x = 0.0
+        # self.position_y = 0.0
 
         # 2) Ship
-        self.position_x = -12.0
-        self.position_y = 0.0
+        # self.position_x = -12.0
+        # self.position_y = 0.0
 
         self.gt_path = Path()
         # self.gt_path.header.frame_id = "world"

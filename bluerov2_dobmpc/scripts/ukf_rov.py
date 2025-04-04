@@ -24,15 +24,22 @@ class UnscentedKalmanFilterNode:
         # Initialize path and position
         self.path = Path()
         self.path.header.frame_id = "map"
-        self.position_x = -12.0
-        self.position_y = 0.0
+
+        # Different initial positions for different cases
+        # 1) Swimming pool
+        self.position_x = 10.0
+        self.position_y = 20.0
+        # 2) Ship
+        # self.position_x = -12.0
+        # self.position_y = 0.0
         self.position_z = -95.0
 
         # UKF variables
         self.state_dim = 9  # [x, y, z, roll, pitch, yaw, vx, vy, vz]
         self.points = MerweScaledSigmaPoints(self.state_dim, alpha=0.1, beta=2., kappa=0.)
         self.ukf = UKF(dim_x=self.state_dim, dim_z=self.state_dim, dt=0.1, fx=self.state_transition, hx=self.measurement_function, points=self.points)
-        self.ukf.x = np.array([-12.0, 0.0, -95.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])  # Initial state
+        # self.ukf.x = np.array([-12.0, 0.0, -95.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])  # Initial state
+        self.ukf.x = np.array([self.position_x, self.position_y, self.position_z, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])  # Initial state
         self.ukf.P *= 0.1  # Initial state covariance
         self.ukf.R = np.eye(self.state_dim) * 10  # Measurement noise covariance
         self.ukf.Q = np.eye(self.state_dim) * 0.05  # Process noise covariance
