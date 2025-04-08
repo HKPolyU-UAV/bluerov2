@@ -57,7 +57,7 @@ We also provide its [docker image](https://github.com/HKPolyU-UAV/airo_docker_li
 4. Install then compile this package
     ```
     cd ~/catkin_ws/src && \
-    git clone --branch https://github.com/HKPolyU-UAV/bluerov2.git
+    git clone --branch huyang-backup https://github.com/HKPolyU-UAV/bluerov2.git
     ```
     Please edit CMakelists.txt [here](/bluerov2_dobmpc/CMakeLists.txt) and [here](/bluerov2_mpc/CMakeLists.txt) if you put your acados in otherwise directory. Modify the line ```set(acados_include "~/acados/include")``` and ```set(acados_lib "~/acados/lib")```
     
